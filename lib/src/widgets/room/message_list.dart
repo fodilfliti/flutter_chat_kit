@@ -64,6 +64,7 @@ class ChatMessageList extends StatefulWidget {
     this.onLinkTap,
     this.onAttachmentTap,
     this.padding,
+    this.enableSelection = false,
     super.key,
   });
 
@@ -93,6 +94,10 @@ class ChatMessageList extends StatefulWidget {
 
   /// Defaults to `ChatTheme.listPadding`.
   final EdgeInsets? padding;
+
+  /// Adds a "Select" action to the actions sheet. Enable it only where
+  /// something shows the selection (such as `SelectionAppBar`).
+  final bool enableSelection;
 
   /// The nearest list state, for example to jump from a reply preview.
   static ChatMessageListState? maybeOf(BuildContext context) =>
@@ -935,6 +940,7 @@ class ChatMessageListState extends State<ChatMessageList> {
       onDelete: () => m.status.isLocal
           ? unawaited(c.discard(m.localId))
           : unawaited(c.delete(m.id)),
+      onSelect: widget.enableSelection ? () => c.toggleSelect(m.localId) : null,
     );
     actions =
         widget.builders.messageActions?.call(context, message, actions) ??

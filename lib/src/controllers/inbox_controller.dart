@@ -5,6 +5,7 @@ import 'package:flutter_chat_kit/src/controllers/chat_kit.dart';
 import 'package:flutter_chat_kit/src/models/chat_room.dart';
 import 'package:flutter_chat_kit/src/models/chat_user.dart';
 import 'package:flutter_chat_kit/src/models/presence.dart';
+import 'package:flutter_chat_kit/src/models/typing.dart';
 import 'package:flutter_chat_kit/src/sync/chat_repository.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 
@@ -15,6 +16,7 @@ class InboxController extends ChangeNotifier {
   InboxController(this.kit) : _repository = kit.repository {
     _repository.openInbox();
     _presenceSub = _repository.presenceChanges.listen(_onPresence);
+    _typingSub = _repository.typingChanges.listen(_onTyping);
     _watch();
     unawaited(refresh());
   }
@@ -24,6 +26,7 @@ class InboxController extends ChangeNotifier {
 
   StreamSubscription<List<ChatRoom>>? _roomsSub;
   StreamSubscription<Presence>? _presenceSub;
+  StreamSubscription<TypingState>? _typingSub;
   Timer? _searchTimer;
   bool _disposed = false;
   int _refreshSeq = 0;
@@ -70,6 +73,13 @@ class InboxController extends ChangeNotifier {
     final id = room.otherUserId(currentUserId);
     return id == null ? null : _users[id];
   }
+
+  /// Names of the members typing in [room] (unresolved users are skipped
+  /// until their names arrive).
+  List<String> typingNames(ChatRoom room) => [
+    for (final id in _repository.typing(room.id).userIds)
+      if (id != currentUserId) ?_users[id]?.name,
+  ];
 
   /// Filters rooms by title or member name, after
   /// `ChatConfig.searchDebounce`.
@@ -186,6 +196,16 @@ class InboxController extends ChangeNotifier {
     if (isPeer) _notify();
   }
 
+  void _onTyping(TypingState state) {
+    if (!_rooms.any((room) => room.id == state.roomId)) return;
+    final missing = {
+      for (final id in state.userIds)
+        if (id != currentUserId && _requestedUsers.add(id)) id,
+    };
+    if (missing.isNotEmpty) unawaited(_resolve(missing));
+    _notify();
+  }
+
   void _notify() {
     if (!_disposed) notifyListeners();
   }
@@ -199,6 +219,7 @@ class InboxController extends ChangeNotifier {
     _searchTimer?.cancel();
     unawaited(_roomsSub?.cancel());
     unawaited(_presenceSub?.cancel());
+    unawaited(_typingSub?.cancel());
     if (kit.isOpen) unawaited(_repository.closeInbox());
     super.dispose();
   }

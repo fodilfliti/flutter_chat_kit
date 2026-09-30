@@ -307,6 +307,9 @@ class ChatRepository {
   Stream<TypingState> watchTyping(String roomId) =>
       _typingController.stream.where((t) => t.roomId == roomId);
 
+  /// Typing changes in every room, for the inbox.
+  Stream<TypingState> get typingChanges => _typingController.stream;
+
   // ------------------------------------------------------------- presence
 
   Presence? presence(String userId) => _presence[userId];

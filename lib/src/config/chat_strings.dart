@@ -62,6 +62,16 @@ class ChatStrings {
     this.microphoneDenied = 'Allow microphone access to record',
     this.slideUpToLock = 'Slide up to lock',
     this.stopRecording = 'Stop recording',
+    this.back = 'Back',
+    this.forward = 'Forward',
+    this.select = 'Select',
+    this.pin = 'Pin',
+    this.unpin = 'Unpin',
+    this.mute = 'Mute',
+    this.unmute = 'Unmute',
+    this.clearSearch = 'Clear search',
+    this.noResults = 'No results',
+    this.loadChatsFailed = "Couldn't load conversations",
     this.typing = defaultTyping,
     this.system = defaultSystem,
     this.lastSeen = defaultLastSeen,
@@ -71,6 +81,10 @@ class ChatStrings {
     this.playbackSpeed = defaultPlaybackSpeed,
     this.moreMedia = defaultMoreMedia,
     this.mediaPosition = defaultMediaPosition,
+    this.members = defaultMembers,
+    this.selectedCount = defaultSelectedCount,
+    this.previewWithAuthor = defaultPreviewWithAuthor,
+    this.unreadCount = defaultUnreadCount,
   });
 
   final String typeMessage;
@@ -161,6 +175,28 @@ class ChatStrings {
   final String slideUpToLock;
   final String stopRecording;
 
+  /// Tooltip of the room app bar back button.
+  final String back;
+
+  /// Selection app bar action (shown only when the app handles forwarding).
+  final String forward;
+
+  /// Message action that starts multi-selection.
+  final String select;
+
+  /// Inbox swipe actions.
+  final String pin;
+  final String unpin;
+  final String mute;
+  final String unmute;
+
+  /// Inbox search: clear button tooltip and empty result.
+  final String clearSearch;
+  final String noResults;
+
+  /// Inbox error state.
+  final String loadChatsFailed;
+
   /// Names of the users currently typing, in arrival order. Never empty.
   final String Function(List<String> names) typing;
 
@@ -187,6 +223,18 @@ class ChatStrings {
 
   /// Media viewer title, for example `3 of 12` (`index` starts at 1).
   final String Function(int index, int total) mediaPosition;
+
+  /// Group app bar subtitle.
+  final String Function(int count) members;
+
+  /// Selection app bar title.
+  final String Function(int count) selectedCount;
+
+  /// Inbox preview prefixed with its author (`You` or a group member).
+  final String Function(String author, String text) previewWithAuthor;
+
+  /// Accessibility label of the inbox unread badge.
+  final String Function(int count) unreadCount;
 
   static String defaultTyping(List<String> names) {
     return switch (names.length) {
@@ -224,4 +272,15 @@ class ChatStrings {
 
   static String defaultMediaPosition(int index, int total) =>
       '$index of $total';
+
+  static String defaultMembers(int count) =>
+      count == 1 ? '1 member' : '$count members';
+
+  static String defaultSelectedCount(int count) => '$count';
+
+  static String defaultPreviewWithAuthor(String author, String text) =>
+      '$author: $text';
+
+  static String defaultUnreadCount(int count) =>
+      count == 1 ? '1 unread message' : '$count unread messages';
 }

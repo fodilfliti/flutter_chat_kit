@@ -45,6 +45,7 @@ class MessageActionsSheet extends StatelessWidget {
     return showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       builder: (_) => MessageActionsSheet(
         actions: actions,
         quickReactions: quickReactions,
@@ -63,6 +64,7 @@ class MessageActionsSheet extends StatelessWidget {
   /// - edit: own confirmed text, image or video message
   /// - retry: own failed message
   /// - delete: own message (a failed or pending one is discarded)
+  /// - select: starts multi-selection
   static List<MessageAction> defaults({
     required MessageContext message,
     ChatStrings strings = const ChatStrings(),
@@ -71,6 +73,7 @@ class MessageActionsSheet extends StatelessWidget {
     VoidCallback? onEdit,
     VoidCallback? onRetry,
     VoidCallback? onDelete,
+    VoidCallback? onSelect,
   }) {
     final m = message.message;
     if (m is SystemMessage || m.isDeleted) return const [];
@@ -105,6 +108,13 @@ class MessageActionsSheet extends StatelessWidget {
           icon: Icons.refresh,
           onTap: onRetry,
         ),
+      if (onSelect != null)
+        MessageAction(
+          id: MessageAction.selectId,
+          label: strings.select,
+          icon: Icons.check_circle_outline,
+          onTap: onSelect,
+        ),
       if (onDelete != null && mine)
         MessageAction(
           id: MessageAction.deleteId,
@@ -125,23 +135,25 @@ class MessageActionsSheet extends StatelessWidget {
       container: true,
       explicitChildNodes: true,
       child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (onReact != null && quickReactions.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    for (final emoji in quickReactions)
-                      _reaction(context, theme, emoji, onReact),
-                  ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (onReact != null && quickReactions.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      for (final emoji in quickReactions)
+                        _reaction(context, theme, emoji, onReact),
+                    ],
+                  ),
                 ),
-              ),
-            for (final action in actions) _action(context, theme, action),
-          ],
+              for (final action in actions) _action(context, theme, action),
+            ],
+          ),
         ),
       ),
     );

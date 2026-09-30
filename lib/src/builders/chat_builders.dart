@@ -84,6 +84,7 @@ class MessageAction {
   static const editId = 'edit';
   static const deleteId = 'delete';
   static const retryId = 'retry';
+  static const selectId = 'select';
 
   /// Stable id; the defaults use the `*Id` constants.
   final String id;

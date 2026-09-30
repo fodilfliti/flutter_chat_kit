@@ -60,8 +60,20 @@ class InboxView extends StatefulWidget {
 
 ## Done when
 
-- [ ] Widget tests: app-supplied `actions` render in the app bar; typing subtitle replaces online; group subtitle shows member count; `header` renders; inbox search filters; tile shows unread badge and muted icon; tap calls `onRoomTap`; pagination on scroll end
-- [ ] `ChatRoomView` creates its own `ComposerController` when none is passed and disposes it
+- [x] Widget tests: app-supplied `actions` render in the app bar; typing subtitle replaces online; group subtitle shows member count; `header` renders; inbox search filters; tile shows unread badge and muted icon; tap calls `onRoomTap`; pagination on scroll end
+- [x] `ChatRoomView` creates its own `ComposerController` when none is passed and disposes it
+
+## As built
+
+- **`ChatAppBar`.** Takes `controller`, `options`, `strings` and `formatters`. The name comes from `roomDisplayName` (room title, else the peer's name, else the other members' names). `leadingBuilder` wraps the avatar; the back button (tooltip `strings.back`) shows only when the route can pop and `showBack` is true. Presence comes from `ChatRepository.watchPresence`, which only receives events while an inbox is open.
+- **`ChatRoomView`.** On top of the API above it takes `appBarBuilder` (return null to hide the bar), `composerBuilder`, `onAttachmentTap`, `onForward` and `backgroundColor`. `theme` applies a `ChatTheme` to this screen only. While messages are selected it shows `SelectionAppBar`, and system back clears the selection instead of popping. It wires the list's reply and edit to the composer and turns on `ChatMessageList.enableSelection`.
+- **Selection.** The long-press sheet gains a "Select" action (`MessageAction.selectId`), shown only when `ChatMessageList.enableSelection` is true. `SelectionAppBar` copies all selected texts, forwards (only with `onForward`, and only confirmed messages) and deletes (only when every selected message is the user's; pending ones are discarded). The sheet now scrolls when its actions do not fit.
+- **`InboxView`.** Adds `onRoomLongPress` and `loadMoreThreshold`. The next page loads near the end of the scroll, and also after a frame when the rooms do not fill the screen (skipped after a failure, so it never retries in a loop). Pull to refresh; loading, error (`loadChatsFailed`), empty (`noChats`) and no-results (`noResults`) states each go through their builder.
+- **Swipe actions.** `RoomSwipeActions` reveals pin and mute (edited through `InboxBuilders.swipeActions`) at the trailing edge, RTL aware. The same actions show in a sheet on long press and as accessibility actions.
+- **`RoomTile`.** Type icons (photo, video, mic, file, deleted) instead of emoji; a voice note shows its duration. `RoomTile.previewOf` adds the `previewWithAuthor` prefix for my messages ("You") and for group authors. The badge shows "99+" above 99 and is announced through `strings.unreadCount`.
+- **Typing in the inbox.** `ChatRepository.typingChanges` streams typing for every room; `InboxController.typingNames(room)` resolves the names.
+- **Shared pieces.** `RoomAvatar` (stacked member avatars for a group without an image, online dot) and `roomDisplayName`.
+- **Strings (D12).** New `ChatStrings` entries: `back`, `forward`, `select`, `pin`, `unpin`, `mute`, `unmute`, `clearSearch`, `noResults`, `loadChatsFailed`, and the functions `members`, `selectedCount`, `previewWithAuthor`, `unreadCount`.
 
 ## Do not
 
