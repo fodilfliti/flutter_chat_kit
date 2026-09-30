@@ -8,6 +8,7 @@
 - Backend contracts `ChatSource`, `ChatUploader`, `ChatUserResolver`; `ChatKit` root, `ChatKitScope`, and `ChatConfig`.
 - Customization surface: `ChatTheme` (`ThemeExtension` with `ColorScheme` fallback), `ChatStrings`, `ChatFormatters`, `ChatBuilders`, `InboxBuilders`, `MessageContext`, `GroupPosition`.
 - Built-in SQLite cache: `ChatCache` interface and `DriftChatCache` (one database per user, reactive room and message queries, keyset paging, pending-to-confirmed reconciliation, outbox, drafts, sync state, retention). `ChatKit` opens and clears it.
+- `ChatRepository`: cache-first sync with bounded gap fill, keyset paging in both directions, latest and detached `RoomWindow`s, jump to any message (`fetchAround` or paging back), ordered realtime events, reconnect resync, in-memory typing and presence, and batched user lookups with a TTL.
 
 ## [0.0.1] - 2026-09-30
 

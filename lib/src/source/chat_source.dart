@@ -43,8 +43,9 @@ abstract interface class ChatSource {
   });
 
   /// A page centred on [messageId], newest first, used to jump to old
-  /// messages. Return null when unsupported; the kit then pages back with
-  /// [fetchMessages] until it finds the message.
+  /// messages. `hasMore` tells whether older messages exist. Return null
+  /// when unsupported; the kit then pages back with [fetchMessages] until it
+  /// finds the message.
   Future<ChatPage<Message>?> fetchAround(
     String roomId,
     String messageId, {

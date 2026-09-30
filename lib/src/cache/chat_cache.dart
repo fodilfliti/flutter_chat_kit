@@ -43,13 +43,21 @@ abstract interface class ChatCache {
   Stream<List<ChatRoom>> watchRooms({String? search});
   Stream<ChatRoom?> watchRoom(String roomId);
 
-  /// Without [anchorAfter], the newest [limit] messages. With it, the
-  /// [limit] messages just newer than the cursor (a window detached from
-  /// the bottom after a jump). Newest first either way.
+  /// Messages between [from] and [to] (both inclusive, either optional),
+  /// newest first. [limit] keeps only the newest ones.
   Stream<List<Message>> watchMessages(
     String roomId, {
-    required int limit,
-    MessageCursor? anchorAfter,
+    MessageCursor? from,
+    MessageCursor? to,
+    int? limit,
+  });
+
+  /// One-shot version of [watchMessages].
+  Future<List<Message>> messages(
+    String roomId, {
+    MessageCursor? from,
+    MessageCursor? to,
+    int? limit,
   });
   Stream<List<RoomMember>> watchMembers(String roomId);
 
@@ -84,6 +92,15 @@ abstract interface class ChatCache {
   /// Adds or updates members without removing others. Read and delivered
   /// pointers never move backwards.
   Future<void> upsertMembers(String roomId, List<RoomMember> members);
+
+  /// Moves one member's read / delivered pointers forward, keeping the
+  /// role. Adds the member when unknown.
+  Future<void> updatePointers(
+    String roomId,
+    String userId, {
+    DateTime? readAt,
+    DateTime? deliveredAt,
+  });
   Future<void> upsertUsers(List<ChatUser> users);
   Future<Map<String, ChatUser>> users(Set<String> ids);
 

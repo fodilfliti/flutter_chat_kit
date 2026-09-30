@@ -127,22 +127,37 @@ class DriftChatCache implements ChatCache {
   @override
   Stream<List<Message>> watchMessages(
     String roomId, {
-    required int limit,
-    MessageCursor? anchorAfter,
+    MessageCursor? from,
+    MessageCursor? to,
+    int? limit,
   }) {
+    return _rangeQuery(roomId, from, to, limit).watch().map(_toMessages);
+  }
+
+  @override
+  Future<List<Message>> messages(
+    String roomId, {
+    MessageCursor? from,
+    MessageCursor? to,
+    int? limit,
+  }) async {
+    return _toMessages(await _rangeQuery(roomId, from, to, limit).get());
+  }
+
+  SimpleSelectStatement<$MessagesTable, MessageRow> _rangeQuery(
+    String roomId,
+    MessageCursor? from,
+    MessageCursor? to,
+    int? limit,
+  ) {
     final db = _db;
-    final query = db.select(db.messages)..where((t) => t.roomId.equals(roomId));
-    if (anchorAfter == null) {
-      query
-        ..orderBy(_newestFirst)
-        ..limit(limit);
-      return query.watch().map(_toMessages);
-    }
-    query
-      ..where((t) => _after(t, anchorAfter))
-      ..orderBy(_oldestFirst)
-      ..limit(limit);
-    return query.watch().map((rows) => _toMessages(rows.reversed));
+    final query = db.select(db.messages)
+      ..where((t) => t.roomId.equals(roomId))
+      ..orderBy(_newestFirst);
+    if (from != null) query.where((t) => _before(t, from).not());
+    if (to != null) query.where((t) => _after(t, to).not());
+    if (limit != null) query.limit(limit);
+    return query;
   }
 
   @override
@@ -287,6 +302,35 @@ class DriftChatCache implements ChatCache {
       for (final member in members) {
         await _upsertMember(db, roomId, member);
       }
+    });
+  }
+
+  @override
+  Future<void> updatePointers(
+    String roomId,
+    String userId, {
+    DateTime? readAt,
+    DateTime? deliveredAt,
+  }) {
+    final db = _db;
+    return db.transaction(() async {
+      final existing =
+          await (db.select(db.members)..where(
+                (t) => t.roomId.equals(roomId) & t.userId.equals(userId),
+              ))
+              .getSingleOrNull();
+      await _upsertMember(
+        db,
+        roomId,
+        RoomMember(
+          userId: userId,
+          role: existing == null
+              ? MemberRole.member
+              : MemberRole.parse(existing.role),
+          lastReadAt: readAt,
+          lastDeliveredAt: deliveredAt,
+        ),
+      );
     });
   }
 

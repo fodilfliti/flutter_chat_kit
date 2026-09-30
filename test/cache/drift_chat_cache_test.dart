@@ -173,22 +173,46 @@ void main() {
       await sub.cancel();
     });
 
-    test(
-      'anchored window returns messages just newer than the cursor',
-      () async {
-        await cache.upsertMessages([
-          for (var i = 0; i < 10; i++) _msg('m$i', second: i),
-        ]);
-        final window = await cache
-            .watchMessages(
-              'r1',
-              limit: 3,
-              anchorAfter: _msg('m2', second: 2).cursor,
-            )
-            .first;
-        expect(_ids(window), ['m5', 'm4', 'm3']);
-      },
-    );
+    test('range bounds are inclusive; limit keeps the newest', () async {
+      await cache.upsertMessages([
+        for (var i = 0; i < 10; i++) _msg('m$i', second: i),
+      ]);
+      final from = _msg('m2', second: 2).cursor;
+      final to = _msg('m5', second: 5).cursor;
+      expect(_ids(await cache.messages('r1', from: from, to: to)), [
+        'm5',
+        'm4',
+        'm3',
+        'm2',
+      ]);
+      expect(_ids(await cache.watchMessages('r1', from: from).first), [
+        'm9',
+        'm8',
+        'm7',
+        'm6',
+        'm5',
+        'm4',
+        'm3',
+        'm2',
+      ]);
+      expect(_ids(await cache.messages('r1', to: to, limit: 2)), ['m5', 'm4']);
+    });
+
+    test('updatePointers keeps the role and never moves back', () async {
+      final read = _t0.add(const Duration(minutes: 5));
+      await cache.upsertMembers('r1', [
+        const RoomMember(userId: 'u2', role: MemberRole.admin),
+      ]);
+      await cache.updatePointers('r1', 'u2', readAt: read);
+      await cache.updatePointers('r1', 'u2', readAt: _t0, deliveredAt: read);
+      await cache.updatePointers('r1', 'u9', readAt: read);
+
+      final members = await cache.watchMembers('r1').first;
+      expect(members.first.role, MemberRole.admin);
+      expect(members.first.lastReadAt, read);
+      expect(members.first.lastDeliveredAt, read);
+      expect(members.last.userId, 'u9');
+    });
 
     test('deleteMessage by server id or local id', () async {
       await cache.upsertMessages([

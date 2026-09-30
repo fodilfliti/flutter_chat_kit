@@ -31,5 +31,7 @@ export 'src/models/typing.dart';
 export 'src/source/chat_source.dart';
 export 'src/source/chat_uploader.dart';
 export 'src/source/chat_user_resolver.dart';
+export 'src/sync/chat_repository.dart';
 export 'src/sync/outbox_entry.dart';
 export 'src/sync/room_sync_state.dart';
+export 'src/sync/room_window.dart';

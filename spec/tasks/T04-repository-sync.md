@@ -55,10 +55,25 @@ class ChatRepository {
 5. Retention: after sync, `cache.trim(roomId, keep: config.maxCachedMessagesPerRoom)` when set.
 6. Every `AppFailure` from the source is rethrown to controllers; cache is never left half-written (use transactions).
 
+### As built
+
+- Windows are values, not repository state. `RoomWindow` is sealed:
+  - `LatestWindow{from, hasMoreOlder}` shows every message from `from` (inclusive) up to the newest, so realtime messages appear without touching the window.
+  - `DetachedWindow{oldest, newest, hasMoreOlder, hasMoreNewer}` is a slice reached by a jump. `loadNewer` turns it into a `LatestWindow` once it meets the synced range, or when the source reports no newer messages.
+- A window never reaches past the contiguous synced range (`RoomSyncState.oldest`..`newest`), so the list never shows a hole.
+- `openRoom` returns a `LatestWindow` and is ref-counted, as is `openInbox` / `closeInbox`, which subscribes to room-level events. `loadOlder` / `loadNewer` take the current window and return the next one. `jumpTo(roomId, messageId, current:)` returns `RoomWindow?`, with null when the message can't be found.
+- Gap fill is capped at `maxGapPages` (default 5). A bigger gap restarts from the latest page instead of downloading everything. Without `fetchAround`, `jumpTo` pages back up to `maxJumpPages` (default 20).
+- One lock per room serializes sync, paging and jumps. Each room's events apply in arrival order through a future chain. Event errors go to `FlutterError.reportError` and never break the stream.
+- `newest` only advances from events while the room is synced. `connectionLost()` marks every open room unsynced; `resync()` gap-fills them, refreshes the inbox when it is open, and rethrows the first failure. `ChatKit.setOnline` calls both.
+- Typing and presence are held in memory only. Typing ignores the current user, expires after `ChatConfig.typingTimeout`, and is cleared for an author when their message arrives.
+- `users(ids)` reads the cache, refreshes missing and stale entries (`userCacheTtl`) through the resolver in batches over a short window (`userBatchWindow`, default 20 ms), shares in-flight lookups, and falls back to the cache when the resolver fails.
+- The cache changed for this task (see T03): `watchMessages` / `messages(roomId, from:, to:, limit:)` with inclusive bounds, and `updatePointers` for receipts.
+- `ChatKit.repository` is available between `open()` and `close()`.
+
 ## Done when
 
-- [ ] Tests: gap fill across two rooms does not affect each other's cursor; `loadOlder` uses cache before source; equal timestamps page correctly; realtime echo of own message does not duplicate; `jumpTo` far message returns detached window; `resync` fills a gap after simulated disconnect; source failure leaves cache consistent
-- [ ] No widget or controller imports `ChatSource` except through the repository and outbox
+- [x] Tests: gap fill across two rooms does not affect each other's cursor; `loadOlder` uses cache before source; equal timestamps page correctly; realtime echo of own message does not duplicate; `jumpTo` far message returns detached window; `resync` fills a gap after simulated disconnect; source failure leaves cache consistent
+- [x] No widget or controller imports `ChatSource` except through the repository and outbox (only `ChatKit`, which owns it, and the repository do)
 
 ## Do not
 
