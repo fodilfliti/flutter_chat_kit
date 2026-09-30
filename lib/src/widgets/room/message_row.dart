@@ -39,13 +39,14 @@ class MessageRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = ChatTheme.of(context);
+    final style = theme.messageList;
     final position = message.groupPosition;
-    final top = position.isFirst ? theme.groupSpacing : theme.messageSpacing;
+    final top = position.isFirst ? style.groupSpacing : style.messageSpacing;
     final background = message.isHighlighted
-        ? theme.highlightColor
+        ? style.highlightColor
         : message.isSelected
-        ? theme.selectedColor
-        : theme.highlightColor.withValues(alpha: 0);
+        ? style.selectedColor
+        : style.highlightColor.withValues(alpha: 0);
 
     final Widget body;
     if (message.message is SystemMessage) {
@@ -62,8 +63,8 @@ class MessageRow extends StatelessWidget {
           if (name != null)
             Padding(
               padding: mine
-                  ? const EdgeInsetsDirectional.only(end: 4, bottom: 2)
-                  : const EdgeInsetsDirectional.only(start: 4, bottom: 2),
+                  ? _mirror(style.authorNamePadding)
+                  : style.authorNamePadding,
               child: name,
             ),
           ConstrainedBox(
@@ -81,22 +82,25 @@ class MessageRow extends StatelessWidget {
         children: [
           if (selecting)
             Padding(
-              padding: const EdgeInsetsDirectional.only(end: 8, bottom: 4),
+              padding: EdgeInsetsDirectional.only(
+                end: theme.size(8),
+                bottom: theme.size(4),
+              ),
               child: Icon(
                 message.isSelected
                     ? Icons.check_circle
                     : Icons.radio_button_unchecked,
-                size: 22,
+                size: style.selectionIconSize,
                 color: message.isSelected
-                    ? Theme.of(context).colorScheme.primary
+                    ? style.selectionColor
                     : theme.iconColor,
               ),
             ),
           if (showAvatar && !mine)
             Padding(
-              padding: const EdgeInsetsDirectional.only(end: 6),
+              padding: EdgeInsetsDirectional.only(end: style.avatarGap),
               child: SizedBox(
-                width: theme.avatarSize,
+                width: style.avatarSize,
                 child: position.isLast ? avatar : null,
               ),
             ),
@@ -128,4 +132,7 @@ class MessageRow extends StatelessWidget {
       ),
     );
   }
+
+  static EdgeInsetsDirectional _mirror(EdgeInsetsDirectional p) =>
+      EdgeInsetsDirectional.fromSTEB(p.end, p.top, p.start, p.bottom);
 }

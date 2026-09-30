@@ -2,36 +2,60 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/src/config/chat_theme.dart';
 
-/// A round avatar: the image at [url] over the initials of [name].
+/// An avatar: the image at [url] over the initials of [name], round or
+/// rounded per `ChatAvatarStyle.radius`.
 class ChatAvatar extends StatelessWidget {
   const ChatAvatar({required this.name, this.url, this.size, super.key});
 
   final String name;
   final String? url;
 
-  /// Diameter; defaults to `ChatTheme.avatarSize`.
+  /// Diameter; defaults to `ChatMessageListStyle.avatarSize`.
   final double? size;
 
   @override
   Widget build(BuildContext context) {
     final theme = ChatTheme.of(context);
-    final scheme = Theme.of(context).colorScheme;
-    final diameter = size ?? theme.avatarSize;
+    final style = theme.avatar;
+    final diameter = size ?? theme.messageList.avatarSize;
     final image = url;
-    return CircleAvatar(
-      radius: diameter / 2,
-      backgroundColor: theme.avatarBackgroundColor,
-      foregroundImage: image == null || image.isEmpty
+    final radius = BorderRadius.circular(style.radius ?? diameter / 2);
+    final side = style.border;
+    return Container(
+      width: diameter,
+      height: diameter,
+      clipBehavior: Clip.antiAlias,
+      foregroundDecoration: side == BorderSide.none
           ? null
-          : CachedNetworkImageProvider(image, errorListener: _ignore),
-      onForegroundImageError: image == null || image.isEmpty ? null : (_, _) {},
-      child: Text(
-        initialsOf(name),
-        style: TextStyle(
-          fontSize: diameter * 0.4,
-          fontWeight: FontWeight.w600,
-          color: scheme.onSecondaryContainer,
-        ),
+          : BoxDecoration(
+              borderRadius: radius,
+              border: Border.fromBorderSide(side),
+            ),
+      decoration: BoxDecoration(
+        color: style.backgroundColor,
+        borderRadius: radius,
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Center(
+            child: Text(
+              initialsOf(name),
+              style: TextStyle(
+                fontSize: diameter * 0.4,
+                fontWeight: FontWeight.w600,
+                color: style.foregroundColor,
+              ),
+            ),
+          ),
+          if (image != null && image.isNotEmpty)
+            Image(
+              image: CachedNetworkImageProvider(image, errorListener: _ignore),
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            ),
+        ],
       ),
     );
   }

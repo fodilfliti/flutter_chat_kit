@@ -154,7 +154,7 @@ class _ChatImageState extends State<ChatImage> {
   Widget build(BuildContext context) {
     final theme = ChatTheme.of(context);
     final placeholder = ColoredBox(
-      color: theme.incomingBubbleColor,
+      color: theme.incomingBubble.color,
       child: const SizedBox.expand(),
     );
     final provider = _provider;
@@ -212,7 +212,7 @@ class _ChatImageState extends State<ChatImage> {
           child: ValueListenableBuilder<double?>(
             valueListenable: store.downloadProgress(url),
             builder: (context, value, _) => SizedBox.square(
-              dimension: 28,
+              dimension: theme.size(28),
               child: CircularProgressIndicator(
                 value: value == null || value <= 0 ? null : value,
                 strokeWidth: 2.5,
@@ -229,7 +229,9 @@ class _ChatImageState extends State<ChatImage> {
       fit: StackFit.expand,
       children: [
         placeholder,
-        Center(child: Icon(icon, color: theme.iconColor)),
+        Center(
+          child: Icon(icon, color: theme.iconColor, size: theme.size(24)),
+        ),
       ],
     );
   }
@@ -248,6 +250,7 @@ class _ChatImageState extends State<ChatImage> {
           child: IconButton.filledTonal(
             onPressed: _retry,
             tooltip: label,
+            iconSize: theme.size(24),
             icon: Icon(icon),
           ),
         ),

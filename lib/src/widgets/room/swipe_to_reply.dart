@@ -73,12 +73,16 @@ class _SwipeToReplyState extends State<SwipeToReply>
             children: [
               if (progress > 0)
                 PositionedDirectional(
-                  start: 8,
+                  start: theme.size(8),
                   child: Opacity(
                     opacity: progress,
                     child: Transform.scale(
                       scale: 0.6 + 0.4 * progress,
-                      child: Icon(Icons.reply, color: theme.iconColor),
+                      child: Icon(
+                        Icons.reply,
+                        color: theme.iconColor,
+                        size: theme.size(24),
+                      ),
                     ),
                   ),
                 ),

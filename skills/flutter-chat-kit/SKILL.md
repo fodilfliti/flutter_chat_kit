@@ -256,10 +256,21 @@ and read; failed ones show a retry action.
 ```dart
 ChatRoomView(
   controller: room,
-  theme: ChatTheme.fallback(scheme).copyWith(bubbleRadius: 12),
+  theme: ChatTheme.fallback(scheme)
+      .withMessageText(const TextStyle(fontSize: 14, color: Colors.grey))
+      .copyWith(roomTile: ChatRoomTileStyle.card(scheme, radius: 16))
+      .mapBubbles((b) => b.copyWith(radius: 8))
+      .scaled(1.1), // always last
   builders: ChatBuilders(
     bubbleBuilder: (context, m, defaultChild) => defaultChild,
     customBuilders: {'offer': (context, m) => OfferCard(message: m)},
+    // Variants of one type, picked from the data; null = unsupported.
+    customBuilder: (context, m) => switch ((m.message as CustomMessage).data['variant']) {
+      'quote' => QuoteCard(message: m),
+      _ => null,
+    },
+    // Drawn inside the regular bubble with time and ticks.
+    bubbledCustomTypes: const {'booking'},
     messageActions: (context, m, defaults) => [...defaults, report(m)],
     appBarActions: (context, room) => [infoButton],
     composerBuilder: (context, defaultChild) => defaultChild,
@@ -272,6 +283,20 @@ ChatRoomView(
 
 - Register `ChatTheme` in `ThemeData.extensions` (derive it with
   `ChatTheme.fallback(colorScheme)`), or pass `theme:` for one screen.
+  It is grouped: `outgoingBubble` / `incomingBubble` (`ChatBubbleStyle`:
+  color or gradient, text, radius, border, shadows), `messageList`
+  (spacing, avatars, `background`), `status`, `dateSeparator`,
+  `systemMessage`, `unreadDivider`, `reactions`, `replyPreview`, `media`,
+  `composer`, `appBar`, `avatar` (`radius` null = circle), `roomTile`
+  (`ChatRoomTileStyle.plain` / `.divided` / `.card`, any `shape`) and
+  `badge`. Change a group with `copyWith` on it, then on the theme.
+- `scaled(factor, textFactor:)` resizes everything; call it last. For
+  `flutter_screenutil`, build the theme inside `ScreenUtilInit` with
+  `ScreenUtil().scaleWidth` / `scaleText`. App widgets follow the scale
+  with `ChatTheme.of(context).size(v)` / `.fontSize(v)`.
+- Custom types: `customBuilders[type]` first, then the `customBuilder`
+  resolver, then "unsupported". `bubbledCustomTypes` keeps the bubble;
+  inside it use `theme.bubble(isMine: m.isMine).textStyle` for colors.
 - Every builder gets the default widget: wrap it instead of rebuilding it.
 - `MessageContext`: `message`, `author`, `sender` (staff in `sentBy`),
   `isMine`, `isSentByMe`, `isSentByColleague`, `groupPosition`, `status`,

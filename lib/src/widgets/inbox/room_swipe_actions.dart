@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_chat_kit/src/builders/inbox_builders.dart';
+import 'package:flutter_chat_kit/src/config/chat_theme.dart';
 
 /// Reveals [actions] at the trailing edge when [child] is swiped towards
 /// the leading edge. Tapping an action runs it and closes the row.
@@ -12,13 +13,15 @@ class RoomSwipeActions extends StatefulWidget {
   const RoomSwipeActions({
     required this.actions,
     required this.child,
-    this.actionWidth = 76,
+    this.actionWidth,
     super.key,
   });
 
   final List<RoomAction> actions;
   final Widget child;
-  final double actionWidth;
+
+  /// Defaults to 76 at the theme scale.
+  final double? actionWidth;
 
   @override
   State<RoomSwipeActions> createState() => _RoomSwipeActionsState();
@@ -31,7 +34,10 @@ class _RoomSwipeActionsState extends State<RoomSwipeActions>
     duration: const Duration(milliseconds: 200),
   );
 
-  double get _extent => widget.actions.length * widget.actionWidth;
+  double get _actionWidth =>
+      widget.actionWidth ?? ChatTheme.of(context).size(76);
+
+  double get _extent => widget.actions.length * _actionWidth;
 
   @override
   void dispose() {
@@ -63,7 +69,9 @@ class _RoomSwipeActionsState extends State<RoomSwipeActions>
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final chat = ChatTheme.of(context);
     if (widget.actions.isEmpty) return widget.child;
     final rtl = Directionality.of(context) == TextDirection.rtl;
     return Semantics(
@@ -86,7 +94,7 @@ class _RoomSwipeActionsState extends State<RoomSwipeActions>
                     children: [
                       for (final action in widget.actions)
                         SizedBox(
-                          width: widget.actionWidth,
+                          width: _actionWidth,
                           child: Material(
                             color: action.isDestructive
                                 ? scheme.error
@@ -98,23 +106,21 @@ class _RoomSwipeActionsState extends State<RoomSwipeActions>
                                 children: [
                                   Icon(
                                     action.icon,
+                                    size: chat.size(24),
                                     color: action.isDestructive
                                         ? scheme.onError
                                         : scheme.onSecondaryContainer,
                                   ),
-                                  const SizedBox(height: 4),
+                                  SizedBox(height: chat.size(4)),
                                   Text(
                                     action.label,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall
-                                        ?.copyWith(
-                                          color: action.isDestructive
-                                              ? scheme.onError
-                                              : scheme.onSecondaryContainer,
-                                        ),
+                                    style: chat.roomTile.timeStyle.copyWith(
+                                      color: action.isDestructive
+                                          ? scheme.onError
+                                          : scheme.onSecondaryContainer,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -132,7 +138,10 @@ class _RoomSwipeActionsState extends State<RoomSwipeActions>
                 offset: Offset((rtl ? 1 : -1) * _open.value * _extent, 0),
                 child: child,
               ),
-              child: Material(color: scheme.surface, child: widget.child),
+              child: Material(
+                color: theme.scaffoldBackgroundColor,
+                child: widget.child,
+              ),
             ),
           ],
         ),

@@ -90,7 +90,8 @@ class ChatRoomView extends StatefulWidget {
   /// Enables the forward action of the selection app bar.
   final ValueChanged<List<Message>>? onForward;
 
-  /// Painted behind the messages, such as a wallpaper.
+  /// Painted behind the messages, such as a wallpaper; replaces
+  /// `ChatMessageListStyle.background`.
   final Widget? background;
   final Color? backgroundColor;
 
@@ -190,6 +191,9 @@ class ChatRoomViewState extends State<ChatRoomView> {
           list,
         ],
       );
+    } else if (ChatTheme.of(context).messageList.background
+        case final decoration?) {
+      list = DecoratedBox(decoration: decoration, child: list);
     }
 
     Widget input = ChatComposer(

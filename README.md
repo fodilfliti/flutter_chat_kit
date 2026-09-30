@@ -248,7 +248,11 @@ need in-app video playback there.
 ```dart
 ChatRoomView(
   controller: room,
-  theme: ChatTheme.fallback(scheme).copyWith(bubbleRadius: 12),
+  theme: ChatTheme.fallback(scheme)
+      .withMessageText(const TextStyle(fontSize: 14, color: Colors.grey))
+      .copyWith(roomTile: ChatRoomTileStyle.card(scheme, radius: 16))
+      .mapBubbles((b) => b.copyWith(radius: 8))
+      .scaled(1.1),
   strings: ChatStrings(typeMessage: 'Écrire un message', send: 'Envoyer'),
   appBar: ChatAppBarOptions(actions: [callButton]),
   builders: ChatBuilders(
@@ -261,8 +265,14 @@ ChatRoomView(
 )
 ```
 
-- **Theme**: register `ChatTheme` in `ThemeData.extensions`, or pass it to
-  a single screen.
+- **Theme**: `ChatTheme` has one style per part (bubbles, message list,
+  composer, app bar, avatars, inbox rows, badges, ...) with every color,
+  text style, size, radius, border and shadow. Inbox rows can be plain,
+  divided or cards of any shape. `scaled()` resizes everything, for a zoom
+  setting or a screen-size package. Register it in
+  `ThemeData.extensions`, or pass it to a single screen.
+- **Custom messages**: one builder per type, a resolver for variants of a
+  type, and `bubbledCustomTypes` to draw them inside the regular bubble.
 - **Builders**: `ChatBuilders` for the room and `InboxBuilders` for the
   inbox. Each builder gets the default widget, so wrapping is one line.
 - **Text**: every string is in `ChatStrings`, in English by default. Map it
@@ -276,9 +286,11 @@ See the [customization cookbook](doc/customization.md) for recipes.
 ## Example
 
 [`example/`](example) is a complete app on an in-memory fake backend:
-inbox, direct and group rooms, a 5 000-message room, a custom "offer"
-message, a personal and a business profile with staff replies, an offline
-toggle and random send failures. No accounts or keys needed:
+inbox, direct and group rooms, a 5 000-message room, custom offer, quote
+and booking messages, a personal and a business profile with staff
+replies, a live style sheet (presets, colors, scale, bubble and tile
+shapes), an offline toggle and random send failures. No accounts or keys
+needed:
 
 ```bash
 cd example

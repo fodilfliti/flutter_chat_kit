@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/src/builders/inbox_builders.dart';
 import 'package:flutter_chat_kit/src/config/chat_formatters.dart';
 import 'package:flutter_chat_kit/src/config/chat_strings.dart';
+import 'package:flutter_chat_kit/src/config/chat_styles.dart';
 import 'package:flutter_chat_kit/src/config/chat_theme.dart';
 import 'package:flutter_chat_kit/src/models/chat_user.dart';
 import 'package:flutter_chat_kit/src/models/message.dart';
@@ -11,7 +12,8 @@ import 'package:flutter_chat_kit/src/widgets/common/room_avatar.dart';
 /// One inbox row: avatar with online dot, name, muted icon, last message
 /// preview (or who is typing), time, pinned icon and unread badge.
 ///
-/// Each part goes through the matching [InboxBuilders] hook.
+/// Drawn from `ChatTheme.roomTile` (plain, divided or card, any shape);
+/// each part goes through the matching [InboxBuilders] hook.
 class RoomTile extends StatelessWidget {
   const RoomTile({
     required this.room,
@@ -21,7 +23,7 @@ class RoomTile extends StatelessWidget {
     this.builders = const InboxBuilders(),
     this.strings = const ChatStrings(),
     this.formatters = const ChatFormatters(),
-    this.avatarSize = 52,
+    this.avatarSize,
     super.key,
   });
 
@@ -34,7 +36,9 @@ class RoomTile extends StatelessWidget {
   final InboxBuilders builders;
   final ChatStrings strings;
   final ChatFormatters formatters;
-  final double avatarSize;
+
+  /// Defaults to `ChatRoomTileStyle.avatarSize`.
+  final double? avatarSize;
 
   /// The preview line of [room]'s last message, prefixed with its author
   /// ("You", a group member, or the colleague who answered for a business
@@ -83,7 +87,8 @@ class RoomTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = ChatTheme.of(context);
-    final scheme = Theme.of(context).colorScheme;
+    final style = theme.roomTile;
+    final avatarSize = this.avatarSize ?? style.avatarSize;
     final r = room.room;
     final unread = room.hasUnread;
     final highlight = unread && !r.muted;
@@ -104,20 +109,18 @@ class RoomTile extends StatelessWidget {
         Flexible(
           child: Text(
             roomDisplayName(r, room.currentUserId, users),
-            style: theme.roomTitleStyle.copyWith(
-              fontWeight: unread ? FontWeight.w700 : null,
-            ),
+            style: unread ? style.unreadTitleStyle : style.titleStyle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
         ),
         if (r.muted)
           Padding(
-            padding: const EdgeInsetsDirectional.only(start: 4),
+            padding: EdgeInsetsDirectional.only(start: theme.size(4)),
             child: Icon(
               Icons.volume_off,
-              size: 16,
-              color: theme.iconColor,
+              size: style.iconSize,
+              color: style.iconColor,
               semanticLabel: strings.mute,
             ),
           ),
@@ -131,27 +134,27 @@ class RoomTile extends StatelessWidget {
     if (room.isTyping) {
       subtitle = Text(
         strings.typing(room.typingNames),
-        style: theme.roomSubtitleStyle.copyWith(color: scheme.primary),
+        style: style.typingStyle,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       );
     } else {
       final last = r.lastMessage;
       final icon = last == null ? null : _kindIcon(last);
+      final preview = unread ? style.unreadSubtitleStyle : style.subtitleStyle;
       subtitle = Row(
         children: [
           if (icon != null)
             Padding(
-              padding: const EdgeInsetsDirectional.only(end: 4),
-              child: Icon(icon, size: 16, color: theme.iconColor),
+              padding: EdgeInsetsDirectional.only(end: theme.size(4)),
+              child: Icon(icon, size: style.iconSize, color: style.iconColor),
             ),
           Expanded(
             child: Text(
               previewOf(room, strings, formatters: formatters),
-              style: theme.roomSubtitleStyle.copyWith(
-                color: unread ? scheme.onSurface : null,
-                fontStyle: last?.isDeleted ?? false ? FontStyle.italic : null,
-              ),
+              style: last?.isDeleted ?? false
+                  ? preview.copyWith(fontStyle: FontStyle.italic)
+                  : preview,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -170,29 +173,27 @@ class RoomTile extends StatelessWidget {
       children: [
         Text(
           formatters.formatRoomTime(time, strings),
-          style: theme.roomTimeStyle.copyWith(
-            color: highlight ? theme.unreadBadgeColor : null,
-          ),
+          style: highlight ? style.unreadTimeStyle : style.timeStyle,
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: theme.size(6)),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (r.pinned)
               Icon(
                 Icons.push_pin,
-                size: 16,
-                color: theme.iconColor,
+                size: style.iconSize,
+                color: style.iconColor,
                 semanticLabel: strings.pin,
               ),
-            if (r.pinned && unread) const SizedBox(width: 4),
+            if (r.pinned && unread) SizedBox(width: theme.size(4)),
             if (unread)
-              _UnreadBadge(
+              ChatUnreadBadge(
                 count: r.unreadCount,
                 muted: r.muted,
-                strings: strings,
+                semanticLabel: strings.unreadCount(r.unreadCount),
               ),
-            if (!r.pinned && !unread) const SizedBox(height: 20),
+            if (!r.pinned && !unread) SizedBox(height: theme.badge.size),
           ],
         ),
       ],
@@ -201,65 +202,119 @@ class RoomTile extends StatelessWidget {
       trailing = build(context, room, trailing);
     }
 
-    Widget tile = InkWell(
-      onTap: onTap,
-      onLongPress: onLongPress,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(
-          children: [
-            leading,
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [title, const SizedBox(height: 4), subtitle],
-              ),
+    final content = Padding(
+      padding: style.padding,
+      child: Row(
+        children: [
+          leading,
+          SizedBox(width: style.gap),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                title,
+                SizedBox(height: style.lineGap),
+                subtitle,
+              ],
             ),
-            const SizedBox(width: 8),
-            trailing,
-          ],
-        ),
+          ),
+          SizedBox(width: style.trailingGap),
+          trailing,
+        ],
       ),
+    );
+    var tile = _frame(
+      style,
+      content,
+      indent: style.padding.left + avatarSize + style.gap,
     );
     if (builders.tileBuilder case final build?) {
       tile = build(context, room, tile);
     }
     return tile;
   }
+
+  /// Background, shape, elevation, divider and margin around [content].
+  Widget _frame(
+    ChatRoomTileStyle style,
+    Widget content, {
+    required double indent,
+  }) {
+    final plain =
+        style.color == null &&
+        style.elevation == 0 &&
+        style.shape == const RoundedRectangleBorder();
+    Widget tile = Material(
+      type: plain ? MaterialType.transparency : MaterialType.canvas,
+      color: style.color ?? Colors.transparent,
+      shape: style.shape,
+      elevation: style.elevation,
+      clipBehavior: plain ? Clip.none : Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        customBorder: style.shape,
+        child: content,
+      ),
+    );
+    final divider = style.divider;
+    if (divider != BorderSide.none) {
+      tile = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          tile,
+          Padding(
+            padding: EdgeInsetsDirectional.only(
+              start: style.dividerIndent ?? indent,
+            ),
+            child: ColoredBox(
+              color: divider.color,
+              child: SizedBox(height: divider.width),
+            ),
+          ),
+        ],
+      );
+    }
+    if (style.margin != EdgeInsets.zero) {
+      tile = Padding(padding: style.margin, child: tile);
+    }
+    return tile;
+  }
 }
 
-class _UnreadBadge extends StatelessWidget {
-  const _UnreadBadge({
+/// An unread counter drawn from `ChatTheme.badge`; shows "99+" above 99.
+class ChatUnreadBadge extends StatelessWidget {
+  const ChatUnreadBadge({
     required this.count,
-    required this.muted,
-    required this.strings,
+    this.muted = false,
+    this.semanticLabel,
+    super.key,
   });
 
   final int count;
+
+  /// Uses `ChatBadgeStyle.mutedColor`.
   final bool muted;
-  final ChatStrings strings;
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
-    final theme = ChatTheme.of(context);
+    final style = ChatTheme.of(context).badge;
     return Semantics(
-      label: strings.unreadCount(count),
-      excludeSemantics: true,
+      label: semanticLabel,
+      excludeSemantics: semanticLabel != null,
       child: Container(
-        constraints: const BoxConstraints(minWidth: 20),
-        height: 20,
-        padding: const EdgeInsets.symmetric(horizontal: 6),
+        constraints: BoxConstraints(minWidth: style.size),
+        height: style.size,
+        padding: style.padding,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: muted ? theme.iconColor : theme.unreadBadgeColor,
-          borderRadius: BorderRadius.circular(10),
+          color: muted ? style.mutedColor : style.color,
+          borderRadius: BorderRadius.circular(style.radius),
         ),
-        child: Text(
-          count > 99 ? '99+' : '$count',
-          style: theme.unreadBadgeTextStyle,
-        ),
+        child: Text(count > 99 ? '99+' : '$count', style: style.textStyle),
       ),
     );
   }

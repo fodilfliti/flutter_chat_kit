@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/src/config/chat_formatters.dart';
 import 'package:flutter_chat_kit/src/config/chat_strings.dart';
+import 'package:flutter_chat_kit/src/config/chat_theme.dart';
 import 'package:flutter_chat_kit/src/controllers/audio_player_hub.dart';
 import 'package:flutter_chat_kit/src/media/chat_media_store.dart';
 import 'package:flutter_chat_kit/src/models/message.dart';
@@ -95,15 +96,18 @@ class _AudioMessageViewState extends State<AudioMessageView> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = ChatTheme.of(context);
     final hub = _hub;
     final m = widget.message;
     final color = widget.color;
     final active = widget.activeColor ?? color;
     if (hub == null) {
       return _layout(
+        theme,
         button: Icon(
           Icons.play_arrow_rounded,
           color: color.withValues(alpha: 0.4),
+          size: theme.size(24),
         ),
         wave: _Waveform(
           bars: m.waveform,
@@ -124,7 +128,7 @@ class _AudioMessageViewState extends State<AudioMessageView> {
         final current = hub.currentId == _id;
         final button = _loading
             ? SizedBox.square(
-                dimension: 24,
+                dimension: theme.size(24),
                 child: CircularProgressIndicator(strokeWidth: 2, color: color),
               )
             : IconButton(
@@ -133,12 +137,13 @@ class _AudioMessageViewState extends State<AudioMessageView> {
                 icon: Icon(
                   playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
                   color: color,
-                  size: 32,
+                  size: theme.size(32),
                 ),
               );
         final position = hub.position(_id);
         final known = hub.duration(_id);
         return _layout(
+          theme,
           button: button,
           wave: ValueListenableBuilder<Duration?>(
             valueListenable: known,
@@ -188,7 +193,7 @@ class _AudioMessageViewState extends State<AudioMessageView> {
                     visualDensity: VisualDensity.compact,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     minimumSize: Size.zero,
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    padding: EdgeInsets.symmetric(horizontal: theme.size(6)),
                   ),
                   child: Text(
                     widget.strings.playbackSpeed(hub.speed),
@@ -204,24 +209,28 @@ class _AudioMessageViewState extends State<AudioMessageView> {
     );
   }
 
-  Widget _layout({
+  Widget _layout(
+    ChatTheme theme, {
     required Widget button,
     required Widget wave,
     required Widget time,
     Widget? speed,
   }) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 260, minWidth: 200),
+      constraints: BoxConstraints(
+        maxWidth: theme.size(260),
+        minWidth: theme.size(200),
+      ),
       child: Row(
         children: [
           button,
-          const SizedBox(width: 4),
+          SizedBox(width: theme.size(4)),
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: 28, child: wave),
+                SizedBox(height: theme.size(28), child: wave),
                 Row(children: [time, const Spacer(), ?speed]),
               ],
             ),

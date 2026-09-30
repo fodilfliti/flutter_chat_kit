@@ -30,22 +30,25 @@ class ReplyEditBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = ChatTheme.of(context);
     return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(8, 6, 8, 0),
+      padding: const EdgeInsetsDirectional.fromSTEB(8, 6, 8, 0) * theme.scale,
       child: Row(
         children: [
           Padding(
-            padding: const EdgeInsetsDirectional.only(start: 4, end: 8),
+            padding: EdgeInsetsDirectional.only(
+              start: theme.size(4),
+              end: theme.size(8),
+            ),
             child: Icon(
               isEditing ? Icons.edit_outlined : Icons.reply,
-              color: theme.replyAccentColor,
-              size: 20,
+              color: theme.replyPreview.accentColor,
+              size: theme.size(20),
             ),
           ),
           Expanded(
             child: ReplyPreview(
               title: isEditing ? strings.editing : authorName,
               snippet: messageSnippet(message, strings),
-              textStyle: theme.composerTextStyle,
+              textStyle: theme.composer.textStyle,
               onClose: onClose,
               closeTooltip: strings.cancel,
             ),

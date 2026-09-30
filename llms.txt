@@ -7,6 +7,6 @@ Backend-agnostic chat kit: models, SQLite cache, outbox, controllers, customizab
 - Kit owns Drift cache (one DB per user), per-room sync, keyset pagination, offline outbox with retry
 - ChatKit root + ChatKitScope; InboxController, ChatRoomController, ComposerController (ChangeNotifier, no Riverpod)
 - ChatRoomView / InboxView; every piece replaceable via ChatBuilders / InboxBuilders; CustomMessage + customBuilders for app types (e.g. offer)
-- ChatTheme (ThemeExtension), ChatConfig, ChatStrings (app passes strings), ChatFormatters
+- ChatTheme (ThemeExtension, grouped: ChatBubbleStyle, ChatRoomTileStyle plain/divided/card, ChatComposerStyle, ...; scaled() for zoom or screenutil), ChatConfig, ChatStrings (app passes strings), ChatFormatters
 - No firebase, supabase, dio, riverpod, slang in lib/
 - Build order: spec/tasks/README.md

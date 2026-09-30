@@ -409,6 +409,7 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
       AudioMessage() => 'Got your voice note, one sec',
       FileMessage() => 'Thanks, I will read it tonight',
       CustomMessage(customType: 'offer') => 'Can you do a bit less? 🙂',
+      CustomMessage(customType: 'booking') => 'Works for me, see you then 👍',
       _ => _replies[_random.nextInt(_replies.length)],
     };
   }
@@ -646,6 +647,7 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
         createdAt: ago(const Duration(hours: 5)),
         customType: 'offer',
         data: const {
+          'variant': 'product',
           'title': 'Camping tent (4 people)',
           'amount': 45,
           'currency': 'USD',
@@ -674,6 +676,49 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
         const Duration(days: 2),
         'Hello! Yes, delivery takes 2 to 3 days.',
         sentBy: 'sara',
+      ),
+      text(
+        shopId,
+        me,
+        const Duration(days: 1, hours: 3),
+        'Can you engrave a name on the wallet?',
+      ),
+      // Same `offer` type as the tent in "Weekend trip", another card.
+      CustomMessage(
+        id: 'shop-quote',
+        localId: 'shop-quote',
+        roomId: shopId,
+        authorId: shopId,
+        sentBy: 'sara',
+        createdAt: ago(const Duration(days: 1, hours: 2)),
+        customType: 'offer',
+        data: const {
+          'variant': 'quote',
+          'title': 'Engraved wallet',
+          'currency': 'USD',
+          'validDays': 3,
+          'items': [
+            {'label': 'Leather wallet', 'amount': 40},
+            {'label': 'Name engraving', 'amount': 8},
+          ],
+        },
+      ),
+      CustomMessage(
+        id: 'shop-booking',
+        localId: 'shop-booking',
+        roomId: shopId,
+        authorId: shopId,
+        sentBy: 'sara',
+        createdAt: ago(const Duration(days: 1, hours: 1)),
+        customType: 'booking',
+        data: {
+          'title': 'Delivery slot',
+          'at': DateTime.now()
+              .add(const Duration(days: 2))
+              .copyWith(hour: 14, minute: 30)
+              .toIso8601String(),
+          'place': 'Oran, your address',
+        },
       ),
     ];
 

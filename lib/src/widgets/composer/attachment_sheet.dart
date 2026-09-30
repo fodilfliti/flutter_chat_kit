@@ -74,38 +74,43 @@ class AttachmentSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = ChatTheme.of(context);
+    final composer = theme.composer;
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16) * theme.scale,
         child: Wrap(
           alignment: WrapAlignment.spaceEvenly,
-          spacing: 12,
-          runSpacing: 16,
+          spacing: theme.size(12),
+          runSpacing: theme.size(16),
           children: [
             for (final option in options)
               SizedBox(
-                width: 76,
+                width: theme.size(76),
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(theme.size(12)),
                   onTap: () => Navigator.of(context).pop(option),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    padding: EdgeInsets.symmetric(vertical: theme.size(6)),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         CircleAvatar(
-                          radius: 26,
+                          radius: theme.size(26),
                           backgroundColor:
-                              option.color ?? theme.sendButtonColor,
-                          child: Icon(option.icon, color: Colors.white),
+                              option.color ?? composer.sendButtonColor,
+                          child: Icon(
+                            option.icon,
+                            color: composer.sendIconColor,
+                            size: composer.iconSize,
+                          ),
                         ),
-                        const SizedBox(height: 6),
+                        SizedBox(height: theme.size(6)),
                         Text(
                           option.label,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
-                          style: theme.roomSubtitleStyle,
+                          style: theme.captionStyle,
                         ),
                       ],
                     ),

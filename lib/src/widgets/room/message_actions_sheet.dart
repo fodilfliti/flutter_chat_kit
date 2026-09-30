@@ -145,7 +145,8 @@ class MessageActionsSheet extends StatelessWidget {
             children: [
               if (onReact != null && quickReactions.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                  padding:
+                      const EdgeInsets.fromLTRB(12, 0, 12, 8) * theme.scale,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -175,7 +176,7 @@ class MessageActionsSheet extends StatelessWidget {
         button: true,
         selected: selected,
         child: Material(
-          color: selected ? theme.reactionMineColor : Colors.transparent,
+          color: selected ? theme.reactions.mineColor : Colors.transparent,
           shape: const CircleBorder(),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -184,8 +185,11 @@ class MessageActionsSheet extends StatelessWidget {
               onReact(emoji);
             },
             child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Text(emoji, style: const TextStyle(fontSize: 26)),
+              padding: EdgeInsets.all(theme.size(8)),
+              child: Text(
+                emoji,
+                style: TextStyle(fontSize: theme.fontSize(26)),
+              ),
             ),
           ),
         ),
@@ -194,9 +198,13 @@ class MessageActionsSheet extends StatelessWidget {
   }
 
   Widget _action(BuildContext context, ChatTheme theme, MessageAction action) {
-    final color = action.isDestructive ? theme.failedColor : null;
+    final color = action.isDestructive ? theme.status.failedColor : null;
     return ListTile(
-      leading: Icon(action.icon, color: color ?? theme.iconColor),
+      leading: Icon(
+        action.icon,
+        color: color ?? theme.iconColor,
+        size: theme.size(24),
+      ),
       title: Text(action.label, style: TextStyle(color: color)),
       onTap: () {
         Navigator.of(context).pop();

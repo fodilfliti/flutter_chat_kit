@@ -570,7 +570,10 @@ class ChatMessageListState extends State<ChatMessageList> {
         c.typingUserIds.isEmpty &&
         !c.isLoadingOlder) {
       final child = Center(
-        child: Text(widget.strings.noMessages, style: theme.systemMessageStyle),
+        child: Text(
+          widget.strings.noMessages,
+          style: theme.systemMessage.textStyle,
+        ),
       );
       return builders.emptyBuilder?.call(context, child) ?? child;
     }
@@ -600,10 +603,10 @@ class ChatMessageListState extends State<ChatMessageList> {
     final c = _controller;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final padding = widget.padding ?? theme.listPadding;
+        final padding = widget.padding ?? theme.messageList.padding;
         final width = constraints.maxWidth - padding.horizontal;
         final maxContentWidth = math
-            .max(0, width * theme.maxBubbleWidthFactor)
+            .max(0, width * theme.messageList.maxBubbleWidthFactor)
             .toDouble();
         final horizontal = EdgeInsets.only(
           left: padding.left,
@@ -821,7 +824,10 @@ class ChatMessageListState extends State<ChatMessageList> {
         ? author?.name ?? ''
         : '';
     if (!isSystem && item.groupPosition.isFirst && authorName.isNotEmpty) {
-      final fallback = Text(authorName, style: theme.authorNameStyle);
+      final fallback = Text(
+        authorName,
+        style: theme.messageList.authorNameStyle,
+      );
       name =
           builders.authorNameBuilder?.call(context, context_, fallback) ??
           fallback;
@@ -995,18 +1001,18 @@ class ChatMessageListState extends State<ChatMessageList> {
     final theme = ChatTheme.of(context);
     if (!c.hasMoreOlder) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: EdgeInsets.symmetric(vertical: theme.size(16)),
         child: Center(
           child: Text(
             widget.strings.startOfConversation,
-            style: theme.systemMessageStyle,
+            style: theme.systemMessage.textStyle,
             textAlign: TextAlign.center,
           ),
         ),
       );
     }
     return SizedBox(
-      height: 48,
+      height: theme.size(48),
       child: c.isLoadingOlder
           ? const Center(
               child: SizedBox.square(

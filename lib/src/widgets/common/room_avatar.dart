@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_chat_kit/src/config/chat_theme.dart';
 import 'package:flutter_chat_kit/src/models/chat_room.dart';
 import 'package:flutter_chat_kit/src/models/chat_user.dart';
 import 'package:flutter_chat_kit/src/widgets/common/chat_avatar.dart';
@@ -32,7 +33,7 @@ class RoomAvatar extends StatelessWidget {
     this.users = const {},
     this.size = 48,
     this.online = false,
-    this.onlineColor = const Color(0xFF34C759),
+    this.onlineColor,
     super.key,
   });
 
@@ -43,11 +44,14 @@ class RoomAvatar extends StatelessWidget {
   final Map<String, ChatUser> users;
   final double size;
   final bool online;
-  final Color onlineColor;
+
+  /// Defaults to `ChatAvatarStyle.onlineColor`.
+  final Color? onlineColor;
 
   @override
   Widget build(BuildContext context) {
     final surface = Theme.of(context).colorScheme.surface;
+    final style = ChatTheme.of(context).avatar;
     final name = roomDisplayName(room, currentUserId, users);
     final Widget avatar;
     if (room.isDirect) {
@@ -61,7 +65,7 @@ class RoomAvatar extends StatelessWidget {
     } else if (room.avatarUrl case final url? when url.isNotEmpty) {
       avatar = ChatAvatar(name: name, url: url, size: size);
     } else {
-      avatar = _stacked(name, surface);
+      avatar = _stacked(name, surface, style.radius);
     }
     if (!online) return avatar;
     final dot = size * 0.28;
@@ -77,7 +81,7 @@ class RoomAvatar extends StatelessWidget {
               width: dot,
               height: dot,
               decoration: BoxDecoration(
-                color: onlineColor,
+                color: onlineColor ?? style.onlineColor,
                 shape: BoxShape.circle,
                 border: Border.all(color: surface, width: dot * 0.18),
               ),
@@ -88,7 +92,7 @@ class RoomAvatar extends StatelessWidget {
     );
   }
 
-  Widget _stacked(String name, Color ring) {
+  Widget _stacked(String name, Color ring, double? radius) {
     final others = [
       for (final member in room.members)
         if (member.userId != currentUserId) ?users[member.userId],
@@ -120,7 +124,7 @@ class RoomAvatar extends StatelessWidget {
             end: 0,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(radius ?? inner / 2),
                 border: Border.all(color: ring, width: 2),
               ),
               child: ChatAvatar(

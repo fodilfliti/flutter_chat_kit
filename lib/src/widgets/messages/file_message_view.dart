@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/src/config/chat_formatters.dart';
 import 'package:flutter_chat_kit/src/config/chat_strings.dart';
+import 'package:flutter_chat_kit/src/config/chat_theme.dart';
 import 'package:flutter_chat_kit/src/models/attachment.dart';
 
 /// A file attachment: type icon, name and size, with an upload progress
@@ -71,12 +72,13 @@ class FileMessageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = ChatTheme.of(context);
     final color = textStyle.color ?? Theme.of(context).colorScheme.onSurface;
     final size = file.size;
-    final icon = Icon(iconFor(file), color: color, size: 24);
+    final icon = Icon(iconFor(file), color: color, size: theme.size(24));
     final progress = this.progress;
     final leading = SizedBox.square(
-      dimension: 44,
+      dimension: theme.size(44),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.12),
@@ -106,12 +108,12 @@ class FileMessageView extends StatelessWidget {
     );
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(theme.size(8)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           leading,
-          const SizedBox(width: 10),
+          SizedBox(width: theme.size(10)),
           Flexible(
             child: Column(
               mainAxisSize: MainAxisSize.min,

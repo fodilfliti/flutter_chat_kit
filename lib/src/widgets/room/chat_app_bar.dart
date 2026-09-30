@@ -176,19 +176,19 @@ class _ChatAppBarState extends State<ChatAppBar> {
   Widget build(BuildContext context) {
     final options = widget.options;
     final theme = ChatTheme.of(context);
-    final scheme = Theme.of(context).colorScheme;
+    final style = theme.appBar;
     final room = _c.room;
     final isTyping = _c.typingUserIds.any(_c.users.containsKey);
     final canPop = ModalRoute.of(context)?.impliesAppBarDismissal ?? false;
     final showBack = options.showBack && canPop;
 
     var avatar = room == null
-        ? const SizedBox.square(dimension: 40)
+        ? SizedBox.square(dimension: style.avatarSize)
         : RoomAvatar(
             room: room,
             currentUserId: _c.currentUserId,
             users: _c.users,
-            size: 40,
+            size: style.avatarSize,
             online: _presence?.isOnline ?? false,
           );
     if (options.leadingBuilder case final build?) {
@@ -197,7 +197,7 @@ class _ChatAppBarState extends State<ChatAppBar> {
 
     Widget title = Text(
       room == null ? '' : roomDisplayName(room, _c.currentUserId, _c.users),
-      style: theme.roomTitleStyle,
+      style: style.titleStyle,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
@@ -210,10 +210,7 @@ class _ChatAppBarState extends State<ChatAppBar> {
         ? const SizedBox.shrink()
         : Text(
             text,
-            style: theme.roomSubtitleStyle.copyWith(
-              fontSize: 12,
-              color: isTyping ? scheme.primary : null,
-            ),
+            style: isTyping ? style.typingStyle : style.subtitleStyle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           );
@@ -224,7 +221,7 @@ class _ChatAppBarState extends State<ChatAppBar> {
     Widget heading = Row(
       children: [
         avatar,
-        const SizedBox(width: 10),
+        SizedBox(width: style.gap),
         Expanded(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -237,9 +234,9 @@ class _ChatAppBarState extends State<ChatAppBar> {
     if (options.onTitleTap case final onTap?) {
       heading = InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(theme.size(8)),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
+          padding: EdgeInsets.symmetric(vertical: theme.size(4)),
           child: heading,
         ),
       );
@@ -255,7 +252,7 @@ class _ChatAppBarState extends State<ChatAppBar> {
             )
           : null,
       titleSpacing: showBack ? 0 : NavigationToolbar.kMiddleSpacing,
-      backgroundColor: options.backgroundColor,
+      backgroundColor: options.backgroundColor ?? style.backgroundColor,
       title: heading,
       actions: options.actions,
     );

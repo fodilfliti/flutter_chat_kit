@@ -6,6 +6,7 @@ import 'package:flutter_chat_kit/src/config/chat_theme.dart';
 import 'package:flutter_chat_kit/src/controllers/chat_profile_switcher.dart';
 import 'package:flutter_chat_kit/src/models/chat_profile.dart';
 import 'package:flutter_chat_kit/src/widgets/common/chat_avatar.dart';
+import 'package:flutter_chat_kit/src/widgets/inbox/room_tile.dart';
 import 'package:flutter_chat_kit/src/widgets/profile/chat_profile_scope.dart';
 
 /// Builds one entry of the profile menu.
@@ -24,7 +25,7 @@ class ChatProfileMenuButton extends StatelessWidget {
   const ChatProfileMenuButton({
     this.switcher,
     this.strings = const ChatStrings(),
-    this.avatarSize = 32,
+    this.avatarSize,
     this.itemBuilder,
     this.onSwitchFailed,
     super.key,
@@ -33,7 +34,9 @@ class ChatProfileMenuButton extends StatelessWidget {
   /// Defaults to the nearest `ChatProfileScope`.
   final ChatProfileSwitcher? switcher;
   final ChatStrings strings;
-  final double avatarSize;
+
+  /// Defaults to `ChatMessageListStyle.avatarSize`.
+  final double? avatarSize;
   final ChatProfileItemBuilder? itemBuilder;
 
   /// Called when the chosen profile's kit fails to open; the previous
@@ -73,7 +76,10 @@ class ChatProfileMenuButton extends StatelessWidget {
                 ),
               ),
           ],
-          child: Padding(padding: const EdgeInsets.all(8), child: icon),
+          child: Padding(
+            padding: EdgeInsets.all(ChatTheme.of(context).size(8)),
+            child: icon,
+          ),
         );
       },
     );
@@ -86,10 +92,15 @@ class ChatProfileMenuButton extends StatelessWidget {
   }) {
     final theme = ChatTheme.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final tile = theme.roomTile;
     final Widget child = Row(
       children: [
-        ChatAvatar(name: profile.name, url: profile.avatarUrl, size: 36),
-        const SizedBox(width: 12),
+        ChatAvatar(
+          name: profile.name,
+          url: profile.avatarUrl,
+          size: theme.size(36),
+        ),
+        SizedBox(width: theme.size(12)),
         Expanded(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -99,44 +110,29 @@ class ChatProfileMenuButton extends StatelessWidget {
                 profile.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                ),
+                style: isActive ? tile.unreadTitleStyle : tile.titleStyle,
               ),
               if (profile.isBusiness)
                 Row(
                   children: [
-                    Icon(Icons.storefront, size: 14, color: theme.iconColor),
-                    const SizedBox(width: 4),
-                    Text(
-                      strings.businessProfile,
-                      style: TextStyle(fontSize: 12, color: theme.iconColor),
+                    Icon(
+                      Icons.storefront,
+                      size: theme.size(14),
+                      color: theme.iconColor,
                     ),
+                    SizedBox(width: theme.size(4)),
+                    Text(strings.businessProfile, style: tile.timeStyle),
                   ],
                 ),
             ],
           ),
         ),
         if (isActive)
-          Icon(Icons.check, color: scheme.primary)
+          Icon(Icons.check, color: scheme.primary, size: theme.size(24))
         else if (profile.unreadCount > 0)
-          Semantics(
-            label: strings.unreadCount(profile.unreadCount),
-            excludeSemantics: true,
-            child: Container(
-              constraints: const BoxConstraints(minWidth: 20),
-              height: 20,
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: theme.unreadBadgeColor,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                profile.unreadCount > 99 ? '99+' : '${profile.unreadCount}',
-                style: theme.unreadBadgeTextStyle,
-              ),
-            ),
+          ChatUnreadBadge(
+            count: profile.unreadCount,
+            semanticLabel: strings.unreadCount(profile.unreadCount),
           ),
       ],
     );

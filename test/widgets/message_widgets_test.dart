@@ -24,9 +24,10 @@ MessageContext ctx(
   );
 }
 
-Future<void> show(WidgetTester tester, Widget child) {
+Future<void> show(WidgetTester tester, Widget child, {ThemeData? theme}) {
   return tester.pumpWidget(
     MaterialApp(
+      theme: theme,
       home: Scaffold(
         body: Center(child: SizedBox(width: 320, child: child)),
       ),
@@ -71,6 +72,113 @@ void main() {
       await show(tester, MessageContent(message: ctx(offer(type: 'poll'))));
       expect(find.byType(UnsupportedMessageView), findsOneWidget);
       expect(find.text(_strings.unsupportedMessage), findsOneWidget);
+    });
+
+    testWidgets('customBuilder resolves variants from the data', (
+      tester,
+    ) async {
+      Widget? resolve(BuildContext context, MessageContext m) {
+        final data = (m.message as CustomMessage).data;
+        return data['price'] == 42 ? const Text('Priced offer') : null;
+      }
+
+      await show(
+        tester,
+        MessageContent(
+          message: ctx(offer(type: 'anything')),
+          builders: ChatBuilders(customBuilder: resolve),
+        ),
+      );
+      expect(find.text('Priced offer'), findsOneWidget);
+      expect(find.byType(MessageBubble), findsNothing);
+    });
+
+    testWidgets('customBuilders win over customBuilder; null falls back', (
+      tester,
+    ) async {
+      final builders = ChatBuilders(
+        customBuilders: {'offer': (context, m) => const Text('By type')},
+        customBuilder: (context, m) => null,
+      );
+      await show(
+        tester,
+        MessageContent(message: ctx(offer()), builders: builders),
+      );
+      expect(find.text('By type'), findsOneWidget);
+
+      await show(
+        tester,
+        MessageContent(
+          message: ctx(offer(type: 'poll')),
+          builders: builders,
+        ),
+      );
+      expect(find.byType(UnsupportedMessageView), findsOneWidget);
+    });
+
+    testWidgets('bubbledCustomTypes render inside the default bubble', (
+      tester,
+    ) async {
+      await show(
+        tester,
+        MessageContent(
+          message: ctx(offer(), mine: true),
+          builders: ChatBuilders(
+            customBuilders: {'offer': (context, m) => const Text('Booking')},
+            bubbledCustomTypes: const {'offer'},
+          ),
+        ),
+      );
+      final bubble = find.byType(MessageBubble);
+      expect(bubble, findsOneWidget);
+      expect(
+        find.descendant(of: bubble, matching: find.text('Booking')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: bubble, matching: find.byType(MessageMeta)),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('bubble style and scale come from the theme', (tester) async {
+      final scheme = ColorScheme.fromSeed(seedColor: Colors.teal);
+      final chat = ChatTheme.fallback(scheme)
+          .withMessageText(const TextStyle(fontSize: 14, color: Colors.grey))
+          .mapBubbles(
+            (b) => b.copyWith(
+              radius: 10,
+              tailRadius: 10,
+              border: const BorderSide(color: Colors.red),
+            ),
+          )
+          .scaled(2);
+      await show(
+        tester,
+        MessageContent(message: ctx(msg(1))),
+        theme: ThemeData(colorScheme: scheme, extensions: [chat]),
+      );
+      final style = tester
+          .widget<TextMessageView>(find.byType(TextMessageView))
+          .style;
+      expect(style.fontSize, 28);
+      expect(style.color, Colors.grey);
+
+      final box = tester
+          .widgetList<DecoratedBox>(
+            find.descendant(
+              of: find.byType(MessageBubble),
+              matching: find.byType(DecoratedBox),
+            ),
+          )
+          .map((d) => d.decoration)
+          .whereType<BoxDecoration>()
+          .first;
+      expect(
+        box.borderRadius?.resolve(TextDirection.ltr),
+        BorderRadius.circular(20),
+      );
+      expect(box.border, Border.all(color: Colors.red, width: 2));
     });
 
     testWidgets('bubble and per-type builders wrap the defaults', (
@@ -331,8 +439,8 @@ void main() {
   group('MessageBubble', () {
     test('tail and group corners sit on the author side', () {
       final theme = ChatTheme.fallback(const ColorScheme.light());
-      final big = Radius.circular(theme.bubbleRadius);
-      final small = Radius.circular(theme.tailRadius);
+      final big = Radius.circular(theme.outgoingBubble.radius);
+      final small = Radius.circular(theme.outgoingBubble.tailRadius);
       final first = MessageBubble.radiusFor(
         GroupPosition.first,
         isMine: true,

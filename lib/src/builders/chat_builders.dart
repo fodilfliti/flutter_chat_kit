@@ -22,6 +22,12 @@ typedef MessageWidgetBuilder =
 typedef CustomMessageBuilder =
     Widget Function(BuildContext context, MessageContext message);
 
+/// Renders any `CustomMessage` not in `ChatBuilders.customBuilders`, for
+/// example by reading a variant from its data; null shows the unsupported
+/// view.
+typedef CustomMessageResolver =
+    Widget? Function(BuildContext context, MessageContext message);
+
 /// Edits the long-press action list; return [defaults] to keep them.
 typedef MessageActionsBuilder =
     List<MessageAction> Function(
@@ -110,6 +116,8 @@ class ChatBuilders {
     this.deletedBuilder,
     this.unsupportedBuilder,
     this.customBuilders = const {},
+    this.customBuilder,
+    this.bubbledCustomTypes = const {},
     this.avatarBuilder,
     this.authorNameBuilder,
     this.statusBuilder,
@@ -142,11 +150,20 @@ class ChatBuilders {
   final MessageWidgetBuilder? systemBuilder;
   final MessageWidgetBuilder? deletedBuilder;
 
-  /// A `CustomMessage` with no entry in [customBuilders].
+  /// A `CustomMessage` that neither [customBuilders] nor [customBuilder]
+  /// renders.
   final MessageWidgetBuilder? unsupportedBuilder;
 
   /// Renderers for `CustomMessage.customType`, for example `'offer'`.
   final Map<String, CustomMessageBuilder> customBuilders;
+
+  /// Fallback for custom messages without an entry in [customBuilders]:
+  /// one place to dispatch many types or variants.
+  final CustomMessageResolver? customBuilder;
+
+  /// Custom types drawn inside the default bubble, with the reply preview,
+  /// time and status ticks. Other custom types render bare.
+  final Set<String> bubbledCustomTypes;
   final MessageWidgetBuilder? avatarBuilder;
   final MessageWidgetBuilder? authorNameBuilder;
   final MessageWidgetBuilder? statusBuilder;

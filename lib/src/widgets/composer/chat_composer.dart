@@ -248,10 +248,12 @@ class _ChatComposerState extends State<ChatComposer> {
   @override
   Widget build(BuildContext context) {
     final theme = ChatTheme.of(context);
+    final style = theme.composer;
     final c = _c;
     final kit = c.room.kit;
     return Material(
-      color: theme.composerBackgroundColor,
+      color: style.backgroundColor,
+      shape: style.border == BorderSide.none ? null : Border(top: style.border),
       child: SafeArea(
         top: false,
         child: ListenableBuilder(
@@ -324,7 +326,8 @@ class _ChatComposerState extends State<ChatComposer> {
                     key: const ValueKey('attach'),
                     onPressed: () => unawaited(_attach()),
                     tooltip: _strings.attach,
-                    icon: Icon(Icons.attach_file, color: theme.iconColor),
+                    iconSize: style.iconSize,
+                    icon: Icon(Icons.attach_file, color: style.iconColor),
                   ),
                 Expanded(
                   key: const ValueKey('field'),
@@ -346,7 +349,7 @@ class _ChatComposerState extends State<ChatComposer> {
                   ),
                 Padding(
                   key: const ValueKey('action'),
-                  padding: const EdgeInsetsDirectional.only(start: 6),
+                  padding: EdgeInsetsDirectional.only(start: theme.size(6)),
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 150),
                     transitionBuilder: (child, animation) =>
@@ -381,14 +384,11 @@ class _ChatComposerState extends State<ChatComposer> {
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(6, 6, 8, 6),
-                      child: row,
-                    ),
+                    Padding(padding: style.padding, child: row),
                     if (state == RecorderState.recording && voiceOn)
                       PositionedDirectional(
-                        end: 10,
-                        bottom: 64,
+                        end: theme.size(10),
+                        bottom: style.buttonSize + theme.size(20),
                         child: _LockHint(drag: _drag, strings: _strings),
                       ),
                   ],
@@ -402,22 +402,23 @@ class _ChatComposerState extends State<ChatComposer> {
   }
 
   Widget _input(ChatTheme theme) {
+    final style = theme.composer;
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(style.inputRadius),
+      borderSide: style.inputBorder,
+    );
     final decoration =
         widget.inputDecoration ??
         InputDecoration(
           hintText: _strings.typeMessage,
-          hintStyle: theme.composerHintStyle,
+          hintStyle: style.hintStyle,
           filled: true,
-          fillColor: theme.composerInputColor,
+          fillColor: style.inputColor,
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 11,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(22),
-            borderSide: BorderSide.none,
-          ),
+          contentPadding: style.inputPadding,
+          border: border,
+          enabledBorder: border,
+          focusedBorder: border,
         );
     return Focus(
       canRequestFocus: false,
@@ -430,7 +431,7 @@ class _ChatComposerState extends State<ChatComposer> {
         maxLines: widget.maxLines,
         keyboardType: TextInputType.multiline,
         textCapitalization: TextCapitalization.sentences,
-        style: theme.composerTextStyle,
+        style: style.textStyle,
         decoration: decoration,
       ),
     );
@@ -449,16 +450,17 @@ class _SendButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ChatTheme.of(context);
+    final style = ChatTheme.of(context).composer;
     return IconButton.filled(
       onPressed: onPressed,
       tooltip: tooltip,
       style: IconButton.styleFrom(
-        backgroundColor: theme.sendButtonColor,
-        foregroundColor: Colors.white,
-        fixedSize: const Size.square(44),
+        backgroundColor: style.sendButtonColor,
+        foregroundColor: style.sendIconColor,
+        fixedSize: Size.square(style.buttonSize),
+        minimumSize: Size.square(style.buttonSize),
       ),
-      icon: const Icon(Icons.send_rounded, size: 20),
+      icon: Icon(Icons.send_rounded, size: style.buttonSize * 0.45),
     );
   }
 }
@@ -486,24 +488,29 @@ class _RecordingBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = ChatTheme.of(context);
-    final style = theme.composerTextStyle;
+    final composer = theme.composer;
+    final failed = theme.status.failedColor;
     final state = recorder.state;
     final time = Text(
       formatters.formatDuration(recorder.elapsed),
-      style: style,
+      style: composer.textStyle,
     );
     final dot = Padding(
-      padding: const EdgeInsetsDirectional.only(start: 12, end: 8),
+      padding: EdgeInsetsDirectional.only(
+        start: theme.size(12),
+        end: theme.size(8),
+      ),
       child: Icon(
         Icons.fiber_manual_record,
-        color: theme.failedColor,
-        size: 14,
+        color: failed,
+        size: theme.size(14),
       ),
     );
     final delete = IconButton(
       onPressed: onDelete,
       tooltip: strings.delete,
-      icon: Icon(Icons.delete_outline, color: theme.failedColor),
+      iconSize: composer.iconSize,
+      icon: Icon(Icons.delete_outline, color: failed),
     );
     final Widget content;
     switch (state) {
@@ -529,12 +536,16 @@ class _RecordingBar extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.chevron_left, color: theme.iconColor, size: 18),
-                  Text(strings.slideToCancel, style: theme.composerHintStyle),
+                  Icon(
+                    Icons.chevron_left,
+                    color: composer.iconColor,
+                    size: theme.size(18),
+                  ),
+                  Text(strings.slideToCancel, style: composer.hintStyle),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: theme.size(8)),
           ],
         );
       case RecorderState.locked:
@@ -547,7 +558,8 @@ class _RecordingBar extends StatelessWidget {
             IconButton(
               onPressed: () => unawaited(recorder.stop(review: true)),
               tooltip: strings.stopRecording,
-              icon: Icon(Icons.stop_circle_outlined, color: theme.failedColor),
+              iconSize: composer.iconSize,
+              icon: Icon(Icons.stop_circle_outlined, color: failed),
             ),
           ],
         );
@@ -571,10 +583,13 @@ class _RecordingBar extends StatelessWidget {
         content = const SizedBox.shrink();
     }
     return Container(
-      constraints: const BoxConstraints(minHeight: 44),
+      constraints: BoxConstraints(minHeight: composer.buttonSize),
       decoration: BoxDecoration(
-        color: theme.composerInputColor,
-        borderRadius: BorderRadius.circular(22),
+        color: composer.inputColor,
+        borderRadius: BorderRadius.circular(composer.inputRadius),
+        border: composer.inputBorder == BorderSide.none
+            ? null
+            : Border.fromBorderSide(composer.inputBorder),
       ),
       child: content,
     );
@@ -597,7 +612,7 @@ class _Preview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ChatTheme.of(context);
+    final composer = ChatTheme.of(context).composer;
     final message = AudioMessage(
       id: id,
       localId: id,
@@ -610,9 +625,9 @@ class _Preview extends StatelessWidget {
     );
     return AudioMessageView(
       message: message,
-      color: theme.composerTextStyle.color ?? theme.iconColor,
-      activeColor: theme.sendButtonColor,
-      metaStyle: theme.composerHintStyle,
+      color: composer.textStyle.color ?? composer.iconColor,
+      activeColor: composer.sendButtonColor,
+      metaStyle: composer.hintStyle,
       strings: strings,
       formatters: formatters,
     );
@@ -628,6 +643,8 @@ class _LockHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = ChatTheme.of(context);
+    final composer = theme.composer;
+    final iconSize = theme.size(18);
     return ValueListenableBuilder<Offset>(
       valueListenable: drag,
       builder: (context, offset, child) => Transform.translate(
@@ -637,16 +654,26 @@ class _LockHint extends StatelessWidget {
       child: Semantics(
         label: strings.slideUpToLock,
         child: Material(
-          color: theme.composerInputColor,
+          color: composer.inputColor,
           shape: const StadiumBorder(),
           elevation: 2,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 10) *
+                theme.scale,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.lock_outline, color: theme.iconColor, size: 18),
-                Icon(Icons.keyboard_arrow_up, color: theme.iconColor, size: 18),
+                Icon(
+                  Icons.lock_outline,
+                  color: composer.iconColor,
+                  size: iconSize,
+                ),
+                Icon(
+                  Icons.keyboard_arrow_up,
+                  color: composer.iconColor,
+                  size: iconSize,
+                ),
               ],
             ),
           ),

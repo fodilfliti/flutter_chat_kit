@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/src/config/chat_strings.dart';
+import 'package:flutter_chat_kit/src/config/chat_styles.dart';
 import 'package:flutter_chat_kit/src/config/chat_theme.dart';
 
 /// Reaction chips with counts, most used first; the current user's
@@ -27,10 +28,10 @@ class ReactionsBar extends StatelessWidget {
         if (e.value.isNotEmpty) e,
     ]..sort((a, b) => b.value.length.compareTo(a.value.length));
     if (entries.isEmpty) return const SizedBox.shrink();
-    final style = theme.incomingMetaStyle;
+    final style = theme.reactions;
     return Wrap(
-      spacing: 4,
-      runSpacing: 4,
+      spacing: style.spacing,
+      runSpacing: style.spacing,
       children: [
         for (final e in entries)
           _chip(
@@ -46,7 +47,7 @@ class ReactionsBar extends StatelessWidget {
 
   Widget _chip(
     ChatTheme theme,
-    TextStyle style,
+    ChatReactionStyle style,
     String emoji,
     int count, {
     required bool mine,
@@ -60,19 +61,25 @@ class ReactionsBar extends StatelessWidget {
       onTap: onTap,
       child: ExcludeSemantics(
         child: Material(
-          color: mine ? theme.reactionMineColor : theme.reactionColor,
-          shape: const StadiumBorder(),
+          color: mine ? style.mineColor : style.color,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(style.radius),
+            side: mine ? style.mineBorder : style.border,
+          ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding: style.padding,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(emoji, style: style.copyWith(fontSize: 14)),
-                  const SizedBox(width: 4),
-                  Text(count.toString(), style: style),
+                  Text(
+                    emoji,
+                    style: style.textStyle.copyWith(fontSize: style.emojiSize),
+                  ),
+                  SizedBox(width: theme.size(4)),
+                  Text(count.toString(), style: style.textStyle),
                 ],
               ),
             ),

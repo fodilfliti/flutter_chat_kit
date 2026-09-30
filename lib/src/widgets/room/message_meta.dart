@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_chat_kit/src/config/chat_theme.dart';
 
 /// The trailing line of a bubble: "edited", the time and the status ticks.
 class MessageMeta extends StatelessWidget {
@@ -10,14 +11,15 @@ class MessageMeta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = ChatTheme.of(context);
     final edited = this.edited;
     final ticks = this.ticks;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (edited != null) ...[edited, const SizedBox(width: 4)],
+        if (edited != null) ...[edited, SizedBox(width: theme.size(4))],
         time,
-        if (ticks != null) ...[const SizedBox(width: 3), ticks],
+        if (ticks != null) ...[SizedBox(width: theme.size(3)), ticks],
       ],
     );
   }

@@ -4,7 +4,9 @@ Every screen is built from small, public widgets, and every visible part has
 a builder that receives the **default widget**. Wrap the default to add
 something, or ignore it to replace the part completely.
 
-- `ChatTheme`: colors, text styles, radii and spacing.
+- `ChatTheme`: one style per part (bubbles, list, composer, room tiles, ...)
+  with every color, text style, size, radius, border and shadow, plus a
+  global scale.
 - `ChatBuilders`: the room (messages, bubble, app bar, composer, ...).
 - `InboxBuilders`: the inbox rows, empty and error states, swipe actions.
 - `ChatStrings`: every piece of text, English by default.
@@ -13,8 +15,21 @@ something, or ignore it to replace the part completely.
 
 ## Theme
 
-`ChatTheme` is a `ThemeExtension`. Derive it from your color scheme so light
-and dark themes stay consistent and animate between each other.
+`ChatTheme` is a `ThemeExtension` made of one style per part. Every value
+the default widgets draw comes from it:
+
+| Group | Part |
+| --- | --- |
+| `outgoingBubble`, `incomingBubble` | `ChatBubbleStyle`: color or gradient, text and meta styles, radius, tail radius, padding, border, shadows |
+| `messageList` | spacing, bubble width, avatars, author names, highlight, background (wallpaper) |
+| `status` | tick colors and size |
+| `dateSeparator`, `systemMessage`, `unreadDivider` | `ChatChipStyle` |
+| `reactions`, `replyPreview`, `media` | reaction chips, quoted messages, image and video bubbles |
+| `composer`, `appBar`, `avatar`, `badge` | input bar (also the inbox search), room header, avatars, unread counters |
+| `roomTile` | inbox rows: text styles, background, any `ShapeBorder`, elevation, divider, margin |
+
+Derive it from your color scheme so light and dark themes stay consistent
+and animate between each other, then change only what you need:
 
 ```dart
 ThemeData buildTheme(Brightness brightness) {
@@ -22,28 +37,154 @@ ThemeData buildTheme(Brightness brightness) {
     seedColor: Colors.indigo,
     brightness: brightness,
   );
+  final base = ChatTheme.fallback(scheme);
   return ThemeData(
     colorScheme: scheme,
     extensions: [
-      ChatTheme.fallback(scheme).copyWith(
-        bubbleRadius: 12,
-        tailRadius: 12,
-        outgoingBubbleColor: scheme.primaryContainer,
-        outgoingTextStyle: TextStyle(color: scheme.onPrimaryContainer),
-        maxBubbleWidthFactor: 0.7,
+      base.copyWith(
+        outgoingBubble: base.outgoingBubble.copyWith(
+          color: scheme.primaryContainer,
+          textStyle: base.outgoingBubble.textStyle.copyWith(
+            color: scheme.onPrimaryContainer,
+          ),
+        ),
+        messageList: base.messageList.copyWith(maxBubbleWidthFactor: 0.7),
       ),
     ],
   );
 }
 ```
 
-Without an extension the kit derives one from the ambient `ColorScheme`.
-To theme a single screen, pass `theme:` to `ChatRoomView` or `InboxView`.
+Without an extension the kit derives one from the ambient `ColorScheme` and
+`TextTheme`. To theme a single screen, pass `theme:` to `ChatRoomView` or
+`InboxView`.
+
+### Common changes
+
+Message text of 14 in grey, for both sides:
+
+```dart
+ChatTheme.fallback(scheme).withMessageText(
+  const TextStyle(fontSize: 14, color: Colors.grey),
+)
+```
+
+Both bubbles at once, and a font for every text:
+
+```dart
+ChatTheme.fallback(scheme)
+    .mapBubbles(
+      (b) => b.copyWith(
+        radius: 8,
+        border: BorderSide(color: scheme.outlineVariant),
+        shadows: const [BoxShadow(color: Color(0x22000000), blurRadius: 3)],
+      ),
+    )
+    .mapText((s) => s.copyWith(fontFamily: 'Cairo'))
+```
+
+A gradient for your own bubbles and a wallpaper behind the messages:
+
+```dart
+final base = ChatTheme.fallback(scheme);
+base.copyWith(
+  outgoingBubble: base.outgoingBubble.copyWith(
+    gradient: const LinearGradient(
+      colors: [Color(0xFF2AABEE), Color(0xFF6A5AE0)],
+    ),
+  ),
+  messageList: base.messageList.copyWith(
+    background: const BoxDecoration(color: Color(0xFFEFEAE2)),
+  ),
+)
+```
+
+### Inbox rows
+
+Start from a preset and adjust it; `shape` takes any `ShapeBorder`:
+
+```dart
+final base = ChatTheme.fallback(scheme);
+
+// Edge to edge (default).
+base.copyWith(roomTile: ChatRoomTileStyle.plain(scheme));
+
+// A line under each row only, starting at the title (or `indent: 0`).
+base.copyWith(roomTile: ChatRoomTileStyle.divided(scheme));
+
+// Separate cards.
+base.copyWith(
+  roomTile: ChatRoomTileStyle.card(
+    scheme,
+    radius: 20,
+    elevation: 1,
+    side: BorderSide(color: scheme.outlineVariant),
+  ),
+);
+
+// Anything else.
+base.copyWith(
+  roomTile: ChatRoomTileStyle.card(scheme).copyWith(
+    shape: const BeveledRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(12)),
+    ),
+    avatarSize: 44,
+    titleStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+  ),
+);
+```
+
+Square avatars: `base.copyWith(avatar: base.avatar.copyWith(radius: 10))`.
+
+### Scale
+
+`scaled` multiplies every size, radius, padding, border and shadow, and
+every font size (separately with `textFactor`). Apply it **last**, since it
+multiplies the values set before it:
+
+```dart
+ChatTheme.fallback(scheme)
+    .withMessageText(const TextStyle(fontSize: 14))
+    .scaled(1.2, textFactor: 1.1)
+```
+
+Widgets read the theme in `build`, so rebuilding `ThemeData` with a new
+factor refreshes the whole chat. With a screen-size package such as
+`flutter_screenutil`, build the theme inside `ScreenUtilInit`:
+
+```dart
+ScreenUtilInit(
+  designSize: const Size(390, 844),
+  builder: (context, child) => MaterialApp(
+    theme: ThemeData(
+      colorScheme: scheme,
+      extensions: [
+        ChatTheme.fallback(scheme).scaled(
+          ScreenUtil().scaleWidth,
+          textFactor: ScreenUtil().scaleText,
+        ),
+      ],
+    ),
+    home: child,
+  ),
+  child: const InboxPage(),
+)
+```
+
+Your own chat widgets (custom messages, headers) can follow the same scale
+with `ChatTheme.of(context).size(12)` and `.fontSize(14)`.
+
+The example app has a live style sheet (palette button): presets, colors,
+dark mode, scale, message font size, bubble radius, shadows and borders,
+tile layout and radius, and square avatars, applied to the screen behind
+it. See `example/lib/style/style_settings.dart` for how each control maps
+to the theme.
 
 ## Bubble
 
-Replace the bubble shape while keeping the content, reply preview, time and
-status the kit builds inside it:
+Colors, gradient, radius, border and shadows are in `ChatBubbleStyle` (see
+Theme). For anything else, replace the bubble while keeping the content,
+reply preview, time and status the kit builds inside it:
 
 ```dart
 ChatBuilders(
@@ -102,7 +243,47 @@ ChatRoomView(
 
 A custom type with no builder falls back to `unsupportedBuilder` (by
 default: "Unsupported message"), so older app versions never crash on new
-types. The example app has a complete offer card with Accept / Decline.
+types.
+
+### Several cards for one type
+
+When one type has variants (a product offer, a service quote, ...), or the
+widget depends on the data, use the `customBuilder` resolver. It runs for
+types without a `customBuilders` entry; return null to fall back to the
+unsupported view:
+
+```dart
+ChatBuilders(
+  customBuilder: (context, m) {
+    final message = m.message as CustomMessage;
+    if (message.customType != 'offer') return null;
+    return switch (message.data['variant']) {
+      'product' || null => ProductOfferCard(message: m),
+      'quote' => QuoteCard(message: m),
+      _ => null, // a variant this app version does not know
+    };
+  },
+)
+```
+
+### Inside the regular bubble
+
+By default a custom widget replaces the whole bubble. List the type in
+`bubbledCustomTypes` to draw it inside the default bubble instead, with the
+reply preview, time and status ticks:
+
+```dart
+ChatBuilders(
+  customBuilders: {'booking': (context, m) => BookingCard(message: m)},
+  bubbledCustomTypes: const {'booking'},
+)
+```
+
+Inside a bubble, read the side's colors so the content stays readable on
+any theme: `ChatTheme.of(context).bubble(isMine: m.isMine).textStyle`.
+
+The example app shows all three: a product offer and a quote (one `offer`
+type, two cards) and a booking inside a bubble.
 
 ## App bar
 
@@ -280,7 +461,9 @@ builders are not enough, compose them yourself:
   scroll-to-bottom)
 - `ChatComposer`, `VoiceRecordButton`, `ReplyEditBanner`
 - `MessageContent`, `MessageBubble`, `MessageRow`
-- `RoomTile`, `RoomAvatar`, `InboxSearchBar`, `RoomSwipeActions`
+- `RoomTile`, `RoomAvatar`, `InboxSearchBar`, `RoomSwipeActions`,
+  `ChatUnreadBadge`
+- `ChatAvatar`, `DatePill`, `ChatChip`
 
 All of them read state from `ChatRoomController` / `InboxController`, which
 you can also use with any widgets of your own.

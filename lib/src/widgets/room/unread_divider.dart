@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/src/config/chat_theme.dart';
 
 /// "New messages" line above the first message that was unread when the
-/// room opened.
+/// room opened, drawn from `ChatTheme.unreadDivider`.
 class UnreadDivider extends StatelessWidget {
   const UnreadDivider({required this.label, super.key});
 
@@ -10,23 +10,16 @@ class UnreadDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ChatTheme.of(context);
-    final line = Expanded(
-      child: Divider(color: theme.unreadBadgeColor.withValues(alpha: 0.4)),
-    );
+    final style = ChatTheme.of(context).unreadDivider;
+    final line = Expanded(child: Divider(color: style.color));
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: style.margin,
       child: Row(
         children: [
           line,
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text(
-              label,
-              style: theme.dateSeparatorStyle.copyWith(
-                color: theme.unreadBadgeColor,
-              ),
-            ),
+            padding: style.padding,
+            child: Text(label, style: style.textStyle),
           ),
           line,
         ],

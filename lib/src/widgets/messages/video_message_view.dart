@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/src/config/chat_formatters.dart';
 import 'package:flutter_chat_kit/src/config/chat_strings.dart';
+import 'package:flutter_chat_kit/src/config/chat_theme.dart';
 import 'package:flutter_chat_kit/src/models/attachment.dart';
 import 'package:flutter_chat_kit/src/widgets/media/chat_image.dart';
 
@@ -13,7 +14,7 @@ class VideoMessageView extends StatelessWidget {
     this.progress,
     this.onTap,
     this.heroTag,
-    this.maxWidth = 300,
+    this.maxWidth,
     this.strings = const ChatStrings(),
     this.formatters = const ChatFormatters(),
     super.key,
@@ -25,12 +26,16 @@ class VideoMessageView extends StatelessWidget {
   final ValueListenable<double?>? progress;
   final VoidCallback? onTap;
   final Object? heroTag;
-  final double maxWidth;
+
+  /// Defaults to `ChatMediaStyle.maxWidth`.
+  final double? maxWidth;
   final ChatStrings strings;
   final ChatFormatters formatters;
 
   @override
   Widget build(BuildContext context) {
+    final theme = ChatTheme.of(context);
+    final media = theme.media;
     final duration = video.duration;
     Widget poster = ChatImage(
       attachment: video,
@@ -41,7 +46,7 @@ class VideoMessageView extends StatelessWidget {
     if (tag != null) poster = Hero(tag: tag, child: poster);
     final progress = this.progress;
     return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: maxWidth),
+      constraints: BoxConstraints(maxWidth: maxWidth ?? media.maxWidth),
       child: AspectRatio(
         aspectRatio: (video.aspectRatio ?? 16 / 9).clamp(0.6, 1.8),
         child: Stack(
@@ -50,39 +55,40 @@ class VideoMessageView extends StatelessWidget {
             poster,
             Center(
               child: progress == null
-                  ? _play()
+                  ? _play(theme)
                   : ValueListenableBuilder<double?>(
                       valueListenable: progress,
                       builder: (context, value, _) => value == null
-                          ? _play()
+                          ? _play(theme)
                           : SizedBox.square(
-                              dimension: 44,
+                              dimension: theme.size(44),
                               child: CircularProgressIndicator(
                                 value: value <= 0 ? null : value,
                                 strokeWidth: 3,
-                                color: Colors.white,
-                                backgroundColor: Colors.white24,
+                                color: media.overlayForegroundColor,
+                                backgroundColor: media.overlayForegroundColor
+                                    .withValues(alpha: 0.24),
                               ),
                             ),
                     ),
             ),
             if (duration != null)
               PositionedDirectional(
-                start: 6,
-                bottom: 6,
+                start: theme.size(6),
+                bottom: theme.size(6),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(10),
+                    color: media.overlayColor,
+                    borderRadius: BorderRadius.circular(media.overlayRadius),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
+                    padding: media.overlayPadding,
                     child: Text(
                       formatters.formatDuration(duration),
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                      style: TextStyle(
+                        color: media.overlayForegroundColor,
+                        fontSize: theme.fontSize(12),
+                      ),
                     ),
                   ),
                 ),
@@ -98,18 +104,23 @@ class VideoMessageView extends StatelessWidget {
     );
   }
 
-  Widget _play() {
+  Widget _play(ChatTheme theme) {
+    final media = theme.media;
     return Semantics(
       button: true,
       label: strings.play,
-      child: const DecoratedBox(
+      child: DecoratedBox(
         decoration: BoxDecoration(
-          color: Colors.black45,
+          color: media.overlayColor,
           shape: BoxShape.circle,
         ),
         child: Padding(
-          padding: EdgeInsets.all(8),
-          child: Icon(Icons.play_arrow_rounded, color: Colors.white, size: 36),
+          padding: EdgeInsets.all(theme.size(8)),
+          child: Icon(
+            Icons.play_arrow_rounded,
+            color: media.overlayForegroundColor,
+            size: theme.size(36),
+          ),
         ),
       ),
     );

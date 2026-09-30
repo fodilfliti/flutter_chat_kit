@@ -14,6 +14,7 @@ export 'src/cache/drift_chat_cache.dart';
 export 'src/config/chat_config.dart';
 export 'src/config/chat_formatters.dart';
 export 'src/config/chat_strings.dart';
+export 'src/config/chat_styles.dart' hide lerpChatText;
 export 'src/config/chat_theme.dart';
 export 'src/controllers/audio_player_hub.dart';
 export 'src/controllers/chat_kit.dart';

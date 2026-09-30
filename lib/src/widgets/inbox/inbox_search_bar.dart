@@ -2,20 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/src/config/chat_strings.dart';
 import 'package:flutter_chat_kit/src/config/chat_theme.dart';
 
-/// Rounded search field of the inbox with a clear button. Debouncing is
-/// left to the listener (`InboxController.search` debounces).
+/// Rounded search field of the inbox with a clear button, styled like the
+/// composer input (`ChatComposerStyle`). Debouncing is left to the
+/// listener (`InboxController.search` debounces).
 class InboxSearchBar extends StatefulWidget {
   const InboxSearchBar({
     required this.onChanged,
     this.initialQuery = '',
-    this.padding = const EdgeInsets.fromLTRB(16, 8, 16, 8),
+    this.padding,
     this.strings = const ChatStrings(),
     super.key,
   });
 
   final ValueChanged<String> onChanged;
   final String initialQuery;
-  final EdgeInsetsGeometry padding;
+
+  /// Defaults to 16 × 8 at the theme scale.
+  final EdgeInsetsGeometry? padding;
   final ChatStrings strings;
 
   @override
@@ -40,8 +43,18 @@ class _InboxSearchBarState extends State<InboxSearchBar> {
   @override
   Widget build(BuildContext context) {
     final theme = ChatTheme.of(context);
+    final style = theme.composer;
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(style.inputRadius),
+      borderSide: style.inputBorder,
+    );
     return Padding(
-      padding: widget.padding,
+      padding:
+          widget.padding ??
+          EdgeInsets.symmetric(
+            horizontal: theme.size(16),
+            vertical: theme.size(8),
+          ),
       child: TextField(
         controller: _text,
         onChanged: (value) {
@@ -49,26 +62,33 @@ class _InboxSearchBarState extends State<InboxSearchBar> {
           setState(() {});
         },
         textInputAction: TextInputAction.search,
-        style: theme.composerTextStyle,
+        style: style.textStyle,
         decoration: InputDecoration(
           hintText: widget.strings.searchChats,
-          hintStyle: theme.composerHintStyle,
-          prefixIcon: Icon(Icons.search, color: theme.iconColor),
+          hintStyle: style.hintStyle,
+          prefixIcon: Icon(
+            Icons.search,
+            color: style.iconColor,
+            size: style.iconSize,
+          ),
           suffixIcon: _text.text.isEmpty
               ? null
               : IconButton(
-                  icon: Icon(Icons.close, color: theme.iconColor),
+                  icon: Icon(
+                    Icons.close,
+                    color: style.iconColor,
+                    size: style.iconSize,
+                  ),
                   tooltip: widget.strings.clearSearch,
                   onPressed: _clear,
                 ),
           filled: true,
-          fillColor: theme.composerInputColor,
+          fillColor: style.inputColor,
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 10),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
-            borderSide: BorderSide.none,
-          ),
+          contentPadding: EdgeInsets.symmetric(vertical: theme.size(10)),
+          border: border,
+          enabledBorder: border,
+          focusedBorder: border,
         ),
       ),
     );

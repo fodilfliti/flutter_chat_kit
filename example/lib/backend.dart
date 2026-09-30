@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/flutter_chat_kit.dart';
+import 'package:flutter_chat_kit_example/custom/custom_messages.dart';
 import 'package:flutter_chat_kit_example/fake/fake_chat_source.dart';
 import 'package:flutter_chat_kit_example/fake/fake_uploader.dart';
-import 'package:flutter_chat_kit_example/offer/offer_card.dart';
 
 /// Texts shared by the inbox and the rooms. A real app passes its own
 /// translations here (for example from slang or intl).

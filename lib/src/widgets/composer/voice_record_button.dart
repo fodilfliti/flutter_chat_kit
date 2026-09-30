@@ -16,7 +16,7 @@ class VoiceRecordButton extends StatefulWidget {
     this.drag,
     this.cancelDistance = 100,
     this.lockDistance = 70,
-    this.size = 44,
+    this.size,
     this.strings = const ChatStrings(),
     super.key,
   });
@@ -34,7 +34,9 @@ class VoiceRecordButton extends StatefulWidget {
   final ValueNotifier<Offset>? drag;
   final double cancelDistance;
   final double lockDistance;
-  final double size;
+
+  /// Defaults to `ChatComposerStyle.buttonSize`.
+  final double? size;
   final ChatStrings strings;
 
   @override
@@ -112,6 +114,8 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
   @override
   Widget build(BuildContext context) {
     final theme = ChatTheme.of(context);
+    final composer = theme.composer;
+    final size = widget.size ?? composer.buttonSize;
     return ListenableBuilder(
       listenable: _recorder,
       builder: (context, _) {
@@ -130,13 +134,19 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
               scale: active ? 1.35 : 1,
               duration: const Duration(milliseconds: 150),
               child: Container(
-                width: widget.size,
-                height: widget.size,
+                width: size,
+                height: size,
                 decoration: BoxDecoration(
-                  color: active ? theme.failedColor : theme.sendButtonColor,
+                  color: active
+                      ? theme.status.failedColor
+                      : composer.sendButtonColor,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.mic, color: Colors.white),
+                child: Icon(
+                  Icons.mic,
+                  color: composer.sendIconColor,
+                  size: size * 0.55,
+                ),
               ),
             ),
           ),

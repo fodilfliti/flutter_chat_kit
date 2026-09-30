@@ -13,26 +13,30 @@ class StagedAttachments extends StatelessWidget {
   const StagedAttachments({
     required this.files,
     required this.onRemove,
-    this.size = 64,
+    this.size,
     this.strings = const ChatStrings(),
     super.key,
   });
 
   final List<Attachment> files;
   final ValueChanged<Attachment> onRemove;
-  final double size;
+
+  /// Thumbnail side; defaults to 64 at the theme scale.
+  final double? size;
   final ChatStrings strings;
 
   @override
   Widget build(BuildContext context) {
     if (files.isEmpty) return const SizedBox.shrink();
+    final theme = ChatTheme.of(context);
+    final size = this.size ?? theme.size(64);
     return SizedBox(
-      height: size + 12,
+      height: size + theme.size(12),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 4) * theme.scale,
         itemCount: files.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => SizedBox(width: theme.size(8)),
         itemBuilder: (context, i) => _Thumb(
           file: files[i],
           size: size,
@@ -80,34 +84,39 @@ class _Thumb extends StatelessWidget {
       preview = _icon(theme, Icons.videocam_outlined);
     } else {
       preview = Padding(
-        padding: const EdgeInsets.all(4),
+        padding: EdgeInsets.all(theme.size(4)),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(FileMessageView.iconFor(file), color: theme.iconColor),
-            const SizedBox(height: 2),
+            Icon(
+              FileMessageView.iconFor(file),
+              color: theme.iconColor,
+              size: theme.size(24),
+            ),
+            SizedBox(height: theme.size(2)),
             Text(
               file.name ?? '',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: theme.roomTimeStyle,
+              style: theme.roomTile.timeStyle,
             ),
           ],
         ),
       );
     }
+    final media = theme.media;
     return SizedBox.square(
       dimension: size,
       child: Stack(
         fit: StackFit.expand,
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: ColoredBox(color: theme.composerInputColor, child: preview),
+            borderRadius: BorderRadius.circular(theme.size(10)),
+            child: ColoredBox(color: theme.composer.inputColor, child: preview),
           ),
           PositionedDirectional(
-            top: 2,
-            end: 2,
+            top: theme.size(2),
+            end: theme.size(2),
             child: Semantics(
               button: true,
               label: removeLabel,
@@ -116,14 +125,18 @@ class _Thumb extends StatelessWidget {
                 child: InkWell(
                   onTap: onRemove,
                   customBorder: const CircleBorder(),
-                  child: const DecoratedBox(
+                  child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: Colors.black54,
+                      color: media.overlayColor,
                       shape: BoxShape.circle,
                     ),
                     child: Padding(
-                      padding: EdgeInsets.all(3),
-                      child: Icon(Icons.close, size: 14, color: Colors.white),
+                      padding: EdgeInsets.all(theme.size(3)),
+                      child: Icon(
+                        Icons.close,
+                        size: theme.size(14),
+                        color: media.overlayForegroundColor,
+                      ),
                     ),
                   ),
                 ),
@@ -135,6 +148,7 @@ class _Thumb extends StatelessWidget {
     );
   }
 
-  Widget _icon(ChatTheme theme, IconData icon) =>
-      Center(child: Icon(icon, color: theme.iconColor));
+  Widget _icon(ChatTheme theme, IconData icon) => Center(
+    child: Icon(icon, color: theme.iconColor, size: theme.size(24)),
+  );
 }

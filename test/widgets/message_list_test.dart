@@ -166,7 +166,9 @@ void main() {
     );
     expect(
       (row.decoration as BoxDecoration?)?.color,
-      ChatTheme.of(tester.element(find.text(msg(20).text))).highlightColor,
+      ChatTheme.of(
+        tester.element(find.text(msg(20).text)),
+      ).messageList.highlightColor,
     );
     await close(tester);
   });

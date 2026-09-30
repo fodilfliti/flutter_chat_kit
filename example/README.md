@@ -32,9 +32,18 @@ matching `drift`) into `web/`, then run `flutter run -d chrome`.
 - **Media and voice**: attach photos, videos or files, or hold the mic
   button to record (slide to cancel, slide up to lock). Tap an image to open
   the viewer and save it.
-- **Custom message**: in "Weekend trip", tap the offer button (app bar or
-  attachment sheet) to send an offer card; the other side can accept or
-  decline. The inbox preview uses `ChatStrings.customPreview`.
+- **Chat style**: tap the palette button (inbox or room) to open a live
+  style sheet. Pick a preset (Classic, WhatsApp-like, Telegram-like,
+  Minimal grey, Cards), a color and dark mode, then drag the scale, text
+  size, message font size and bubble radius sliders, toggle grey text,
+  shadows, borders and square avatars, and switch inbox rows between plain,
+  lines and cards. The screen behind the sheet updates as you go.
+- **Custom messages**: in "Weekend trip", tap the offer button (app bar or
+  attachment sheet) to send a product offer; the other side can accept or
+  decline. In "Lemsa Shop", the same `offer` type shows as a quote with line
+  items, and a booking sits inside a regular bubble with its time and
+  ticks. The attachment sheet sends all three. The inbox preview uses
+  `ChatStrings.customPreview`.
 - **Big history**: "Big history (5 000 messages)" pages smoothly in both
   directions; tap a reply preview to jump to a much older message.
 - **Selection**: long-press a message and choose "Select" to copy, delete or
@@ -46,7 +55,10 @@ matching `drift`) into `web/`, then run `flutter run -d chrome`.
 | --- | --- |
 | `lib/fake/fake_chat_source.dart` | a complete `ChatSource`: keyset pages, idempotent send, events |
 | `lib/fake/fake_uploader.dart` | a `ChatUploader` with progress |
-| `lib/offer/offer_card.dart` | a custom message type, its builder, preview and attachment option |
+| `lib/style/style_settings.dart` | presets and live overrides turned into a `ChatTheme` (scale applied last) |
+| `lib/style/style_sheet.dart` | the live style sheet |
+| `lib/custom/custom_messages.dart` | custom types: the `customBuilder` resolver for variants, `bubbledCustomTypes`, previews, attachment options |
+| `lib/custom/offer_cards.dart`, `booking_card.dart` | cards that follow the chat theme and scale |
 | `lib/backend.dart` | creating and opening `ChatKit`, connectivity, strings |
 | `lib/pages/inbox_page.dart` | `InboxView` inside your own `Scaffold` |
 | `lib/pages/room_page.dart` | `ChatRoomView` with header, app bar actions and forward |

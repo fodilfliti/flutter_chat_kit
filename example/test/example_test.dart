@@ -6,8 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_chat_kit/flutter_chat_kit.dart';
 import 'package:flutter_chat_kit_example/backend.dart';
+import 'package:flutter_chat_kit_example/custom/booking_card.dart';
+import 'package:flutter_chat_kit_example/custom/offer_cards.dart';
 import 'package:flutter_chat_kit_example/main.dart';
-import 'package:flutter_chat_kit_example/offer/offer_card.dart';
+import 'package:flutter_chat_kit_example/style/style_settings.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Alternates real time (the database) and frames until [until] holds.
@@ -39,16 +41,66 @@ void main() {
       cache: () =>
           DriftChatCache(executorFactory: (_) => NativeDatabase.memory()),
     );
-    await tester.pumpWidget(ChatKitExampleApp(backend: backend));
+    final style = StyleSettings();
+    addTearDown(style.dispose);
+    await tester.pumpWidget(ChatKitExampleApp(backend: backend, style: style));
     await settle(tester, () => shows('Weekend trip'));
     expect(find.text('Big history (5 000 messages)'), findsOneWidget);
 
+    // The style sheet restyles the screen behind it.
+    ChatTheme themeOf(String text) =>
+        ChatTheme.of(tester.element(find.text(text)));
+    // Theme changes animate; frames run them to the end.
+    Future<void> frames() async {
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    await tester.tap(find.byTooltip('Chat style'));
+    await frames();
+    final cards = find.widgetWithText(ChoiceChip, 'Cards');
+    await tester.ensureVisible(cards);
+    await frames();
+    await tester.tap(cards);
+    await frames();
+    expect(style.tileLayout, TileLayout.card);
+    final tile = themeOf('Weekend trip').roomTile;
+    expect(tile.shape, isA<RoundedRectangleBorder>());
+    expect(tile.margin, isNot(EdgeInsets.zero));
+    style.scale = 1.2;
+    await frames();
+    expect(themeOf('Weekend trip').scale, closeTo(1.2, 1e-9));
+    style
+      ..applyPreset(ChatPreset.classic)
+      ..scale = 1;
+    await tester.tapAt(const Offset(20, 120));
+    await frames();
+
     await tester.tap(find.text('Weekend trip'));
-    await settle(tester, () => find.byType(OfferCard).evaluate().isNotEmpty);
+    await settle(
+      tester,
+      () => find.byType(ProductOfferCard).evaluate().isNotEmpty,
+    );
     expect(find.text('Camping tent (4 people)'), findsOneWidget);
     expect(find.text('4 members'), findsOneWidget);
     expect(find.byType(ChatComposer), findsOneWidget);
 
+    await tester.pageBack();
+    await settle(tester, () => find.byType(InboxView).evaluate().isNotEmpty);
+    await tester.pump(const Duration(seconds: 1));
+
+    // One `offer` type drawn as another card, and a booking in a bubble.
+    await tester.tap(find.text('Lemsa Shop').first);
+    await settle(tester, () => find.byType(QuoteCard).evaluate().isNotEmpty);
+    expect(find.text('Engraved wallet'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(MessageBubble),
+        matching: find.byType(BookingCard),
+      ),
+      findsOneWidget,
+    );
     await tester.pageBack();
     await settle(tester, () => find.byType(InboxView).evaluate().isNotEmpty);
     await tester.pump(const Duration(seconds: 1));

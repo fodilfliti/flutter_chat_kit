@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/flutter_chat_kit.dart';
 import 'package:flutter_chat_kit_example/backend.dart';
 import 'package:flutter_chat_kit_example/pages/room_page.dart';
+import 'package:flutter_chat_kit_example/style/style_sheet.dart';
 
 class InboxPage extends StatefulWidget {
   const InboxPage({required this.backend, super.key});
@@ -42,6 +43,7 @@ class _InboxPageState extends State<InboxPage> {
           },
         ),
         actions: [
+          const StyleButton(),
           const ChatProfileMenuButton(strings: exampleStrings),
           ConnectionButton(backend: widget.backend),
           StatefulBuilder(

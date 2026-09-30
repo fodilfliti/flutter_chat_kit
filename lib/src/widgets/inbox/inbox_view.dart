@@ -273,8 +273,8 @@ class _InboxViewState extends State<InboxView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_strings.loadChatsFailed, style: theme.roomSubtitleStyle),
-            const SizedBox(height: 8),
+            Text(_strings.loadChatsFailed, style: theme.captionStyle),
+            SizedBox(height: theme.size(8)),
             TextButton(
               onPressed: () => unawaited(retry()),
               child: Text(_strings.retry),
@@ -292,10 +292,10 @@ class _InboxViewState extends State<InboxView> {
     }
     final empty = Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(theme.size(24)),
         child: Text(
           _c.query.isEmpty ? _strings.noChats : _strings.noResults,
-          style: theme.roomSubtitleStyle,
+          style: theme.captionStyle,
           textAlign: TextAlign.center,
         ),
       ),

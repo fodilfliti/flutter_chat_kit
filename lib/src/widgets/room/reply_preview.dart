@@ -23,7 +23,7 @@ class ReplyPreview extends StatelessWidget {
   /// Snippet style; defaults to the incoming bubble text.
   final TextStyle? textStyle;
 
-  /// Defaults to `ChatTheme.replyAccentColor`.
+  /// Defaults to `ChatReplyStyle.accentColor`.
   final Color? accentColor;
   final VoidCallback? onTap;
 
@@ -34,12 +34,14 @@ class ReplyPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = ChatTheme.of(context);
-    final accent = accentColor ?? theme.replyAccentColor;
-    final style = textStyle ?? theme.incomingTextStyle;
+    final reply = theme.replyPreview;
+    final accent = accentColor ?? reply.accentColor;
+    final style = textStyle ?? theme.incomingBubble.textStyle;
+    final fontSize = (style.fontSize ?? theme.fontSize(16)) * reply.textScale;
     final title = this.title;
     final onClose = this.onClose;
     final body = Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(8, 4, 8, 4),
+      padding: reply.padding,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,14 +54,14 @@ class ReplyPreview extends StatelessWidget {
               style: style.copyWith(
                 color: accent,
                 fontWeight: FontWeight.w600,
-                fontSize: (style.fontSize ?? 16) * 0.85,
+                fontSize: fontSize,
               ),
             ),
           Text(
             snippet,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: style.copyWith(fontSize: (style.fontSize ?? 16) * 0.85),
+            style: style.copyWith(fontSize: fontSize),
           ),
         ],
       ),
@@ -67,15 +69,15 @@ class ReplyPreview extends StatelessWidget {
     return Semantics(
       button: onTap != null,
       child: Material(
-        color: accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
+        color: reply.backgroundColor ?? accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(reply.radius),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
           child: DecoratedBox(
             decoration: BoxDecoration(
               border: BorderDirectional(
-                start: BorderSide(color: accent, width: 3),
+                start: BorderSide(color: accent, width: reply.accentWidth),
               ),
             ),
             child: onClose == null
@@ -84,7 +86,7 @@ class ReplyPreview extends StatelessWidget {
                     children: [
                       Expanded(child: body),
                       IconButton(
-                        icon: const Icon(Icons.close, size: 18),
+                        icon: Icon(Icons.close, size: theme.size(18)),
                         tooltip: closeTooltip,
                         onPressed: onClose,
                       ),

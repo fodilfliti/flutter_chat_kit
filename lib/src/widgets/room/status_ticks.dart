@@ -11,7 +11,7 @@ class StatusTicks extends StatelessWidget {
     this.color,
     this.seenColor,
     this.failedColor,
-    this.size = 14,
+    this.size,
     this.onRetry,
     this.strings = const ChatStrings(),
     super.key,
@@ -19,11 +19,18 @@ class StatusTicks extends StatelessWidget {
 
   final MessageStatus status;
 
-  /// Pending, sent and delivered; defaults to `ChatTheme.statusColor`.
+  /// Pending, sent and delivered; defaults to `ChatStatusStyle.color`, else
+  /// the incoming meta color.
   final Color? color;
+
+  /// Defaults to `ChatStatusStyle.seenColor`.
   final Color? seenColor;
+
+  /// Defaults to `ChatStatusStyle.failedColor`.
   final Color? failedColor;
-  final double size;
+
+  /// Defaults to `ChatStatusStyle.iconSize`.
+  final double? size;
 
   /// Makes the failed icon a retry button.
   final VoidCallback? onRetry;
@@ -32,7 +39,13 @@ class StatusTicks extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = ChatTheme.of(context);
-    final base = color ?? theme.statusColor;
+    final style = theme.status;
+    final base =
+        color ??
+        style.color ??
+        theme.incomingBubble.metaStyle.color ??
+        theme.iconColor;
+    final size = this.size ?? style.iconSize;
     final (icon, tint, label) = switch (status) {
       MessageStatus.pending ||
       MessageStatus.sending => (Icons.schedule, base, strings.statusPending),
@@ -44,12 +57,12 @@ class StatusTicks extends StatelessWidget {
       ),
       MessageStatus.seen => (
         Icons.done_all,
-        seenColor ?? theme.seenColor,
+        seenColor ?? style.seenColor,
         strings.statusSeen,
       ),
       MessageStatus.failed => (
         Icons.error_outline,
-        failedColor ?? theme.failedColor,
+        failedColor ?? style.failedColor,
         strings.failedToSend,
       ),
     };

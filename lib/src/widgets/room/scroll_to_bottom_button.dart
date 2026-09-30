@@ -19,10 +19,13 @@ class ScrollToBottomButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = ChatTheme.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final badge = theme.badge;
     return Badge(
       isLabelVisible: unreadCount > 0,
-      backgroundColor: theme.unreadBadgeColor,
-      label: Text('$unreadCount', style: theme.unreadBadgeTextStyle),
+      backgroundColor: badge.color,
+      largeSize: badge.size,
+      padding: badge.padding,
+      label: Text('$unreadCount', style: badge.textStyle),
       child: Material(
         color: scheme.surfaceContainerHigh,
         shape: const CircleBorder(),
@@ -30,6 +33,7 @@ class ScrollToBottomButton extends StatelessWidget {
         child: IconButton(
           tooltip: tooltip,
           onPressed: onPressed,
+          iconSize: theme.size(24),
           icon: Icon(Icons.keyboard_arrow_down, color: theme.iconColor),
         ),
       ),

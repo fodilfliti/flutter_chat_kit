@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/src/config/chat_strings.dart';
+import 'package:flutter_chat_kit/src/config/chat_theme.dart';
 import 'package:flutter_chat_kit/src/models/attachment.dart';
 import 'package:flutter_chat_kit/src/widgets/media/chat_image.dart';
 
@@ -19,7 +20,7 @@ class ImageMessageView extends StatelessWidget {
     this.cellBuilder,
     this.heroTags,
     this.spacing = 2,
-    this.maxWidth = 300,
+    this.maxWidth,
     this.strings = const ChatStrings(),
     super.key,
   });
@@ -36,7 +37,9 @@ class ImageMessageView extends StatelessWidget {
   /// Hero tags per image, matching the media viewer's.
   final List<Object>? heroTags;
   final double spacing;
-  final double maxWidth;
+
+  /// Defaults to `ChatMediaStyle.maxWidth`.
+  final double? maxWidth;
   final ChatStrings strings;
 
   /// Aspect ratio of the whole grid.
@@ -50,13 +53,14 @@ class ImageMessageView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (images.isEmpty) return const SizedBox.shrink();
+    final theme = ChatTheme.of(context);
     final grid = AspectRatio(
       aspectRatio: aspectRatioOf(images),
-      child: _grid(context),
+      child: _grid(context, theme),
     );
     final progress = this.progress;
     return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: maxWidth),
+      constraints: BoxConstraints(maxWidth: maxWidth ?? theme.media.maxWidth),
       child: progress == null
           ? grid
           : Stack(
@@ -75,12 +79,12 @@ class ImageMessageView extends StatelessWidget {
     );
   }
 
-  Widget _grid(BuildContext context) {
-    final gap = SizedBox.square(dimension: spacing);
-    Widget cell(int i) => Expanded(child: _cell(context, i));
+  Widget _grid(BuildContext context, ChatTheme theme) {
+    final gap = SizedBox.square(dimension: theme.size(spacing));
+    Widget cell(int i) => Expanded(child: _cell(context, theme, i));
     switch (images.length) {
       case 1:
-        return _cell(context, 0);
+        return _cell(context, theme, 0);
       case 2:
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -122,7 +126,7 @@ class ImageMessageView extends StatelessWidget {
     }
   }
 
-  Widget _cell(BuildContext context, int index) {
+  Widget _cell(BuildContext context, ChatTheme theme, int index) {
     final image = images[index];
     var child =
         cellBuilder?.call(context, image, index) ??
@@ -139,13 +143,13 @@ class ImageMessageView extends StatelessWidget {
         child,
         if (index == 3 && more > 0)
           ColoredBox(
-            color: Colors.black45,
+            color: theme.media.overlayColor,
             child: Center(
               child: Text(
                 strings.moreMedia(more),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
+                style: TextStyle(
+                  color: theme.media.overlayForegroundColor,
+                  fontSize: theme.fontSize(24),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -172,7 +176,7 @@ class _UploadOverlay extends StatelessWidget {
       color: Colors.black26,
       child: Center(
         child: SizedBox.square(
-          dimension: 44,
+          dimension: ChatTheme.of(context).size(44),
           child: CircularProgressIndicator(
             value: value <= 0 ? null : value,
             strokeWidth: 3,

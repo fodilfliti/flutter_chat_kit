@@ -1,119 +1,81 @@
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_chat_kit/src/config/chat_styles.dart';
 
-/// Visual settings for the chat room and inbox.
+/// Visual settings for the chat room and inbox, one style per part.
 ///
-/// Register it on `ThemeData.extensions`, usually derived from the app's
-/// color scheme so light and dark themes animate between each other:
+/// Every size, color, text style, border and shadow the default widgets
+/// draw comes from here. Register it on `ThemeData.extensions`, usually
+/// derived from the app's color scheme so light and dark themes animate
+/// between each other:
 ///
 /// ```dart
+/// final chat = ChatTheme.fallback(scheme);
 /// ThemeData(
 ///   colorScheme: scheme,
 ///   extensions: [
-///     ChatTheme.fallback(scheme).copyWith(bubbleRadius: 12),
+///     chat
+///         .withMessageText(const TextStyle(fontSize: 14))
+///         .copyWith(roomTile: ChatRoomTileStyle.card(scheme, radius: 20))
+///         .mapBubbles((bubble) => bubble.copyWith(radius: 8))
+///         .scaled(1.1),
 ///   ],
 /// )
 /// ```
+///
+/// Apply [scaled] last: it multiplies the values set before it. Widgets
+/// read the theme in `build`, so rebuilding `ThemeData` with a new scale
+/// (from a scale package or a zoom setting) refreshes the whole chat.
 ///
 /// Without an extension, [ChatTheme.of] derives one from the ambient
 /// [ColorScheme] and [TextTheme].
 @immutable
 class ChatTheme extends ThemeExtension<ChatTheme> {
   const ChatTheme({
-    required this.outgoingBubbleColor,
-    required this.incomingBubbleColor,
-    required this.outgoingTextStyle,
-    required this.incomingTextStyle,
-    required this.outgoingMetaStyle,
-    required this.incomingMetaStyle,
-    required this.authorNameStyle,
-    required this.systemMessageStyle,
-    required this.dateSeparatorStyle,
-    required this.dateSeparatorColor,
-    required this.highlightColor,
-    required this.selectedColor,
-    required this.statusColor,
-    required this.seenColor,
-    required this.failedColor,
-    required this.replyAccentColor,
-    required this.reactionColor,
-    required this.reactionMineColor,
-    required this.avatarBackgroundColor,
-    required this.composerBackgroundColor,
-    required this.composerInputColor,
-    required this.composerTextStyle,
-    required this.composerHintStyle,
+    required this.outgoingBubble,
+    required this.incomingBubble,
+    required this.messageList,
+    required this.status,
+    required this.dateSeparator,
+    required this.systemMessage,
+    required this.unreadDivider,
+    required this.reactions,
+    required this.replyPreview,
+    required this.composer,
+    required this.appBar,
+    required this.avatar,
+    required this.roomTile,
+    required this.badge,
     required this.iconColor,
-    required this.sendButtonColor,
-    required this.unreadBadgeColor,
-    required this.unreadBadgeTextStyle,
-    required this.roomTitleStyle,
-    required this.roomSubtitleStyle,
-    required this.roomTimeStyle,
-    this.bubbleRadius = 18,
-    this.tailRadius = 4,
-    this.bubblePadding = const EdgeInsets.symmetric(
-      horizontal: 12,
-      vertical: 8,
-    ),
-    this.listPadding = const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-    this.maxBubbleWidthFactor = 0.78,
-    this.avatarSize = 32,
-    this.messageSpacing = 2,
-    this.groupSpacing = 10,
+    required this.captionStyle,
+    this.media = const ChatMediaStyle(),
+    this.scale = 1,
+    this.textScale = 1,
   });
 
   /// Defaults derived from [scheme] (and [textTheme] when given).
   factory ChatTheme.fallback(ColorScheme scheme, {TextTheme? textTheme}) {
     final text = textTheme ?? Typography.material2021().englishLike;
-    final body = text.bodyLarge ?? const TextStyle(fontSize: 16);
-    final small = text.labelSmall ?? const TextStyle(fontSize: 11);
-    final label = text.labelMedium ?? const TextStyle(fontSize: 12);
     return ChatTheme(
-      outgoingBubbleColor: scheme.primary,
-      incomingBubbleColor: scheme.surfaceContainerHighest,
-      outgoingTextStyle: body.copyWith(color: scheme.onPrimary),
-      incomingTextStyle: body.copyWith(color: scheme.onSurface),
-      outgoingMetaStyle: small.copyWith(
-        color: scheme.onPrimary.withValues(alpha: 0.72),
-      ),
-      incomingMetaStyle: small.copyWith(color: scheme.onSurfaceVariant),
-      authorNameStyle: label.copyWith(
-        color: scheme.primary,
-        fontWeight: FontWeight.w600,
-      ),
-      systemMessageStyle: label.copyWith(color: scheme.onSurfaceVariant),
-      dateSeparatorStyle: label.copyWith(color: scheme.onSurfaceVariant),
-      dateSeparatorColor: scheme.surfaceContainerHigh,
-      highlightColor: scheme.primary.withValues(alpha: 0.16),
-      selectedColor: scheme.primary.withValues(alpha: 0.10),
-      statusColor: scheme.onSurfaceVariant,
-      seenColor: scheme.tertiary,
-      failedColor: scheme.error,
-      replyAccentColor: scheme.secondary,
-      reactionColor: scheme.surfaceContainerHigh,
-      reactionMineColor: scheme.primaryContainer,
-      avatarBackgroundColor: scheme.secondaryContainer,
-      composerBackgroundColor: scheme.surface,
-      composerInputColor: scheme.surfaceContainerHigh,
-      composerTextStyle: body.copyWith(color: scheme.onSurface),
-      composerHintStyle: body.copyWith(color: scheme.onSurfaceVariant),
+      outgoingBubble: ChatBubbleStyle.outgoing(scheme, textTheme: text),
+      incomingBubble: ChatBubbleStyle.incoming(scheme, textTheme: text),
+      messageList: ChatMessageListStyle.fallback(scheme, textTheme: text),
+      status: ChatStatusStyle.fallback(scheme),
+      dateSeparator: ChatChipStyle.dateSeparator(scheme, textTheme: text),
+      systemMessage: ChatChipStyle.systemMessage(scheme, textTheme: text),
+      unreadDivider: ChatChipStyle.unreadDivider(scheme, textTheme: text),
+      reactions: ChatReactionStyle.fallback(scheme, textTheme: text),
+      replyPreview: ChatReplyStyle.fallback(scheme),
+      composer: ChatComposerStyle.fallback(scheme, textTheme: text),
+      appBar: ChatAppBarStyle.fallback(scheme, textTheme: text),
+      avatar: ChatAvatarStyle.fallback(scheme),
+      roomTile: ChatRoomTileStyle.plain(scheme, textTheme: text),
+      badge: ChatBadgeStyle.fallback(scheme, textTheme: text),
       iconColor: scheme.onSurfaceVariant,
-      sendButtonColor: scheme.primary,
-      unreadBadgeColor: scheme.primary,
-      unreadBadgeTextStyle: small.copyWith(
-        color: scheme.onPrimary,
-        fontWeight: FontWeight.w600,
-      ),
-      roomTitleStyle: (text.titleMedium ?? body).copyWith(
-        color: scheme.onSurface,
-        fontWeight: FontWeight.w600,
-      ),
-      roomSubtitleStyle: (text.bodyMedium ?? body).copyWith(
+      captionStyle: (text.bodyMedium ?? const TextStyle(fontSize: 14)).copyWith(
         color: scheme.onSurfaceVariant,
       ),
-      roomTimeStyle: label.copyWith(color: scheme.onSurfaceVariant),
     );
   }
 
@@ -125,196 +87,181 @@ class ChatTheme extends ThemeExtension<ChatTheme> {
         ChatTheme.fallback(theme.colorScheme, textTheme: theme.textTheme);
   }
 
-  final Color outgoingBubbleColor;
-  final Color incomingBubbleColor;
-  final TextStyle outgoingTextStyle;
-  final TextStyle incomingTextStyle;
+  /// The current user's bubbles.
+  final ChatBubbleStyle outgoingBubble;
+  final ChatBubbleStyle incomingBubble;
+  final ChatMessageListStyle messageList;
+  final ChatStatusStyle status;
+  final ChatChipStyle dateSeparator;
+  final ChatChipStyle systemMessage;
 
-  /// Timestamp and "edited" label inside outgoing bubbles.
-  final TextStyle outgoingMetaStyle;
-  final TextStyle incomingMetaStyle;
-  final TextStyle authorNameStyle;
-  final TextStyle systemMessageStyle;
-  final TextStyle dateSeparatorStyle;
-  final Color dateSeparatorColor;
+  /// The "New messages" line.
+  final ChatChipStyle unreadDivider;
+  final ChatReactionStyle reactions;
+  final ChatReplyStyle replyPreview;
+  final ChatMediaStyle media;
+  final ChatComposerStyle composer;
+  final ChatAppBarStyle appBar;
+  final ChatAvatarStyle avatar;
+  final ChatRoomTileStyle roomTile;
+  final ChatBadgeStyle badge;
 
-  /// Flash behind a message reached by jump-to-message.
-  final Color highlightColor;
-  final Color selectedColor;
-
-  /// Pending, sent and delivered ticks.
-  final Color statusColor;
-  final Color seenColor;
-  final Color failedColor;
-  final Color replyAccentColor;
-  final Color reactionColor;
-  final Color reactionMineColor;
-  final Color avatarBackgroundColor;
-  final Color composerBackgroundColor;
-  final Color composerInputColor;
-  final TextStyle composerTextStyle;
-  final TextStyle composerHintStyle;
+  /// Secondary icons outside the composer (swipe reply, actions, placeholders).
   final Color iconColor;
-  final Color sendButtonColor;
-  final Color unreadBadgeColor;
-  final TextStyle unreadBadgeTextStyle;
-  final TextStyle roomTitleStyle;
-  final TextStyle roomSubtitleStyle;
-  final TextStyle roomTimeStyle;
-  final double bubbleRadius;
 
-  /// Corner radius on the author side of grouped bubbles.
-  final double tailRadius;
-  final EdgeInsets bubblePadding;
-  final EdgeInsets listPadding;
+  /// Secondary text: empty and error states, sheet labels, file sizes.
+  final TextStyle captionStyle;
 
-  /// Bubble width as a fraction of the list width.
-  final double maxBubbleWidthFactor;
-  final double avatarSize;
+  /// Product of every [scaled] factor applied so far.
+  final double scale;
 
-  /// Gap between messages of one group.
-  final double messageSpacing;
+  /// Product of every [scaled] text factor applied so far.
+  final double textScale;
 
-  /// Gap between groups.
-  final double groupSpacing;
+  /// The bubble style of the current user's ([isMine]) or others' messages.
+  ChatBubbleStyle bubble({required bool isMine}) =>
+      isMine ? outgoingBubble : incomingBubble;
+
+  /// [value] logical pixels at this theme's [scale], for sizes of custom
+  /// widgets that should follow the chat's scale.
+  double size(double value) => value * scale;
+
+  /// [value] font size at this theme's [textScale].
+  double fontSize(double value) => value * textScale;
+
+  /// Multiplies every size, radius, padding, border and shadow by [factor],
+  /// and every font size by [textFactor] (default [factor]).
+  ///
+  /// With `flutter_screenutil`, build the theme inside `ScreenUtilInit` and
+  /// pass `ScreenUtil().scaleWidth` and `ScreenUtil().scaleText`.
+  ChatTheme scaled(double factor, {double? textFactor}) {
+    final text = textFactor ?? factor;
+    return ChatTheme(
+      outgoingBubble: outgoingBubble.scaled(factor, textFactor: text),
+      incomingBubble: incomingBubble.scaled(factor, textFactor: text),
+      messageList: messageList.scaled(factor, textFactor: text),
+      status: status.scaled(factor),
+      dateSeparator: dateSeparator.scaled(factor, textFactor: text),
+      systemMessage: systemMessage.scaled(factor, textFactor: text),
+      unreadDivider: unreadDivider.scaled(factor, textFactor: text),
+      reactions: reactions.scaled(factor, textFactor: text),
+      replyPreview: replyPreview.scaled(factor),
+      media: media.scaled(factor),
+      composer: composer.scaled(factor, textFactor: text),
+      appBar: appBar.scaled(factor, textFactor: text),
+      avatar: avatar.scaled(factor),
+      roomTile: roomTile.scaled(factor, textFactor: text),
+      badge: badge.scaled(factor, textFactor: text),
+      iconColor: iconColor,
+      captionStyle: _scaleFont(captionStyle, text),
+      scale: scale * factor,
+      textScale: textScale * text,
+    );
+  }
+
+  /// Rewrites every text style, for example to set a font family:
+  /// `theme.mapText((s) => s.copyWith(fontFamily: 'Cairo'))`.
+  ChatTheme mapText(ChatTextMapper map) {
+    return copyWith(
+      outgoingBubble: outgoingBubble.mapText(map),
+      incomingBubble: incomingBubble.mapText(map),
+      messageList: messageList.mapText(map),
+      dateSeparator: dateSeparator.mapText(map),
+      systemMessage: systemMessage.mapText(map),
+      unreadDivider: unreadDivider.mapText(map),
+      reactions: reactions.mapText(map),
+      composer: composer.mapText(map),
+      appBar: appBar.mapText(map),
+      roomTile: roomTile.mapText(map),
+      badge: badge.mapText(map),
+      captionStyle: map(captionStyle),
+    );
+  }
+
+  /// Applies [update] to both bubble styles.
+  ChatTheme mapBubbles(ChatBubbleStyle Function(ChatBubbleStyle) update) =>
+      copyWith(
+        outgoingBubble: update(outgoingBubble),
+        incomingBubble: update(incomingBubble),
+      );
+
+  /// Merges [style] into the message text of both bubbles, for example
+  /// `TextStyle(fontSize: 14, color: Colors.grey)`.
+  ChatTheme withMessageText(TextStyle style) => mapBubbles(
+    (bubble) => bubble.copyWith(textStyle: bubble.textStyle.merge(style)),
+  );
 
   @override
   ChatTheme copyWith({
-    Color? outgoingBubbleColor,
-    Color? incomingBubbleColor,
-    TextStyle? outgoingTextStyle,
-    TextStyle? incomingTextStyle,
-    TextStyle? outgoingMetaStyle,
-    TextStyle? incomingMetaStyle,
-    TextStyle? authorNameStyle,
-    TextStyle? systemMessageStyle,
-    TextStyle? dateSeparatorStyle,
-    Color? dateSeparatorColor,
-    Color? highlightColor,
-    Color? selectedColor,
-    Color? statusColor,
-    Color? seenColor,
-    Color? failedColor,
-    Color? replyAccentColor,
-    Color? reactionColor,
-    Color? reactionMineColor,
-    Color? avatarBackgroundColor,
-    Color? composerBackgroundColor,
-    Color? composerInputColor,
-    TextStyle? composerTextStyle,
-    TextStyle? composerHintStyle,
+    ChatBubbleStyle? outgoingBubble,
+    ChatBubbleStyle? incomingBubble,
+    ChatMessageListStyle? messageList,
+    ChatStatusStyle? status,
+    ChatChipStyle? dateSeparator,
+    ChatChipStyle? systemMessage,
+    ChatChipStyle? unreadDivider,
+    ChatReactionStyle? reactions,
+    ChatReplyStyle? replyPreview,
+    ChatMediaStyle? media,
+    ChatComposerStyle? composer,
+    ChatAppBarStyle? appBar,
+    ChatAvatarStyle? avatar,
+    ChatRoomTileStyle? roomTile,
+    ChatBadgeStyle? badge,
     Color? iconColor,
-    Color? sendButtonColor,
-    Color? unreadBadgeColor,
-    TextStyle? unreadBadgeTextStyle,
-    TextStyle? roomTitleStyle,
-    TextStyle? roomSubtitleStyle,
-    TextStyle? roomTimeStyle,
-    double? bubbleRadius,
-    double? tailRadius,
-    EdgeInsets? bubblePadding,
-    EdgeInsets? listPadding,
-    double? maxBubbleWidthFactor,
-    double? avatarSize,
-    double? messageSpacing,
-    double? groupSpacing,
+    TextStyle? captionStyle,
   }) {
     return ChatTheme(
-      outgoingBubbleColor: outgoingBubbleColor ?? this.outgoingBubbleColor,
-      incomingBubbleColor: incomingBubbleColor ?? this.incomingBubbleColor,
-      outgoingTextStyle: outgoingTextStyle ?? this.outgoingTextStyle,
-      incomingTextStyle: incomingTextStyle ?? this.incomingTextStyle,
-      outgoingMetaStyle: outgoingMetaStyle ?? this.outgoingMetaStyle,
-      incomingMetaStyle: incomingMetaStyle ?? this.incomingMetaStyle,
-      authorNameStyle: authorNameStyle ?? this.authorNameStyle,
-      systemMessageStyle: systemMessageStyle ?? this.systemMessageStyle,
-      dateSeparatorStyle: dateSeparatorStyle ?? this.dateSeparatorStyle,
-      dateSeparatorColor: dateSeparatorColor ?? this.dateSeparatorColor,
-      highlightColor: highlightColor ?? this.highlightColor,
-      selectedColor: selectedColor ?? this.selectedColor,
-      statusColor: statusColor ?? this.statusColor,
-      seenColor: seenColor ?? this.seenColor,
-      failedColor: failedColor ?? this.failedColor,
-      replyAccentColor: replyAccentColor ?? this.replyAccentColor,
-      reactionColor: reactionColor ?? this.reactionColor,
-      reactionMineColor: reactionMineColor ?? this.reactionMineColor,
-      avatarBackgroundColor:
-          avatarBackgroundColor ?? this.avatarBackgroundColor,
-      composerBackgroundColor:
-          composerBackgroundColor ?? this.composerBackgroundColor,
-      composerInputColor: composerInputColor ?? this.composerInputColor,
-      composerTextStyle: composerTextStyle ?? this.composerTextStyle,
-      composerHintStyle: composerHintStyle ?? this.composerHintStyle,
+      outgoingBubble: outgoingBubble ?? this.outgoingBubble,
+      incomingBubble: incomingBubble ?? this.incomingBubble,
+      messageList: messageList ?? this.messageList,
+      status: status ?? this.status,
+      dateSeparator: dateSeparator ?? this.dateSeparator,
+      systemMessage: systemMessage ?? this.systemMessage,
+      unreadDivider: unreadDivider ?? this.unreadDivider,
+      reactions: reactions ?? this.reactions,
+      replyPreview: replyPreview ?? this.replyPreview,
+      media: media ?? this.media,
+      composer: composer ?? this.composer,
+      appBar: appBar ?? this.appBar,
+      avatar: avatar ?? this.avatar,
+      roomTile: roomTile ?? this.roomTile,
+      badge: badge ?? this.badge,
       iconColor: iconColor ?? this.iconColor,
-      sendButtonColor: sendButtonColor ?? this.sendButtonColor,
-      unreadBadgeColor: unreadBadgeColor ?? this.unreadBadgeColor,
-      unreadBadgeTextStyle: unreadBadgeTextStyle ?? this.unreadBadgeTextStyle,
-      roomTitleStyle: roomTitleStyle ?? this.roomTitleStyle,
-      roomSubtitleStyle: roomSubtitleStyle ?? this.roomSubtitleStyle,
-      roomTimeStyle: roomTimeStyle ?? this.roomTimeStyle,
-      bubbleRadius: bubbleRadius ?? this.bubbleRadius,
-      tailRadius: tailRadius ?? this.tailRadius,
-      bubblePadding: bubblePadding ?? this.bubblePadding,
-      listPadding: listPadding ?? this.listPadding,
-      maxBubbleWidthFactor: maxBubbleWidthFactor ?? this.maxBubbleWidthFactor,
-      avatarSize: avatarSize ?? this.avatarSize,
-      messageSpacing: messageSpacing ?? this.messageSpacing,
-      groupSpacing: groupSpacing ?? this.groupSpacing,
+      captionStyle: captionStyle ?? this.captionStyle,
+      scale: scale,
+      textScale: textScale,
     );
   }
 
   @override
   ChatTheme lerp(covariant ThemeExtension<ChatTheme>? other, double t) {
     if (other is! ChatTheme) return this;
-    Color c(Color a, Color b) => Color.lerp(a, b, t)!;
-    TextStyle s(TextStyle a, TextStyle b) => TextStyle.lerp(a, b, t)!;
-    double d(double a, double b) => lerpDouble(a, b, t)!;
-    EdgeInsets e(EdgeInsets a, EdgeInsets b) => EdgeInsets.lerp(a, b, t)!;
     return ChatTheme(
-      outgoingBubbleColor: c(outgoingBubbleColor, other.outgoingBubbleColor),
-      incomingBubbleColor: c(incomingBubbleColor, other.incomingBubbleColor),
-      outgoingTextStyle: s(outgoingTextStyle, other.outgoingTextStyle),
-      incomingTextStyle: s(incomingTextStyle, other.incomingTextStyle),
-      outgoingMetaStyle: s(outgoingMetaStyle, other.outgoingMetaStyle),
-      incomingMetaStyle: s(incomingMetaStyle, other.incomingMetaStyle),
-      authorNameStyle: s(authorNameStyle, other.authorNameStyle),
-      systemMessageStyle: s(systemMessageStyle, other.systemMessageStyle),
-      dateSeparatorStyle: s(dateSeparatorStyle, other.dateSeparatorStyle),
-      dateSeparatorColor: c(dateSeparatorColor, other.dateSeparatorColor),
-      highlightColor: c(highlightColor, other.highlightColor),
-      selectedColor: c(selectedColor, other.selectedColor),
-      statusColor: c(statusColor, other.statusColor),
-      seenColor: c(seenColor, other.seenColor),
-      failedColor: c(failedColor, other.failedColor),
-      replyAccentColor: c(replyAccentColor, other.replyAccentColor),
-      reactionColor: c(reactionColor, other.reactionColor),
-      reactionMineColor: c(reactionMineColor, other.reactionMineColor),
-      avatarBackgroundColor: c(
-        avatarBackgroundColor,
-        other.avatarBackgroundColor,
-      ),
-      composerBackgroundColor: c(
-        composerBackgroundColor,
-        other.composerBackgroundColor,
-      ),
-      composerInputColor: c(composerInputColor, other.composerInputColor),
-      composerTextStyle: s(composerTextStyle, other.composerTextStyle),
-      composerHintStyle: s(composerHintStyle, other.composerHintStyle),
-      iconColor: c(iconColor, other.iconColor),
-      sendButtonColor: c(sendButtonColor, other.sendButtonColor),
-      unreadBadgeColor: c(unreadBadgeColor, other.unreadBadgeColor),
-      unreadBadgeTextStyle: s(unreadBadgeTextStyle, other.unreadBadgeTextStyle),
-      roomTitleStyle: s(roomTitleStyle, other.roomTitleStyle),
-      roomSubtitleStyle: s(roomSubtitleStyle, other.roomSubtitleStyle),
-      roomTimeStyle: s(roomTimeStyle, other.roomTimeStyle),
-      bubbleRadius: d(bubbleRadius, other.bubbleRadius),
-      tailRadius: d(tailRadius, other.tailRadius),
-      bubblePadding: e(bubblePadding, other.bubblePadding),
-      listPadding: e(listPadding, other.listPadding),
-      maxBubbleWidthFactor: d(maxBubbleWidthFactor, other.maxBubbleWidthFactor),
-      avatarSize: d(avatarSize, other.avatarSize),
-      messageSpacing: d(messageSpacing, other.messageSpacing),
-      groupSpacing: d(groupSpacing, other.groupSpacing),
+      outgoingBubble: outgoingBubble.lerp(other.outgoingBubble, t),
+      incomingBubble: incomingBubble.lerp(other.incomingBubble, t),
+      messageList: messageList.lerp(other.messageList, t),
+      status: status.lerp(other.status, t),
+      dateSeparator: dateSeparator.lerp(other.dateSeparator, t),
+      systemMessage: systemMessage.lerp(other.systemMessage, t),
+      unreadDivider: unreadDivider.lerp(other.unreadDivider, t),
+      reactions: reactions.lerp(other.reactions, t),
+      replyPreview: replyPreview.lerp(other.replyPreview, t),
+      media: media.lerp(other.media, t),
+      composer: composer.lerp(other.composer, t),
+      appBar: appBar.lerp(other.appBar, t),
+      avatar: avatar.lerp(other.avatar, t),
+      roomTile: roomTile.lerp(other.roomTile, t),
+      badge: badge.lerp(other.badge, t),
+      iconColor: Color.lerp(iconColor, other.iconColor, t)!,
+      captionStyle: lerpChatText(captionStyle, other.captionStyle, t),
+      scale: lerpDouble(scale, other.scale, t)!,
+      textScale: lerpDouble(textScale, other.textScale, t)!,
     );
+  }
+
+  static TextStyle _scaleFont(TextStyle style, double factor) {
+    final size = style.fontSize;
+    return size == null ? style : style.copyWith(fontSize: size * factor);
   }
 }

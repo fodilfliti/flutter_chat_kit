@@ -37,8 +37,9 @@ typedef AttachmentTapCallback =
 /// Resolution order: `ChatBuilders.bubbleBuilder` gets the default bubble,
 /// which holds the per-type builder's widget (`textBuilder`, `fileBuilder`,
 /// …) or the default view. A `CustomMessage` renders through
-/// `customBuilders[customType]` without a bubble, else the unsupported
-/// view. System messages render as a centered pill.
+/// `customBuilders[customType]`, else `customBuilder`, else the unsupported
+/// view; without a bubble unless its type is in `bubbledCustomTypes`.
+/// System messages render as a centered pill.
 class MessageContent extends StatelessWidget {
   const MessageContent({
     required this.message,
@@ -75,12 +76,17 @@ class MessageContent extends StatelessWidget {
       return builders.systemBuilder?.call(context, message, view) ?? view;
     }
     final theme = ChatTheme.of(context);
-    final custom = m is CustomMessage && !m.isDeleted
-        ? builders.customBuilders[m.customType]
-        : null;
-    final body = custom != null
-        ? custom(context, message)
-        : _bubble(context, theme, m);
+    Widget? custom;
+    var bubbled = false;
+    if (m is CustomMessage && !m.isDeleted) {
+      custom =
+          builders.customBuilders[m.customType]?.call(context, message) ??
+          builders.customBuilder?.call(context, message);
+      bubbled = builders.bubbledCustomTypes.contains(m.customType);
+    }
+    final body = custom != null && !bubbled
+        ? custom
+        : _bubble(context, theme, m, custom: custom);
 
     final hasReactions =
         showReactions &&
@@ -107,16 +113,24 @@ class MessageContent extends StatelessWidget {
       children: [
         body,
         if (reactions != null)
-          Padding(padding: const EdgeInsets.only(top: 2), child: reactions),
+          Padding(
+            padding: EdgeInsets.only(top: theme.size(2)),
+            child: reactions,
+          ),
         if (failed) _FailedNotice(strings: strings, onRetry: onRetry),
       ],
     );
   }
 
-  Widget _bubble(BuildContext context, ChatTheme theme, Message m) {
-    final mine = message.isMine;
-    final textStyle = mine ? theme.outgoingTextStyle : theme.incomingTextStyle;
-    final metaStyle = mine ? theme.outgoingMetaStyle : theme.incomingMetaStyle;
+  Widget _bubble(
+    BuildContext context,
+    ChatTheme theme,
+    Message m, {
+    Widget? custom,
+  }) {
+    final style = theme.bubble(isMine: message.isMine);
+    final textStyle = style.textStyle;
+    final metaStyle = style.metaStyle;
     final meta = _meta(context, theme, m, metaStyle);
 
     Widget typed(MessageWidgetBuilder? builder, Widget view) =>
@@ -212,12 +226,15 @@ class MessageContent extends StatelessWidget {
             AudioMessageView(
               message: m,
               color: textStyle.color ?? theme.iconColor,
-              activeColor: mine ? textStyle.color : theme.replyAccentColor,
+              activeColor: style.accentColor,
               metaStyle: metaStyle,
               strings: strings,
               formatters: formatters,
             ),
           );
+        case CustomMessage() when custom != null:
+          inlineMeta = false;
+          content = custom;
         case CustomMessage():
           content = typed(
             builders.unsupportedBuilder,
@@ -235,13 +252,17 @@ class MessageContent extends StatelessWidget {
         ? Wrap(
             alignment: WrapAlignment.end,
             crossAxisAlignment: WrapCrossAlignment.end,
-            spacing: 8,
+            spacing: theme.size(8),
             children: [content, meta],
           )
         : Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
-            children: [content, const SizedBox(height: 2), meta],
+            children: [
+              content,
+              SizedBox(height: theme.size(2)),
+              meta,
+            ],
           );
 
     final reply = _reply(context, theme, m, textStyle);
@@ -253,7 +274,7 @@ class MessageContent extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 reply,
-                const SizedBox(height: 4),
+                SizedBox(height: theme.size(4)),
                 Align(
                   alignment: AlignmentDirectional.centerEnd,
                   child: laidOut,
@@ -283,9 +304,11 @@ class MessageContent extends StatelessWidget {
     required String? caption,
   }) {
     final mine = message.isMine;
-    final textStyle = mine ? theme.outgoingTextStyle : theme.incomingTextStyle;
-    final metaStyle = mine ? theme.outgoingMetaStyle : theme.incomingMetaStyle;
-    const inset = 3.0;
+    final style = theme.bubble(isMine: mine);
+    final textStyle = style.textStyle;
+    final metaStyle = style.metaStyle;
+    final mediaStyle = theme.media;
+    final inset = mediaStyle.inset;
     final radius = MessageBubble.radiusFor(
       message.groupPosition,
       isMine: mine,
@@ -293,7 +316,9 @@ class MessageContent extends StatelessWidget {
     );
     final hasCaption = caption != null && caption.trim().isNotEmpty;
     final reply = _reply(context, theme, m, textStyle);
-    final overlayStyle = metaStyle.copyWith(color: Colors.white);
+    final overlayStyle = metaStyle.copyWith(
+      color: mediaStyle.overlayForegroundColor,
+    );
 
     final mediaStack = Stack(
       children: [
@@ -308,36 +333,42 @@ class MessageContent extends StatelessWidget {
         ),
         if (!hasCaption)
           PositionedDirectional(
-            end: 6,
-            bottom: 6,
+            end: theme.size(6),
+            bottom: theme.size(6),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: Colors.black45,
-                borderRadius: BorderRadius.circular(10),
+                color: mediaStyle.overlayColor,
+                borderRadius: BorderRadius.circular(mediaStyle.overlayRadius),
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                child: _meta(context, theme, m, overlayStyle),
+                padding: mediaStyle.overlayPadding,
+                child: _meta(
+                  context,
+                  theme,
+                  m,
+                  overlayStyle,
+                  ticksColor: mediaStyle.overlayForegroundColor,
+                ),
               ),
             ),
           ),
       ],
     );
     final child = ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 300),
+      constraints: BoxConstraints(maxWidth: mediaStyle.maxWidth),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (reply != null)
             Padding(
-              padding: const EdgeInsets.fromLTRB(4, 4, 4, 6),
+              padding: const EdgeInsets.fromLTRB(4, 4, 4, 6) * theme.scale,
               child: reply,
             ),
           mediaStack,
           if (hasCaption)
             Padding(
-              padding: theme.bubblePadding,
+              padding: style.padding,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -360,7 +391,7 @@ class MessageContent extends StatelessWidget {
     );
     final bubble = MessageBubble(
       message: message,
-      padding: const EdgeInsets.all(inset),
+      padding: EdgeInsets.all(inset),
       clip: true,
       child: child,
     );
@@ -390,8 +421,9 @@ class MessageContent extends StatelessWidget {
     BuildContext context,
     ChatTheme theme,
     Message m,
-    TextStyle metaStyle,
-  ) {
+    TextStyle metaStyle, {
+    Color? ticksColor,
+  }) {
     final locale = Localizations.maybeLocaleOf(context)?.toString();
     Widget time = Text(
       formatters.formatTime(m.createdAt, locale: locale),
@@ -402,9 +434,7 @@ class MessageContent extends StatelessWidget {
     if (message.isMine) {
       ticks = StatusTicks(
         status: message.status,
-        color: metaStyle.color,
-        seenColor: theme.seenColor,
-        failedColor: theme.failedColor,
+        color: ticksColor ?? theme.status.color ?? metaStyle.color,
         onRetry: onRetry,
         strings: strings,
       );
@@ -439,7 +469,7 @@ class MessageContent extends StatelessWidget {
           ? strings.replyUnavailable
           : messageSnippet(quoted, strings),
       textStyle: textStyle,
-      accentColor: message.isMine ? textStyle.color : theme.replyAccentColor,
+      accentColor: theme.bubble(isMine: message.isMine).accentColor,
       onTap: onReplyTap == null ? null : () => onReplyTap!(replyToId),
     );
     return builders.replyPreviewBuilder?.call(context, message, preview) ??
@@ -456,24 +486,25 @@ class _FailedNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = ChatTheme.of(context);
-    final style = theme.incomingMetaStyle.copyWith(color: theme.failedColor);
+    final failed = theme.status.failedColor;
+    final style = theme.incomingBubble.metaStyle.copyWith(color: failed);
     final onRetry = this.onRetry;
     return Padding(
-      padding: const EdgeInsets.only(top: 2),
+      padding: EdgeInsets.only(top: theme.size(2)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.error_outline, size: 14, color: theme.failedColor),
-          const SizedBox(width: 4),
+          Icon(Icons.error_outline, size: theme.status.iconSize, color: failed),
+          SizedBox(width: theme.size(4)),
           Text(strings.failedToSend, style: style),
           if (onRetry != null)
             TextButton(
               onPressed: onRetry,
               style: TextButton.styleFrom(
-                foregroundColor: theme.failedColor,
+                foregroundColor: failed,
                 visualDensity: VisualDensity.compact,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                padding: const EdgeInsets.symmetric(horizontal: 6),
+                padding: EdgeInsets.symmetric(horizontal: theme.size(6)),
                 minimumSize: Size.zero,
               ),
               child: Text(
