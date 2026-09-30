@@ -1,0 +1,15 @@
+---
+description: Session rules for flutter_chat_kit
+alwaysApply: true
+---
+
+# flutter_chat_kit
+
+- Build one task from `spec/tasks/` per session; read `spec/README.md` first.
+- Public export only via `lib/flutter_chat_kit.dart`.
+- Backend-agnostic: never import firebase, supabase, dio, or any backend SDK in `lib/`.
+- No riverpod, slang, easy_localization, or `.tr()` in `lib/`. Strings come from `ChatStrings`.
+- UI reads the cache; the repository writes it. Widgets never call `ChatSource`.
+- Controllers are `ChangeNotifier`; models are immutable with value equality.
+- Depend on `lemsa_core_kit` only among Lemsa kits (hosted `^` constraint).
+- Use `fvm flutter` (pin 3.47.2). Never upgrade the shared SDK.

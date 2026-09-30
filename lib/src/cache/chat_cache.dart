@@ -1,0 +1,118 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter_chat_kit/src/models/chat_room.dart';
+import 'package:flutter_chat_kit/src/models/chat_user.dart';
+import 'package:flutter_chat_kit/src/models/message.dart';
+import 'package:flutter_chat_kit/src/models/message_cursor.dart';
+import 'package:flutter_chat_kit/src/models/room_member.dart';
+import 'package:flutter_chat_kit/src/sync/outbox_entry.dart';
+import 'package:flutter_chat_kit/src/sync/room_sync_state.dart';
+
+/// Unsent composer text for a room.
+@immutable
+class ChatDraft {
+  const ChatDraft({required this.text, this.replyToId});
+
+  final String text;
+  final String? replyToId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ChatDraft && other.text == text && other.replyToId == replyToId;
+
+  @override
+  int get hashCode => Object.hash(text, replyToId);
+}
+
+/// Local store the UI reads from. `DriftChatCache` is the default; the
+/// interface exists for tests and alternative stores.
+///
+/// Message lists are newest first, ordered by `(createdAt, id)` descending.
+/// Only `ChatKit` opens and closes a cache.
+abstract interface class ChatCache {
+  bool get isOpen;
+
+  /// Opens the store of [userId], closing another user's store first.
+  Future<void> open(String userId);
+  Future<void> close();
+
+  /// Deletes everything of the open user.
+  Future<void> clear();
+
+  /// Pinned first, then most recently updated. [search] matches the room
+  /// title or a member's name.
+  Stream<List<ChatRoom>> watchRooms({String? search});
+  Stream<ChatRoom?> watchRoom(String roomId);
+
+  /// Without [anchorAfter], the newest [limit] messages. With it, the
+  /// [limit] messages just newer than the cursor (a window detached from
+  /// the bottom after a jump). Newest first either way.
+  Stream<List<Message>> watchMessages(
+    String roomId, {
+    required int limit,
+    MessageCursor? anchorAfter,
+  });
+  Stream<List<RoomMember>> watchMembers(String roomId);
+
+  /// Up to [limit] messages strictly older than [cursor], newest first.
+  Future<List<Message>> messagesBefore(
+    String roomId,
+    MessageCursor cursor,
+    int limit,
+  );
+
+  /// Up to [limit] messages strictly newer than [cursor], newest first.
+  Future<List<Message>> messagesAfter(
+    String roomId,
+    MessageCursor cursor,
+    int limit,
+  );
+  Future<Message?> messageByAnyId(String idOrLocalId);
+
+  /// Upserts rooms. A room with a non-empty `members` list replaces the
+  /// stored member set; read pointers never move backwards.
+  Future<void> upsertRooms(List<ChatRoom> rooms);
+
+  /// Removes the room with its members, messages, sync state, draft and
+  /// outbox entries.
+  Future<void> deleteRoom(String roomId);
+
+  /// Upserts in one transaction, matching on `localId`, else on `id`, so a
+  /// confirmed message replaces its pending row.
+  Future<void> upsertMessages(List<Message> messages);
+  Future<void> deleteMessage(String idOrLocalId);
+
+  /// Adds or updates members without removing others. Read and delivered
+  /// pointers never move backwards.
+  Future<void> upsertMembers(String roomId, List<RoomMember> members);
+  Future<void> upsertUsers(List<ChatUser> users);
+  Future<Map<String, ChatUser>> users(Set<String> ids);
+
+  /// Ids from [ids] that are missing or were fetched before [olderThan].
+  Future<Set<String>> staleUsers(
+    Set<String> ids, {
+    required DateTime olderThan,
+  });
+
+  Future<RoomSyncState?> syncState(String roomId);
+  Future<void> saveSyncState(RoomSyncState state);
+
+  /// Inserts or replaces the entry with the same key.
+  Future<void> enqueue(OutboxEntry entry);
+
+  /// Entries due at [now], oldest first.
+  Future<List<OutboxEntry>> dueOutbox(DateTime now);
+
+  /// Every entry, oldest first.
+  Future<List<OutboxEntry>> outbox();
+  Future<void> updateOutbox(OutboxEntry entry);
+  Future<void> removeOutbox(String key);
+
+  Future<ChatDraft?> draft(String roomId);
+
+  /// Saves the draft; an empty text without a reply clears it.
+  Future<void> saveDraft(String roomId, String? text, {String? replyToId});
+
+  /// Keeps the newest [keep] messages of the room (plus unsent ones) and
+  /// moves the sync state's oldest cursor accordingly.
+  Future<void> trim(String roomId, {required int keep});
+}

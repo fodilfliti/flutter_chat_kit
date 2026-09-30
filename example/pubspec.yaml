@@ -1,0 +1,22 @@
+name: flutter_chat_kit_example
+description: Demo chat app for flutter_chat_kit.
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ^3.12.0
+  flutter: ">=3.44.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_chat_kit:
+    path: ../
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^11.0.0
+
+flutter:
+  uses-material-design: true

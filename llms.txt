@@ -1,0 +1,12 @@
+# flutter_chat_kit
+
+Backend-agnostic chat kit: models, SQLite cache, outbox, controllers, customizable UI.
+
+- Import: `package:flutter_chat_kit/flutter_chat_kit.dart`
+- App implements ChatSource (fetch rooms/messages, events stream, send, edit, delete, markRead), ChatUploader, ChatUserResolver
+- Kit owns Drift cache (one DB per user), per-room sync, keyset pagination, offline outbox with retry
+- ChatKit root + ChatKitScope; InboxController, ChatRoomController, ComposerController (ChangeNotifier, no Riverpod)
+- ChatRoomView / InboxView; every piece replaceable via ChatBuilders / InboxBuilders; CustomMessage + customBuilders for app types (e.g. offer)
+- ChatTheme (ThemeExtension), ChatConfig, ChatStrings (app passes strings), ChatFormatters
+- No firebase, supabase, dio, riverpod, slang in lib/
+- Build order: spec/tasks/README.md
