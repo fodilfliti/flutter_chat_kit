@@ -63,3 +63,27 @@
 **Choice:** Depend on `lemsa_core_kit` (`AppFailure`, `Result`, `Change`). Styling comes from `ChatTheme` (a `ThemeExtension`) with fallbacks from `ColorScheme`.
 
 **Why:** Usable by any pub.dev app, not only apps on `flutter_scale_theme_kit`. A theme-kit bridge can be added later without a breaking change.
+
+## D10 — Latest dependency versions; Flutter 3.44 minimum
+
+**Choice:** `environment: flutter: ">=3.44.0"`. Every third-party package is added at its latest stable version (`flutter pub add <name>`, never a guessed version), and `flutter pub outdated` must show no direct dependency behind before a release.
+
+**Why:** Owner requirement. The kit must build on Flutter 3.44 and later; recent plugin majors carry the platform fixes (Android Gradle, iOS privacy manifests, web wasm) that older ones lack.
+
+**Do not:** Pin an old major to dodge a migration, or add a package whose latest version needs a Flutter newer than 3.44.
+
+## D11 — Media is stored locally and reused
+
+**Choice:** A `ChatMediaStore` keeps image, video, audio and file payloads on disk (app support directory, one folder per user) with an index table in the Drift cache (`remote_url` → `local_path`, `size`, `last_access`). The user's own sent files are copied into the store at send time, so they never download again. Received media is downloaded on first view (images, audio) or on demand (video, files), then read from disk. The store has a size limit with least-recently-used eviction, and is wiped by `clearUserData()`. A "Save" action exports a stored file through `FilePicker.saveFile` by default; apps can override it with `onSaveMedia` (for example to save to the gallery).
+
+**Why:** Owner requirement. Local files open instantly, work offline, cut bandwidth, keep the list smooth, and make download/save trivial. On web the store falls back to the browser HTTP cache (no file system).
+
+**Do not:** Re-download media the device already has, or keep message bytes in the SQLite rows.
+
+## D12 — English defaults; every visible text is replaceable
+
+**Choice:** All user-facing text (labels, hints, menu actions, errors, relative dates, system messages, accessibility labels) comes from `ChatStrings`, with English defaults. No widget contains a literal string. Apps translate by building `ChatStrings` from their own localization (`slang`, `intl`/ARB, `easy_localization`): plain fields for fixed text, functions for plurals and arguments. Dates and numbers use `ChatFormatters` with the app's locale.
+
+**Why:** Owner requirement. The kit ships one language and never fights the app's i18n system.
+
+**Do not:** Bundle ARB files or depend on a localization package in `lib/`.

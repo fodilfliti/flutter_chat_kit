@@ -6,6 +6,7 @@
 - No backend SDK in `lib/`: no `firebase_*`, `cloud_firestore`, `supabase*`, `dio`. Enforced by `test/import_guard_test.dart` (from T02).
 - No Riverpod, slang, easy_localization, or `.tr(` in `lib/`.
 - The only Lemsa kit dependency is `lemsa_core_kit`.
+- Flutter `>=3.44.0`. Third-party packages at their latest stable version; `flutter pub outdated` shows no direct dependency behind at release (D10).
 
 ## Data
 
@@ -30,7 +31,8 @@
 
 ## UI
 
-- Kits never localize: user-facing text comes from `ChatStrings`, formats from `ChatFormatters`.
+- Kits never localize: user-facing text comes from `ChatStrings` (English defaults), formats from `ChatFormatters`. No string literal is shown to the user from `lib/` (D12).
+- Media is read from local files first (`ChatMediaStore`, D11). Sent files are adopted into the store; received ones are downloaded once.
 - Every builder receives the default child (or default list of actions) so apps can wrap.
 - The message list is reversed (index 0 = newest). Loading older messages must not move the viewport.
 - New messages auto-scroll only per `ChatConfig.autoScrollPolicy`; otherwise the unread badge increments.

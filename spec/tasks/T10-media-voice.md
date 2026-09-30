@@ -6,7 +6,7 @@ Images, video, voice notes and their players/recorder, built for smooth scrollin
 
 ## Read first
 
-- [../decisions.md](../decisions.md) D8; [../invariants.md](../invariants.md) (UI)
+- [../decisions.md](../decisions.md) D8, D10, D11, D12; [../invariants.md](../invariants.md) (UI)
 - valizex `LazyChatImage.dart`, `ConversationMediaGallery.dart`, `VideoMessageBubble.dart`, `AudioMessageBubble.dart`, `VoiceRecordingDialog.dart`, `service/voice_message_service.dart`
 
 ## Depends on
@@ -16,7 +16,9 @@ T09.
 ## Deliverables
 
 ```text
-lib/src/widgets/media/chat_image.dart             local file while uploading, else CachedNetworkImage; memCacheWidth by DPR; Hero
+lib/src/media/chat_media_store.dart               D11: files on disk + Drift index, download (with progress), LRU size limit, clear
+lib/src/cache/drift/tables.dart                   add MediaFiles table (remote_url PK, local_path, size, mime_type, last_access); schema migration
+lib/src/widgets/media/chat_image.dart             local or stored file first, else download into the store (CachedNetworkImage only on web); memCacheWidth by DPR; Hero
 lib/src/widgets/messages/image_message_view.dart  1 / 2 / 3 / 4+ grid ("+N"), aspect ratio reserved, progress overlay
 lib/src/widgets/messages/video_message_view.dart  thumbnail + duration + play; opens viewer
 lib/src/widgets/messages/audio_message_view.dart  play/pause, waveform bars (played portion colored), seek by drag, speed 1x/1.5x/2x
@@ -46,7 +48,18 @@ class VoiceRecorderController extends ChangeNotifier {
 class VoiceRecording { final String path; final Duration duration; final List<double> waveform; }
 ```
 
-`ChatKit` owns one `AudioPlayerHub` (disposed on `close`).
+```dart
+class ChatMediaStore {
+  Future<File?> file(String remoteUrl);                          // stored copy or null
+  Future<File> fetch(String remoteUrl, {void Function(double)? onProgress}); // download once, then reuse
+  Future<void> adopt(String localPath, String remoteUrl);         // own sent file: copy in, no download
+  ValueListenable<double?> downloadProgress(String remoteUrl);
+  Future<void> save(String remoteUrl, {String? name});           // FilePicker.saveFile unless ChatKit.onSaveMedia is set
+  Future<void> trim({required int maxBytes}); Future<void> clear();
+}
+```
+
+`ChatKit` owns one `AudioPlayerHub` and one `ChatMediaStore` (disposed on `close`; the store is cleared by `clearUserData`). The outbox calls `adopt` after each upload. `ChatConfig` gains `maxMediaCacheBytes` and `autoDownload` (images and audio by default; video and files on tap). Every label (save, download, open, failed) comes from `ChatStrings` (D12).
 
 ## Done when
 
@@ -55,9 +68,11 @@ class VoiceRecording { final String path; final Duration duration; final List<do
 - [ ] Starting a second voice message pauses the first
 - [ ] Recorder: < 1 s discarded; cancel deletes the temp file; amplitude produces a 40-bar waveform
 - [ ] Viewer opens at the tapped item, swipes through all room media, zooms
+- [ ] Media store: second view reads from disk (no request); own sent image never downloads; LRU trim respects the limit; `clearUserData` removes the files; save uses the override when given
 
 ## Do not
 
 - Create one `AudioPlayer` per bubble
 - Generate video thumbnails on device (use `thumbnailUrl`; fall back to a placeholder)
-- Auto-save media to the gallery (app concern)
+- Auto-save media to the gallery (app concern; the explicit "Save" action is the kit's, D11)
+- Add a package at anything but its latest version (D10)

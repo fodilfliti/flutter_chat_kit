@@ -23,7 +23,7 @@ dependencies:
     sdk: flutter
   image_picker: ^1.2.3
   intl: ^0.20.3
-  lemsa_core_kit: ^1.0.0
+  lemsa_core_kit: ^1.1.0
   path_provider: ^2.1.6
   record: ^7.1.1
   super_sliver_list: ^0.4.1
