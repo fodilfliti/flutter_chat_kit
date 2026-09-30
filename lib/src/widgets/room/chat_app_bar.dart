@@ -48,6 +48,26 @@ class ChatAppBarOptions {
 
   /// Shows a back button when the route can be popped.
   final bool showBack;
+
+  ChatAppBarOptions copyWith({
+    List<Widget>? actions,
+    ChatAppBarBuilder? titleBuilder,
+    ChatAppBarBuilder? subtitleBuilder,
+    ChatAppBarBuilder? leadingBuilder,
+    VoidCallback? onTitleTap,
+    Color? backgroundColor,
+    bool? showBack,
+  }) {
+    return ChatAppBarOptions(
+      actions: actions ?? this.actions,
+      titleBuilder: titleBuilder ?? this.titleBuilder,
+      subtitleBuilder: subtitleBuilder ?? this.subtitleBuilder,
+      leadingBuilder: leadingBuilder ?? this.leadingBuilder,
+      onTitleTap: onTitleTap ?? this.onTitleTap,
+      backgroundColor: backgroundColor ?? this.backgroundColor,
+      showBack: showBack ?? this.showBack,
+    );
+  }
 }
 
 /// App bar of a room: avatar, name, and a subtitle that shows, by priority,

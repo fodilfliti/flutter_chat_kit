@@ -101,7 +101,9 @@ class _ChatImageState extends State<ChatImage> {
     final url = _url;
     if (url == null) return;
     if (store == null || !store.isSupported) {
-      _provider = CachedNetworkImageProvider(url);
+      // The errorBuilder shows the failure; the listener keeps it out of
+      // the error log.
+      _provider = CachedNetworkImageProvider(url, errorListener: (_) {});
       return;
     }
     final known = store.peek(url);

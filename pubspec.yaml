@@ -2,7 +2,7 @@ name: flutter_chat_kit
 description: >
   Backend-agnostic chat kit for Flutter: typed models, built-in SQLite cache,
   offline outbox, controllers, and a fully customizable chat room and inbox UI.
-version: 0.0.1
+version: 0.1.0
 homepage: https://github.com/fodilfliti/flutter_chat_kit
 repository: https://github.com/fodilfliti/flutter_chat_kit
 issue_tracker: https://github.com/fodilfliti/flutter_chat_kit/issues

@@ -2,7 +2,8 @@
 /// outbox, controllers, and a customizable chat room and inbox UI.
 ///
 /// The app implements `ChatSource` (Firebase, Supabase, REST, ...); the kit
-/// owns everything else. Build order lives in `spec/tasks/`.
+/// owns everything else. Start with `ChatKit`, `InboxView` and
+/// `ChatRoomView`.
 library;
 
 export 'src/builders/chat_builders.dart';

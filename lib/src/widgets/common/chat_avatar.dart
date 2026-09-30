@@ -23,7 +23,7 @@ class ChatAvatar extends StatelessWidget {
       backgroundColor: theme.avatarBackgroundColor,
       foregroundImage: image == null || image.isEmpty
           ? null
-          : CachedNetworkImageProvider(image),
+          : CachedNetworkImageProvider(image, errorListener: _ignore),
       onForegroundImageError: image == null || image.isEmpty ? null : (_, _) {},
       child: Text(
         initialsOf(name),
@@ -35,6 +35,9 @@ class ChatAvatar extends StatelessWidget {
       ),
     );
   }
+
+  /// Failed loads (offline, 404) fall back to the initials.
+  static void _ignore(Object _) {}
 
   /// Up to two initials: first letters of the first and last words.
   static String initialsOf(String name) {

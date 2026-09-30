@@ -60,6 +60,7 @@ void main() {
       ChatAppBarOptions appBar = const ChatAppBarOptions(),
       Widget? header,
       ComposerController? composer,
+      ChatBuilders builders = const ChatBuilders(),
     }) async {
       h = Harness();
       h.source
@@ -76,6 +77,7 @@ void main() {
             composer: composer,
             appBar: appBar,
             header: header,
+            builders: builders,
           ),
         ),
       );
@@ -105,6 +107,30 @@ void main() {
       expect(find.text('3 members'), findsOneWidget);
       expect(find.byKey(const Key('call')), findsOneWidget);
       expect(find.text('Pinned banner'), findsOneWidget);
+      expect(find.byType(ChatComposer), findsOneWidget);
+      await close(tester);
+    });
+
+    testWidgets('ChatBuilders app bar actions and composer builder apply', (
+      tester,
+    ) async {
+      await open(
+        tester,
+        groupRoom(),
+        appBar: const ChatAppBarOptions(
+          actions: [Icon(Icons.call, key: Key('call'))],
+        ),
+        builders: ChatBuilders(
+          appBarActions: (context, room) => [
+            Text('Actions for ${room?.title}'),
+          ],
+          composerBuilder: (context, child) =>
+              Column(children: [const Text('Above composer'), child]),
+        ),
+      );
+      expect(find.byKey(const Key('call')), findsOneWidget);
+      expect(find.text('Actions for Team'), findsOneWidget);
+      expect(find.text('Above composer'), findsOneWidget);
       expect(find.byType(ChatComposer), findsOneWidget);
       await close(tester);
     });

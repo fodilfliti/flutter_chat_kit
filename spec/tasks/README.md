@@ -17,7 +17,7 @@ Build **one task per session**. Each file is self-contained: Goal, Read first, D
 | [T10](T10-media-voice.md) | Images, gallery, video, audio player hub, voice recorder controller | T09 | Done |
 | [T11](T11-composer.md) | `ChatComposer`, attachment sheet, voice record button, reply/edit banner | T08, T10 | Done |
 | [T12](T12-views.md) | `ChatAppBar`, `ChatRoomView`, `InboxView`, `RoomTile`, search | T11 | Done |
-| [T13](T13-example-docs-release.md) | Example app, adapter guides, README, SKILL.md, 0.1.0 | T12 | Open |
+| [T13](T13-example-docs-release.md) | Example app, adapter guides, README, SKILL.md, 0.1.0 | T12 | Done (publish pending owner) |
 
 ```mermaid
 flowchart LR

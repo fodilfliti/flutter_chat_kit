@@ -16,7 +16,9 @@ String messageSnippet(Message message, ChatStrings strings) {
     AudioMessage() => strings.voice,
     FileMessage(:final file) => orLabel(file.name, strings.file),
     SystemMessage(:final code, :final args) => strings.system(code, args),
-    CustomMessage() => strings.unsupportedMessage,
+    CustomMessage(:final customType, :final data) =>
+      strings.customPreview?.call(customType, data) ??
+          strings.unsupportedMessage,
   };
 }
 

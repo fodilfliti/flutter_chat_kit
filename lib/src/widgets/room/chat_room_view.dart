@@ -24,14 +24,6 @@ typedef ChatRoomAppBarBuilder =
       PreferredSizeWidget defaultAppBar,
     );
 
-/// Wraps or replaces the composer.
-typedef ChatComposerBuilder =
-    Widget Function(
-      BuildContext context,
-      ComposerController composer,
-      Widget defaultChild,
-    );
-
 /// A complete room screen: [ChatAppBar] (or [SelectionAppBar] while
 /// selecting), an optional [header], [ChatMessageList] and [ChatComposer].
 ///
@@ -44,7 +36,6 @@ class ChatRoomView extends StatefulWidget {
     this.composer,
     this.appBar = const ChatAppBarOptions(),
     this.appBarBuilder,
-    this.composerBuilder,
     this.builders = const ChatBuilders(),
     this.theme,
     this.config,
@@ -68,8 +59,12 @@ class ChatRoomView extends StatefulWidget {
   /// Defaults to one owned by the view.
   final ComposerController? composer;
   final ChatAppBarOptions appBar;
+
+  /// Applied last, to either bar; can hide it. `ChatBuilders.appBarBuilder`
+  /// and `appBarActions` apply to the room bar only.
   final ChatRoomAppBarBuilder? appBarBuilder;
-  final ChatComposerBuilder? composerBuilder;
+
+  /// Also used for `appBarActions`, `appBarBuilder` and `composerBuilder`.
   final ChatBuilders builders;
 
   /// Applied to this screen only; defaults to the ambient `ChatTheme`.
@@ -147,19 +142,29 @@ class ChatRoomViewState extends State<ChatRoomView> {
     final composer = this.composer;
     final selecting = c.selectedIds.isNotEmpty;
 
-    final defaultBar = selecting
-        ? SelectionAppBar(
-            controller: c,
-            onForward: widget.onForward,
-            backgroundColor: widget.appBar.backgroundColor,
-            strings: widget.strings,
-          )
-        : ChatAppBar(
-            controller: c,
-            options: widget.appBar,
-            strings: widget.strings,
-            formatters: widget.formatters,
-          );
+    final builders = widget.builders;
+    final PreferredSizeWidget defaultBar;
+    if (selecting) {
+      defaultBar = SelectionAppBar(
+        controller: c,
+        onForward: widget.onForward,
+        backgroundColor: widget.appBar.backgroundColor,
+        strings: widget.strings,
+      );
+    } else {
+      final extra = builders.appBarActions?.call(context, c.room);
+      final bar = ChatAppBar(
+        controller: c,
+        options: extra == null
+            ? widget.appBar
+            : widget.appBar.copyWith(
+                actions: [...widget.appBar.actions, ...extra],
+              ),
+        strings: widget.strings,
+        formatters: widget.formatters,
+      );
+      defaultBar = builders.appBarBuilder?.call(context, c.room, bar) ?? bar;
+    }
     final appBar = widget.appBarBuilder == null
         ? defaultBar
         : widget.appBarBuilder!(context, c, defaultBar);
@@ -194,8 +199,8 @@ class ChatRoomViewState extends State<ChatRoomView> {
       strings: widget.strings,
       formatters: widget.formatters,
     );
-    if (widget.composerBuilder case final build?) {
-      input = build(context, composer, input);
+    if (builders.composerBuilder case final build?) {
+      input = build(context, input);
     }
 
     return PopScope(

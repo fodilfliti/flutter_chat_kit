@@ -85,6 +85,7 @@ class ChatStrings {
     this.selectedCount = defaultSelectedCount,
     this.previewWithAuthor = defaultPreviewWithAuthor,
     this.unreadCount = defaultUnreadCount,
+    this.customPreview,
   });
 
   final String typeMessage;
@@ -235,6 +236,11 @@ class ChatStrings {
 
   /// Accessibility label of the inbox unread badge.
   final String Function(int count) unreadCount;
+
+  /// One-line text of a `CustomMessage` for the inbox and reply previews.
+  /// [unsupportedMessage] is used when this is null or returns null.
+  final String? Function(String customType, Map<String, Object?> data)?
+  customPreview;
 
   static String defaultTyping(List<String> names) {
     return switch (names.length) {
