@@ -52,8 +52,22 @@ class ChatComposer extends StatefulWidget {
 
 ## Done when
 
-- [ ] Widget tests: typing toggles mic/send; submit clears text and draft; reply banner cancel; edit submits `edit`; custom picker override is called; extra option callback fires; voice: short press shows hint, long press records, slide cancel discards
-- [ ] Works on desktop with keyboard shortcuts
+- [x] Widget tests: typing toggles mic/send; submit clears text and draft; reply banner cancel; edit submits `edit`; custom picker override is called; extra option callback fires; voice: short press shows hint, long press records, slide cancel discards
+- [x] Works on desktop with keyboard shortcuts
+
+## As built
+
+- **`ChatComposer`.** On top of the API above it takes `sendOnEnter` (defaults to true on desktop and web), `recorder` (an injectable `VoiceRecorderController`), `onError` (defaults to a snack bar: `attachmentTooLarge` for a `ValidationFailure`, otherwise `failedToSend`), `focusNode`, `strings` and `formatters`.
+  - Keys go through a `Focus.onKeyEvent` above the field. Enter sends unless Shift is held or an IME composition is active; Esc cancels a reply or edit.
+  - The action button sits in an `AnimatedSwitcher` whose outgoing child ignores pointers. The row children are keyed so the mic keeps its gesture while the bar changes.
+  - Voice and attachments are hidden without `ChatKit.uploader` and while editing. Picked files over `ChatConfig.maxAttachmentBytes` are dropped with a snack bar.
+- **Voice.**
+  - `VoiceRecordButton`: tap shows the hint; hold records; sliding 100 px towards the start edge cancels (RTL aware); sliding 70 px up locks. Releasing sends, or shows the hint if the recording was too short. A denied permission shows `microphoneDenied`.
+  - While recording, the text field becomes a bar: time and "slide to cancel" while holding; delete / time / stop when locked; delete and an `AudioMessageView` preview in review. The action becomes send.
+  - `RecordBackend` creates the platform recorder on first use.
+- **Pickers.** `DefaultAttachmentPicker` covers camera (`pickImage`), gallery (`pickMultipleMedia`), video (`pickVideo`) and file (`FilePicker.pickFiles` in file_picker 13). `attachmentFromXFile` reads the size, the MIME type (from the file, else from the extension via `mimeTypeForPath`), image dimensions from the header (`ImageDescriptor`, without a full decode), and video size and duration (`video_player`, native only, 5 s timeout).
+- **Other widgets.** `AttachmentOption` (built-in options carry a `source`; app options use `onSelected`), `AttachmentSheet.show`, `StagedAttachments` (image thumbnails decoded at `cacheWidth`, a remove button each) and `ReplyEditBanner` (reuses `ReplyPreview`).
+- **Strings (D12).** New `ChatStrings` entries: `attach`, `removeAttachment`, `recordVoice`, `holdToRecord`, `microphoneDenied`, `slideUpToLock`, `stopRecording`.
 
 ## Do not
 

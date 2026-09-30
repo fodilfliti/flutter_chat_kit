@@ -55,6 +55,13 @@ class ChatStrings {
     this.play = 'Play',
     this.pause = 'Pause',
     this.close = 'Close',
+    this.attach = 'Attach',
+    this.removeAttachment = 'Remove',
+    this.recordVoice = 'Record voice message',
+    this.holdToRecord = 'Hold to record, release to send',
+    this.microphoneDenied = 'Allow microphone access to record',
+    this.slideUpToLock = 'Slide up to lock',
+    this.stopRecording = 'Stop recording',
     this.typing = defaultTyping,
     this.system = defaultSystem,
     this.lastSeen = defaultLastSeen,
@@ -139,8 +146,20 @@ class ChatStrings {
   final String play;
   final String pause;
 
-  /// Closes the media viewer.
+  /// Closes the media viewer and the composer banner.
   final String close;
+
+  /// Composer: attachment button, removing a staged file.
+  final String attach;
+  final String removeAttachment;
+
+  /// Composer voice button: tooltip, and the hint after a short tap or a
+  /// too-short recording.
+  final String recordVoice;
+  final String holdToRecord;
+  final String microphoneDenied;
+  final String slideUpToLock;
+  final String stopRecording;
 
   /// Names of the users currently typing, in arrival order. Never empty.
   final String Function(List<String> names) typing;

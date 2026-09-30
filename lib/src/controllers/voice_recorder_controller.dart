@@ -206,9 +206,12 @@ class VoiceRecorderController extends ChangeNotifier {
   }
 }
 
-/// [RecorderBackend] on `record` (AAC in an `.m4a` file).
+/// [RecorderBackend] on `record` (AAC in an `.m4a` file). The platform
+/// recorder is created on first use, so idle composers hold none.
 class RecordBackend implements RecorderBackend {
-  final _recorder = AudioRecorder();
+  AudioRecorder? _instance;
+
+  AudioRecorder get _recorder => _instance ??= AudioRecorder();
 
   @override
   Future<bool> hasPermission() => _recorder.hasPermission();
@@ -218,12 +221,12 @@ class RecordBackend implements RecorderBackend {
       _recorder.start(const RecordConfig(numChannels: 1), path: path);
 
   @override
-  Future<String?> stop() => _recorder.stop();
+  Future<String?> stop() async => await _instance?.stop();
 
   @override
   Stream<double> amplitudes(Duration interval) =>
       _recorder.onAmplitudeChanged(interval).map((a) => a.current);
 
   @override
-  Future<void> dispose() => _recorder.dispose();
+  Future<void> dispose() async => await _instance?.dispose();
 }

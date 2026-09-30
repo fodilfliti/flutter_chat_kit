@@ -35,11 +35,12 @@ class NameResolver implements ChatUserResolver {
 
 /// A kit on an in-memory cache and a fake source, with short timings.
 class Harness {
-  Harness({ChatConfig? config}) {
+  Harness({ChatConfig? config, ChatUploader? uploader}) {
     source = FakeChatSource()..clock = () => now;
     kit = ChatKit(
       currentUserId: 'me',
       source: source,
+      uploader: uploader,
       users: NameResolver(),
       cache: memoryCache(clock: () => now),
       clock: () => now,
