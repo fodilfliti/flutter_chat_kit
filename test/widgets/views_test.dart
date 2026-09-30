@@ -377,6 +377,34 @@ void main() {
       await close(tester);
     });
 
+    testWidgets('a filtered list keeps paging while it is still empty', (
+      tester,
+    ) async {
+      h = Harness();
+      for (var i = 0; i < 6; i++) {
+        h.source.seedRoom(
+          inboxRoom('group$i', updated: 10 + i).copyWith(type: RoomType.group),
+        );
+      }
+      h.source
+        ..seedRoom(inboxRoom('direct', updated: 1))
+        ..ignoreRoomFilter = true;
+      await drive(tester, h.open());
+      inbox = h.kit.inbox(filter: RoomFilter.direct);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: InboxView(controller: inbox, onRoomTap: (_) {}),
+          ),
+        ),
+      );
+      await settle(tester, until: () => inbox.rooms.isNotEmpty);
+      await tester.pump();
+      expect(find.text('direct'), findsOneWidget);
+      expect(find.text('No conversations yet'), findsNothing);
+      await close(tester);
+    });
+
     testWidgets('empty inbox shows the empty text', (tester) async {
       h = Harness();
       await drive(tester, h.open());

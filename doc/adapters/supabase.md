@@ -42,6 +42,7 @@ create table room_members (
   unread_count int not null default 0,
   pinned boolean not null default false,
   muted boolean not null default false,
+  labels text[] not null default '{}',  -- per user, for RoomFilter
   primary key (room_id, user_id)
 );
 
@@ -191,6 +192,7 @@ class SupabaseChatSource implements ChatSource {
       'unread_count': me['unread_count'],
       'pinned': me['pinned'],
       'muted': me['muted'],
+      'labels': me['labels'],
     });
   }
 
@@ -199,9 +201,25 @@ class SupabaseChatSource implements ChatSource {
     RoomCursor? after,
     int limit = 20,
     String? search,
+    RoomFilter filter = RoomFilter.all,
   }) => _guard(() async {
-    var q = _db.from('rooms').select('*, room_members(*)');
+    // `me` is the current user's membership, inner-joined so filters on it
+    // select rooms; `room_members` still embeds every member.
+    var q = _db
+        .from('rooms')
+        .select('*, room_members(*), me:room_members!inner(labels, unread_count)')
+        .eq('me.user_id', _uid);
     if (search != null && search.isNotEmpty) q = q.ilike('title', '%$search%');
+    if (filter.types case final types?) {
+      q = q.inFilter('type', [for (final t in types) t.name]);
+    }
+    if (filter.labels case final labels?) {
+      q = q.overlaps('me.labels', labels.toList());
+    }
+    if (filter.excludeLabels case final excluded?) {
+      q = q.not('me.labels', 'ov', '{${excluded.join(',')}}');
+    }
+    if (filter.unreadOnly) q = q.gt('me.unread_count', 0);
     if (after != null) {
       final t = after.updatedAt.toIso8601String();
       q = q.or('updated_at.lt.$t,and(updated_at.eq.$t,id.lt.${after.id})');

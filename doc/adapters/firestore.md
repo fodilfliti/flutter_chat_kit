@@ -30,6 +30,7 @@ rooms/{roomId}
   members: { uid: { role, last_read_at, last_delivered_at } }
   unread: { uid: 3, ... }        (maintained by a Cloud Function)
   pinned_by: [uid], muted_by: [uid]
+  labels: { uid: ["work", ...] } (optional, per user, for RoomFilter)
   last_message: { ...message fields }
   updated_at: Timestamp
 
@@ -62,6 +63,7 @@ Composite indexes you will need:
 | Collection | Fields |
 | --- | --- |
 | `rooms` | `member_ids` array-contains, `updated_at` desc, `__name__` desc |
+| `rooms` (type filter) | `member_ids` array-contains, `type` asc, `updated_at` desc, `__name__` desc |
 | `messages` | `created_at` desc, `__name__` desc |
 
 ## Converting documents
@@ -106,6 +108,7 @@ ChatRoom _room(DocumentSnapshot<Map<String, dynamic>> doc, String uid) {
     unreadCount: ((json['unread'] as Map?)?[uid] as num?)?.toInt() ?? 0,
     pinned: (json['pinned_by'] as List?)?.contains(uid) ?? false,
     muted: (json['muted_by'] as List?)?.contains(uid) ?? false,
+    labels: {...?((json['labels'] as Map?)?[uid] as List?)?.cast<String>()},
   );
 }
 ```
@@ -157,26 +160,31 @@ class FirestoreChatSource with ChatSourceDefaults {
     RoomCursor? after,
     int limit = 20,
     String? search,
+    RoomFilter filter = RoomFilter.all,
   }) => _guard(() async {
-    var q = _rooms
-        .where('member_ids', arrayContains: _uid)
+    Query<Map<String, dynamic>> q = _rooms.where(
+      'member_ids',
+      arrayContains: _uid,
+    );
+    // `member_ids` already uses the query's only array-contains, so labels
+    // and unread are filtered by the kit on the device.
+    if (filter.types case final types?) {
+      q = q.where('type', whereIn: [for (final t in types) t.name]);
+    }
+    q = q
         .orderBy('updated_at', descending: true)
         .orderBy(FieldPath.documentId, descending: true);
     if (after != null) {
       q = q.startAfter([Timestamp.fromDate(after.updatedAt), after.id]);
     }
     final snap = await q.limit(limit + 1).get();
-    var rooms = [for (final d in snap.docs.take(limit)) _room(d, _uid)];
-    // Firestore has no substring search. Filter the page here, or back
-    // search with Algolia / Typesense and return its results instead.
-    if (search != null && search.isNotEmpty) {
-      final s = search.toLowerCase();
-      rooms = [
-        for (final r in rooms)
-          if ((r.title ?? '').toLowerCase().contains(s)) r,
-      ];
-    }
-    return ChatPage(items: rooms, hasMore: snap.docs.length > limit);
+    // Firestore has no substring search: return the page as read and the
+    // kit filters cached rooms by title and member name. For server-side
+    // search, query Algolia / Typesense instead when `search` is set.
+    return ChatPage(
+      items: [for (final d in snap.docs.take(limit)) _room(d, _uid)],
+      hasMore: snap.docs.length > limit,
+    );
   });
 
   @override

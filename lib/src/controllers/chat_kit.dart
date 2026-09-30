@@ -8,6 +8,7 @@ import 'package:flutter_chat_kit/src/controllers/audio_player_hub.dart';
 import 'package:flutter_chat_kit/src/controllers/chat_room_controller.dart';
 import 'package:flutter_chat_kit/src/controllers/inbox_controller.dart';
 import 'package:flutter_chat_kit/src/media/chat_media_store.dart';
+import 'package:flutter_chat_kit/src/models/room_filter.dart';
 import 'package:flutter_chat_kit/src/source/chat_source.dart';
 import 'package:flutter_chat_kit/src/source/chat_uploader.dart';
 import 'package:flutter_chat_kit/src/source/chat_user_resolver.dart';
@@ -96,10 +97,11 @@ class ChatKit extends ChangeNotifier {
   /// The write queue (send, edit, delete, react). Available while open.
   Outbox get outbox => _outbox ?? (throw StateError('ChatKit is not open'));
 
-  /// A new inbox controller. The caller disposes it.
-  // A factory for a new, disposable controller, not a conversion.
-  // ignore: use_to_and_as_if_applicable
-  InboxController inbox() => InboxController(this);
+  /// A new inbox controller showing rooms that match [filter]. Create one
+  /// per list (for example a "Chats" and a "Groups" tab). The caller
+  /// disposes it.
+  InboxController inbox({RoomFilter filter = RoomFilter.all}) =>
+      InboxController(this, filter: filter);
 
   /// A new controller for [roomId]. The caller disposes it (before
   /// [close]).

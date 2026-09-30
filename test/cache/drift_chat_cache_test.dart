@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:drift/native.dart';
 import 'package:flutter_chat_kit/flutter_chat_kit.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -315,6 +318,15 @@ void main() {
       },
     );
 
+    test('labels are stored and replaced', () async {
+      await cache.upsertRooms([
+        room('r1').copyWith(labels: {'work', 'vip'}),
+      ]);
+      expect((await cache.watchRoom('r1').first)?.labels, {'vip', 'work'});
+      await cache.upsertRooms([room('r1', minute: 1)]);
+      expect((await cache.watchRoom('r1').first)?.labels, isEmpty);
+    });
+
     test('a room without members keeps the stored ones', () async {
       await cache.upsertRooms([
         room('r1', members: [const RoomMember(userId: 'u2')]),
@@ -475,6 +487,33 @@ void main() {
       await multi.close();
       expect(multi.isOpen, isFalse);
       expect(multi.watchRooms, throwsStateError);
+    });
+
+    test('a version 2 database gains the labels column', () async {
+      final dir = await Directory.systemTemp.createTemp('chat_kit_migrate');
+      addTearDown(() => dir.delete(recursive: true));
+      final file = File('${dir.path}/chat.db');
+
+      final v3 = DriftChatCache(executorFactory: (_) => NativeDatabase(file));
+      await v3.open('me');
+      await v3.upsertRooms([ChatRoom(id: 'r1', updatedAt: _t0)]);
+      await v3.close();
+
+      final upgraded = DriftChatCache(
+        executorFactory: (_) => NativeDatabase(
+          file,
+          setup: (db) => db
+            ..execute('ALTER TABLE rooms DROP COLUMN labels_json')
+            ..execute('PRAGMA user_version = 2'),
+        ),
+      );
+      await upgraded.open('me');
+      addTearDown(upgraded.close);
+      expect((await upgraded.watchRoom('r1').first)?.labels, isEmpty);
+      await upgraded.upsertRooms([
+        ChatRoom(id: 'r1', updatedAt: _t0, labels: const {'work'}),
+      ]);
+      expect((await upgraded.watchRoom('r1').first)?.labels, {'work'});
     });
 
     test('database names are file-safe and distinct', () {

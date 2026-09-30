@@ -24,6 +24,12 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
   final List<({String roomId, MessageCursor? before, MessageCursor? after})>
   fetchCalls = [];
   final List<(String, String)> aroundCalls = [];
+  final List<({RoomCursor? after, String? search, RoomFilter filter})>
+  roomFetchCalls = [];
+
+  /// Returns every room regardless of the filter, like a backend that
+  /// cannot filter.
+  bool ignoreRoomFilter = false;
   int sendCalls = 0;
   int _serverSeq = 0;
 
@@ -74,14 +80,17 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
     RoomCursor? after,
     int limit = 20,
     String? search,
+    RoomFilter filter = RoomFilter.all,
   }) async {
     _check();
+    roomFetchCalls.add((after: after, search: search, filter: filter));
     final q = search?.toLowerCase();
     final sorted =
         rooms.values
             .where(
               (r) => q == null || (r.title ?? '').toLowerCase().contains(q),
             )
+            .where((r) => ignoreRoomFilter || filter.matches(r))
             .where((r) => after == null || r.cursor.compareTo(after) < 0)
             .toList()
           ..sort((a, b) => b.cursor.compareTo(a.cursor));

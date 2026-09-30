@@ -78,6 +78,18 @@ List<double> readDoubleList(Object? value) {
   ];
 }
 
+/// A list (or a single string) as a set of strings; empty otherwise.
+Set<String> readStringSet(Object? value) {
+  return switch (value) {
+    final List<Object?> list => {
+      for (final item in list)
+        if (item != null) item.toString(),
+    },
+    final String single when single.isNotEmpty => {single},
+    _ => const {},
+  };
+}
+
 Map<String, Set<String>> readReactions(Object? value) {
   final raw = readMap(value);
   return {

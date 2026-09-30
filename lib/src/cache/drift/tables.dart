@@ -17,6 +17,9 @@ class Rooms extends Table {
   BoolColumn get muted => boolean().withDefault(const Constant(false))();
   TextColumn get metadataJson => text().withDefault(const Constant('{}'))();
 
+  /// `ChatRoom.labels` as a sorted JSON list.
+  TextColumn get labelsJson => text().withDefault(const Constant('[]'))();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
 }

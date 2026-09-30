@@ -72,12 +72,14 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
     RoomCursor? after,
     int limit = 20,
     String? search,
+    RoomFilter filter = RoomFilter.all,
   }) async {
     await _call();
     final q = search?.trim().toLowerCase();
     final rooms =
         _rooms.values
             .where((room) => q == null || q.isEmpty || _matches(room, q))
+            .where(filter.matches)
             .where((room) => after == null || room.cursor.compareTo(after) < 0)
             .toList()
           ..sort((a, b) => b.cursor.compareTo(a.cursor));
@@ -557,12 +559,14 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
       int unread = 0,
       bool pinned = false,
       bool muted = false,
+      Set<String> labels = const {},
     }) {
       final messages = _messages[id]!;
       return ChatRoom(
         id: id,
         type: type,
         title: title,
+        labels: labels,
         updatedAt: messages.first.createdAt,
         lastMessage: messages.first,
         unreadCount: unread,
@@ -580,7 +584,7 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
     }
 
     for (final r in [
-      room('amina', ['amina'], unread: 2),
+      room('amina', ['amina'], unread: 2, labels: {'friends'}),
       room('karim', ['karim'], muted: true),
       room(
         'trip',
@@ -589,6 +593,7 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
         title: 'Weekend trip',
         pinned: true,
         unread: 1,
+        labels: {'friends'},
       ),
       room(
         'history',

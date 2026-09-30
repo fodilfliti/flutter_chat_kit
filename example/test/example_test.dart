@@ -50,6 +50,15 @@ void main() {
 
     await tester.pageBack();
     await settle(tester, () => find.byType(InboxView).evaluate().isNotEmpty);
+    await tester.pump(const Duration(seconds: 1));
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Chats'));
+    await settle(tester, () => !shows('Weekend trip'));
+    expect(find.text('Big history (5 000 messages)'), findsNothing);
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Friends'));
+    await settle(tester, () => shows('Weekend trip'));
+    expect(find.text('Big history (5 000 messages)'), findsNothing);
 
     await tester.pumpWidget(const SizedBox());
     var closed = false;

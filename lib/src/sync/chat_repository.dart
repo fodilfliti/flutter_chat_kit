@@ -10,12 +10,17 @@ import 'package:flutter_chat_kit/src/models/chat_user.dart';
 import 'package:flutter_chat_kit/src/models/message.dart';
 import 'package:flutter_chat_kit/src/models/message_cursor.dart';
 import 'package:flutter_chat_kit/src/models/presence.dart';
+import 'package:flutter_chat_kit/src/models/room_filter.dart';
 import 'package:flutter_chat_kit/src/models/typing.dart';
 import 'package:flutter_chat_kit/src/source/chat_source.dart';
 import 'package:flutter_chat_kit/src/source/chat_user_resolver.dart';
 import 'package:flutter_chat_kit/src/sync/room_sync_state.dart';
 import 'package:flutter_chat_kit/src/sync/room_window.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
+
+/// Result of `ChatRepository.fetchRooms`: whether more rooms exist and the
+/// cursor to pass as `after` for the next page.
+typedef RoomsPageInfo = ({bool hasMore, RoomCursor? next});
 
 /// Reads from `ChatSource` and writes into `ChatCache`. The UI watches the
 /// cache; nothing here keeps message lists in memory.
@@ -61,12 +66,9 @@ class ChatRepository {
   final Map<String, Future<void>> _locks = {};
   StreamSubscription<ChatEvent>? _inboxSub;
   int _inboxRefs = 0;
+  final List<Future<void> Function()> _inboxResyncs = [];
   Future<void> _inboxChain = Future.value();
   bool _disposed = false;
-
-  RoomCursor? _roomsCursor;
-  String? _roomsSearch;
-  bool _roomsHasMore = true;
 
   final Map<String, TypingState> _typing = {};
   final Map<(String, String), Timer> _typingTimers = {};
@@ -83,49 +85,52 @@ class ChatRepository {
 
   // ---------------------------------------------------------------- inbox
 
-  Stream<List<ChatRoom>> watchRooms({String? search}) =>
-      _cache.watchRooms(search: search);
+  /// Cached rooms matching [search] and [filter], pinned first, then most
+  /// recently updated.
+  Stream<List<ChatRoom>> watchRooms({
+    String? search,
+    RoomFilter filter = RoomFilter.all,
+  }) {
+    final rooms = _cache.watchRooms(search: search);
+    return filter.isAll ? rooms : rooms.map(filter.apply);
+  }
 
   Stream<ChatRoom?> watchRoom(String roomId) => _cache.watchRoom(roomId);
 
-  /// Fetches the first page of rooms. Returns whether more exist.
-  Future<bool> refreshRooms({String? search}) async {
+  /// Fetches one page of rooms into the cache: the first page, or the one
+  /// after [after]. Pass the returned `next` as [after] for the following
+  /// page. Stateless, so several inbox lists can page independently.
+  Future<RoomsPageInfo> fetchRooms({
+    RoomCursor? after,
+    String? search,
+    RoomFilter filter = RoomFilter.all,
+  }) async {
     final page = await _source.fetchRooms(
+      after: after,
       limit: _config.roomsPageSize,
       search: search,
+      filter: filter,
     );
     await _cache.upsertRooms(page.items);
-    _roomsSearch = search;
-    _roomsCursor = page.items.isEmpty ? null : page.items.last.cursor;
-    _roomsHasMore = page.hasMore;
-    return page.hasMore;
-  }
-
-  /// Fetches the next page of rooms. Returns whether more exist.
-  Future<bool> loadMoreRooms() async {
-    if (!_roomsHasMore) return false;
-    final page = await _source.fetchRooms(
-      after: _roomsCursor,
-      limit: _config.roomsPageSize,
-      search: _roomsSearch,
-    );
-    await _cache.upsertRooms(page.items);
-    if (page.items.isNotEmpty) _roomsCursor = page.items.last.cursor;
-    _roomsHasMore = page.hasMore;
-    return page.hasMore;
+    if (page.items.isEmpty) return (hasMore: false, next: after);
+    return (hasMore: page.hasMore, next: page.items.last.cursor);
   }
 
   /// Subscribes to inbox-level events (room changes, presence). Calls are
-  /// counted; each must be matched by [closeInbox].
-  void openInbox() {
+  /// counted; each must be matched by [closeInbox] with the same
+  /// [onResync]. [resync] calls every registered [onResync] (usually the
+  /// controller refetching its first page).
+  void openInbox({Future<void> Function()? onResync}) {
     _inboxRefs++;
+    if (onResync != null) _inboxResyncs.add(onResync);
     _inboxSub ??= _source.events().listen(
       (event) => _inboxChain = _inboxChain.then((_) => _guard(event)),
     );
   }
 
-  Future<void> closeInbox() async {
+  Future<void> closeInbox({Future<void> Function()? onResync}) async {
     if (_inboxRefs == 0) return;
+    if (onResync != null) _inboxResyncs.remove(onResync);
     _inboxRefs--;
     if (_inboxRefs > 0) return;
     final sub = _inboxSub;
@@ -237,8 +242,8 @@ class ChatRepository {
   }
 
   /// Fills the gap of every open room (after a reconnect) and refreshes
-  /// the first page of rooms when the inbox is open. Failures leave the
-  /// room unsynced for the next attempt; the first one is rethrown.
+  /// the first page of every open inbox list. Failures leave the room
+  /// unsynced for the next attempt; the first one is rethrown.
   Future<void> resync() async {
     Object? firstError;
     StackTrace? firstStack;
@@ -251,11 +256,16 @@ class ChatRepository {
       }
     }
     if (_inboxRefs > 0) {
-      try {
-        await refreshRooms(search: _roomsSearch);
-      } on AppFailure catch (e, st) {
-        firstError ??= e;
-        firstStack ??= st;
+      final refreshes = _inboxResyncs.isEmpty
+          ? <Future<void> Function()>[fetchRooms]
+          : [..._inboxResyncs];
+      for (final refresh in refreshes) {
+        try {
+          await refresh();
+        } on AppFailure catch (e, st) {
+          firstError ??= e;
+          firstStack ??= st;
+        }
       }
     }
     if (firstError != null) Error.throwWithStackTrace(firstError, firstStack!);
@@ -353,6 +363,7 @@ class ChatRepository {
     _rooms.clear();
     await _inboxSub?.cancel();
     _inboxSub = null;
+    _inboxResyncs.clear();
     for (final timer in _typingTimers.values) {
       timer.cancel();
     }

@@ -19,9 +19,9 @@ part 'chat_database.g.dart';
 class ChatDatabase extends _$ChatDatabase {
   ChatDatabase(super.e);
 
-  /// 2: `media_files` (T10).
+  /// 2: `media_files` (T10). 3: `rooms.labels_json` (T14).
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -30,6 +30,9 @@ class ChatDatabase extends _$ChatDatabase {
       if (from < 2) {
         await m.createTable(mediaFiles);
         await m.createIndex(mediaLru);
+      }
+      if (from < 3) {
+        await m.addColumn(rooms, rooms.labelsJson);
       }
     },
   );

@@ -419,9 +419,12 @@ void main() {
       for (var i = 0; i < 5; i++) {
         source.seedRoom(room('room$i', i));
       }
-      expect(await repo.refreshRooms(), isTrue);
-      expect(await repo.loadMoreRooms(), isTrue);
-      expect(await repo.loadMoreRooms(), isFalse);
+      final first = await repo.fetchRooms();
+      expect(first.hasMore, isTrue);
+      final second = await repo.fetchRooms(after: first.next);
+      expect(second.hasMore, isTrue);
+      final third = await repo.fetchRooms(after: second.next);
+      expect(third.hasMore, isFalse);
       expect(await repo.watchRooms().first, hasLength(5));
 
       repo.openInbox();

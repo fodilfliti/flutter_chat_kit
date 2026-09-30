@@ -38,11 +38,11 @@ Use this package for:
 
 | Piece | Owner | Notes |
 | --- | --- | --- |
-| `ChatSource` | app | fetch pages, realtime `events`, send / edit / delete / markRead |
+| `ChatSource` | app | fetch pages, realtime `events`, send / edit / delete / markRead; or `ComposedChatSource(data:, realtime:)` |
 | `ChatUploader` | app | uploads a file, streams `UploadRunning` then one `UploadDone` |
 | `ChatUserResolver` | app | `resolve(Set<String> ids)` → names and avatars; kit batches and caches |
 | `ChatKit` | kit | one per signed-in user: cache, sync, outbox, media store |
-| `InboxController` / `ChatRoomController` | kit | created by `kit.inbox()` / `kit.room(id)`; **the page disposes them** |
+| `InboxController` / `ChatRoomController` | kit | created by `kit.inbox(filter:)` / `kit.room(id)`; **the page disposes them** |
 | `InboxView` / `ChatRoomView` | kit | complete screens; they never navigate, taps come back as callbacks |
 
 Widgets never talk to the source directly. Only the kit writes the cache.
@@ -154,10 +154,52 @@ Rules:
   `Timestamp` first).
 - Emit `Change<T>` values from `lemsa_core_kit`: `Created(item)`,
   `Updated(item)`, `Deleted(id)`.
+- **`fetchRooms(filter:)`**: apply what the query supports (types, labels,
+  unread; REST: `...filter.toQuery()`), ignore the rest. Never drop rooms
+  from a page after the query; the kit filters its cache itself.
 
 Full guides with schema, realtime mapping and uploads ship in the package:
 `doc/adapters/firestore.md`, `doc/adapters/supabase.md`,
-`doc/adapters/rest_websocket.md`.
+`doc/adapters/rest_websocket.md`, `doc/adapters/mixing.md`.
+
+## Several chat lists
+
+One controller per list, each with its own paging, search and
+`totalUnread` (tab badges):
+
+```dart
+late final _chats = context.chatKit.inbox(filter: RoomFilter.direct);
+late final _groups = context.chatKit.inbox(filter: RoomFilter.groups);
+// also: RoomFilter(labels: {'work'}), RoomFilter(excludeLabels: {'archived'}),
+//       RoomFilter(unreadOnly: true), RoomFilter(where: (room) => ...)
+// Chips over one list: _inbox.setFilter(RoomFilter.groups);
+```
+
+`ChatRoom.labels` are per-user categories from the backend
+(`"labels": [...]`).
+
+## Mixing backends
+
+`ChatSource` = `ChatDataSource` (reads, writes; mix in
+`ChatDataSourceDefaults`) + `ChatRealtime` (`events`, `setTyping`).
+
+```dart
+final api = MyRestApi(); // implements ChatDataSource
+ChatKit(
+  currentUserId: uid,
+  source: ComposedChatSource(
+    data: api,
+    realtime: SupabaseChatSource(client), // a full adapter works as realtime
+    // realtime: PollingRealtime(api),    // REST only: polls open screens
+  ),
+);
+```
+
+Both sides must use the same room / message ids and `localId`s.
+`PollingRealtime` needs soft deletes and has no typing or presence.
+Two unrelated chat systems → two `ChatKit`s, the second with
+`DriftChatCache(executorFactory: (id) => openChatDatabase('support_$id'))`
+and its own `ChatMediaStore` user id.
 
 ## Sending from code
 

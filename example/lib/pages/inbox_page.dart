@@ -62,6 +62,7 @@ class _InboxPageState extends State<InboxPage> {
       body: Column(
         children: [
           OfflineBanner(kit: widget.backend.kit),
+          _FilterChips(inbox: _inbox),
           Expanded(
             child: InboxView(
               controller: _inbox,
@@ -70,6 +71,44 @@ class _InboxPageState extends State<InboxPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// One inbox, several views of it. For lists shown side by side (tabs),
+/// create one controller per list with `kit.inbox(filter: ...)` instead.
+class _FilterChips extends StatelessWidget {
+  const _FilterChips({required this.inbox});
+
+  final InboxController inbox;
+
+  static const Map<String, RoomFilter> _filters = {
+    'All': RoomFilter.all,
+    'Chats': RoomFilter.direct,
+    'Groups': RoomFilter.groups,
+    'Unread': RoomFilter(unreadOnly: true),
+    'Friends': RoomFilter(labels: {'friends'}),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: inbox,
+      builder: (context, _) => SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          spacing: 8,
+          children: [
+            for (final MapEntry(key: label, value: filter) in _filters.entries)
+              ChoiceChip(
+                label: Text(label),
+                selected: inbox.filter == filter,
+                onSelected: (_) => inbox.setFilter(filter),
+              ),
+          ],
+        ),
       ),
     );
   }

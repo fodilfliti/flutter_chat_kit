@@ -112,6 +112,7 @@ RoomsCompanion roomToRow(ChatRoom room) {
     pinned: Value(room.pinned),
     muted: Value(room.muted),
     metadataJson: Value(encodeJson(room.metadata)),
+    labelsJson: Value(encodeJson(room.labels.toList()..sort())),
   );
 }
 
@@ -128,6 +129,7 @@ ChatRoom roomFromRow(RoomRow row, List<RoomMember> members) {
     unreadCount: row.unreadCount,
     pinned: row.pinned,
     muted: row.muted,
+    labels: readStringSet(jsonDecode(row.labelsJson)),
     metadata: decodeJson(row.metadataJson),
   );
 }

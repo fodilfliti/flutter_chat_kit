@@ -33,7 +33,7 @@ writing mappers.
 
 | Kit call | HTTP |
 | --- | --- |
-| `fetchRooms(after, limit, search)` | `GET /rooms?limit=20&after_updated_at=...&after_id=...&q=...` |
+| `fetchRooms(after, limit, search, filter)` | `GET /rooms?limit=20&after_updated_at=...&after_id=...&q=...&types=direct&labels=work&exclude_labels=archived&unread=true` |
 | `fetchMessages(roomId, before)` | `GET /rooms/{id}/messages?limit=30&before_created_at=...&before_id=...` |
 | `fetchMessages(roomId, after)` | `GET /rooms/{id}/messages?limit=30&after_created_at=...&after_id=...` |
 | `fetchAround(roomId, messageId)` | `GET /rooms/{id}/messages/{messageId}/around?limit=30` |
@@ -58,6 +58,12 @@ Server rules:
   of creating a second one.
 - The WebSocket also delivers the **sender's own** messages. The kit
   deduplicates by `localId`.
+- **Room filters are optional.** `types`, `labels` (any of),
+  `exclude_labels` and `unread` come from `RoomFilter.toQuery()`. A server
+  that ignores them still works: the kit filters on the device. Labels are
+  per user (`"labels": ["work"]` in the room JSON).
+- No WebSocket? See [mixing backends](mixing.md): keep this REST source for
+  data and use `PollingRealtime`, or Firebase / Supabase, for events.
 
 ## Errors
 
@@ -150,12 +156,14 @@ class RestChatSource implements ChatSource {
     RoomCursor? after,
     int limit = 20,
     String? search,
+    RoomFilter filter = RoomFilter.all,
   }) async => _page(
     await _call('GET', '/rooms', query: {
       'limit': '$limit',
       'after_updated_at': after?.updatedAt.toIso8601String(),
       'after_id': after?.id,
       'q': search,
+      ...filter.toQuery(),
     }),
     ChatRoom.fromJson,
   );

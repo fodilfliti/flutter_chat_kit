@@ -18,6 +18,7 @@ Build **one task per session**. Each file is self-contained: Goal, Read first, D
 | [T11](T11-composer.md) | `ChatComposer`, attachment sheet, voice record button, reply/edit banner | T08, T10 | Done |
 | [T12](T12-views.md) | `ChatAppBar`, `ChatRoomView`, `InboxView`, `RoomTile`, search | T11 | Done |
 | [T13](T13-example-docs-release.md) | Example app, adapter guides, README, SKILL.md, 0.1.0 | T12 | Done (publish pending owner) |
+| [T14](T14-room-filters-mixed-sources.md) | Several chat lists (`RoomFilter`, labels), mixed backends (`ComposedChatSource`, `PollingRealtime`) | T13 | Done |
 
 ```mermaid
 flowchart LR
@@ -35,6 +36,7 @@ flowchart LR
   T10 --> T11
   T11 --> T12[T12 views]
   T12 --> T13[T13 release]
+  T13 --> T14[T14 filters + mixed sources]
 ```
 
 T07 can run in parallel with T02–T06.

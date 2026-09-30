@@ -59,6 +59,94 @@ void main() {
       expect(room.member('me')?.role, MemberRole.owner);
       expect(room.member('nobody'), isNull);
     });
+
+    test('labels round-trip JSON and accept a single string', () {
+      final labelled = room.copyWith(labels: {'work', 'vip'});
+      expect(labelled.toJson()['labels'], ['vip', 'work']);
+      expect(ChatRoom.fromJson(labelled.toJson()), labelled);
+      expect(labelled.hasLabel('vip'), isTrue);
+      expect(room.toJson()['labels'], isNull);
+      expect(ChatRoom.fromJson(room.toJson()).labels, isEmpty);
+
+      final json = room.toJson()..['labels'] = 'work';
+      expect(ChatRoom.fromJson(json).labels, {'work'});
+    });
+  });
+
+  group('RoomFilter', () {
+    ChatRoom r(
+      String id, {
+      RoomType type = RoomType.group,
+      Set<String> labels = const {},
+      int unread = 0,
+    }) => ChatRoom(
+      id: id,
+      updatedAt: _t0,
+      type: type,
+      labels: labels,
+      unreadCount: unread,
+    );
+
+    final direct = r('d', type: RoomType.direct, unread: 1);
+    final group = r('g', labels: {'work'});
+    final channel = r('c', type: RoomType.channel, labels: {'archived'});
+
+    test('presets match by type', () {
+      expect(RoomFilter.all.isAll, isTrue);
+      expect(RoomFilter.all.apply([direct, group]), [direct, group]);
+      expect(RoomFilter.direct.apply([direct, group, channel]), [direct]);
+      expect(RoomFilter.groups.apply([direct, group, channel]), [
+        group,
+        channel,
+      ]);
+    });
+
+    test('labels, excluded labels, unread and where combine', () {
+      expect(const RoomFilter(labels: {'work'}).apply([direct, group]), [
+        group,
+      ]);
+      expect(
+        const RoomFilter(excludeLabels: {'archived'}).apply([group, channel]),
+        [group],
+      );
+      expect(const RoomFilter(unreadOnly: true).apply([direct, group]), [
+        direct,
+      ]);
+      final byId = RoomFilter(where: (room) => room.id == 'g');
+      expect(byId.isAll, isFalse);
+      expect(byId.apply([direct, group, channel]), [group]);
+      expect(
+        RoomFilter.groups.copyWith(excludeLabels: {'archived'}).apply([
+          direct,
+          group,
+          channel,
+        ]),
+        [group],
+      );
+    });
+
+    test('query parameters and equality', () {
+      expect(RoomFilter.all.toQuery(), isEmpty);
+      expect(
+        const RoomFilter(
+          types: {RoomType.group, RoomType.direct},
+          labels: {'b', 'a'},
+          excludeLabels: {'archived'},
+          unreadOnly: true,
+        ).toQuery(),
+        {
+          'types': 'direct,group',
+          'labels': 'a,b',
+          'exclude_labels': 'archived',
+          'unread': 'true',
+        },
+      );
+      final types = {RoomType.direct};
+      final built = RoomFilter(types: types);
+      expect(built, RoomFilter.direct);
+      expect(built.hashCode, RoomFilter.direct.hashCode);
+      expect(RoomFilter.direct, isNot(RoomFilter.groups));
+    });
   });
 
   group('RoomMember receipts', () {

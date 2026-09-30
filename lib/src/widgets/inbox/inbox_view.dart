@@ -76,11 +76,13 @@ class _InboxViewState extends State<InboxView> {
   }
 
   void _loadMore() {
-    if (_c.hasMore && _c.rooms.isNotEmpty) unawaited(_c.loadMore());
+    if (_c.hasMore && !_c.isLoading) unawaited(_c.loadMore());
   }
 
   /// Keeps loading while the rooms do not fill the viewport, since nothing
-  /// can scroll then. Stops after a failure so it never retries in a loop.
+  /// can scroll then (also when a filtered list is still empty because the
+  /// backend ignored the filter). Stops after a failure so it never retries
+  /// in a loop.
   void _scheduleFillCheck() {
     if (_checkScheduled) return;
     _checkScheduled = true;
@@ -188,7 +190,7 @@ class _InboxViewState extends State<InboxView> {
       }
     }
 
-    if (_c.hasMore && rooms.isNotEmpty) _scheduleFillCheck();
+    if (_c.hasMore) _scheduleFillCheck();
     return NotificationListener<ScrollNotification>(
       onNotification: _onScroll,
       child: RefreshIndicator(
@@ -257,7 +259,8 @@ class _InboxViewState extends State<InboxView> {
     final builders = widget.builders;
     final theme = ChatTheme.of(context);
     final failure = _c.failure;
-    if (!_c.hasLoadedCache || (_c.isLoading && failure == null)) {
+    final fetching = _c.isLoading || _c.isLoadingMore || _c.hasMore;
+    if (!_c.hasLoadedCache || (fetching && failure == null)) {
       const loading = Center(child: CircularProgressIndicator());
       return builders.loadingBuilder?.call(context, loading) ?? loading;
     }

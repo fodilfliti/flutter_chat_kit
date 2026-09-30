@@ -14,6 +14,10 @@ chat room and inbox UI you can customize piece by piece.
 
 - **Direct and group chats**: inbox with search, pinning, muting, unread
   badges, typing and presence; room with author names and stacked avatars.
+- **Several chat lists**: "Chats" and "Groups" tabs, labels or an unread
+  list from one backend, each with its own paging and unread count.
+- **Mix backends**: data from a REST API with realtime from Firebase,
+  Supabase or a WebSocket, or REST alone with built-in polling.
 - **Smooth scrolling at any size**: a center-anchored list that never jumps
   when older pages, newer pages or new messages arrive; jump to any old
   message (for example a reply) with a highlight.
@@ -81,7 +85,8 @@ capabilities):
 ```dart
 class MyChatSource with ChatSourceDefaults {
   @override
-  Future<ChatPage<ChatRoom>> fetchRooms({RoomCursor? after, int limit = 20, String? search}) { ... }
+  Future<ChatPage<ChatRoom>> fetchRooms({RoomCursor? after, int limit = 20,
+      String? search, RoomFilter filter = RoomFilter.all}) { ... }
 
   @override
   Future<ChatPage<Message>> fetchMessages(String roomId,
@@ -122,9 +127,41 @@ Step-by-step guides, with schema, realtime mapping and uploads:
 - [Firestore](doc/adapters/firestore.md)
 - [Supabase](doc/adapters/supabase.md)
 - [REST + WebSocket](doc/adapters/rest_websocket.md)
+- [Several chat lists and mixed backends](doc/adapters/mixing.md)
 
 Call `kit.setOnline(online: ...)` from your connectivity source. Going online
-fills the gaps of open rooms and flushes the outbox.
+fills the gaps of open rooms, refreshes open chat lists and flushes the
+outbox.
+
+### Several chat lists
+
+Create one `InboxController` per list; each has its own filter, paging,
+search and `totalUnread`:
+
+```dart
+final chats = kit.inbox(filter: RoomFilter.direct);
+final groups = kit.inbox(filter: RoomFilter.groups);
+final work = kit.inbox(filter: const RoomFilter(labels: {'work'}));
+// Chips over one list: inbox.setFilter(const RoomFilter(unreadOnly: true));
+```
+
+The filter reaches `fetchRooms` so the backend can apply it, and the kit
+filters its cache again, so a backend that ignores it still works.
+
+### Mixing backends
+
+`ChatSource` is a `ChatDataSource` (reads and writes) plus a
+`ChatRealtime` (events and typing). Take each half from a different
+service:
+
+```dart
+final api = MyRestApi(); // implements ChatDataSource
+final source = ComposedChatSource(
+  data: api,
+  realtime: SupabaseChatSource(supabase), // or Firestore, a WebSocket, ...
+  // realtime: PollingRealtime(api),      // REST only, no realtime service
+);
+```
 
 ## Platform setup
 

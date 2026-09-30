@@ -209,6 +209,11 @@ InboxView(
 `RoomContext` gives the builder the `room`, the resolved direct `peer`, the
 `lastMessageAuthor`, `presence`, and `typingNames`.
 
+Tabs, chips and labels (for example an "Archived" list) are filters on the
+controller: `kit.inbox(filter: RoomFilter.groups)` or
+`inbox.setFilter(const RoomFilter(labels: {'archived'}))`. See
+[several chat lists](adapters/mixing.md#several-chat-lists-from-one-backend).
+
 ## Text and translation
 
 `ChatStrings` holds every visible text, in English by default. Plural and

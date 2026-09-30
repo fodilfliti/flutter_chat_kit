@@ -118,6 +118,18 @@ class $RoomsTable extends Rooms with TableInfo<$RoomsTable, RoomRow> {
     requiredDuringInsert: false,
     defaultValue: const Constant('{}'),
   );
+  static const VerificationMeta _labelsJsonMeta = const VerificationMeta(
+    'labelsJson',
+  );
+  @override
+  late final GeneratedColumn<String> labelsJson = GeneratedColumn<String>(
+    'labels_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -130,6 +142,7 @@ class $RoomsTable extends Rooms with TableInfo<$RoomsTable, RoomRow> {
     pinned,
     muted,
     metadataJson,
+    labelsJson,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -215,6 +228,12 @@ class $RoomsTable extends Rooms with TableInfo<$RoomsTable, RoomRow> {
         ),
       );
     }
+    if (data.containsKey('labels_json')) {
+      context.handle(
+        _labelsJsonMeta,
+        labelsJson.isAcceptableOrUnknown(data['labels_json']!, _labelsJsonMeta),
+      );
+    }
     return context;
   }
 
@@ -264,6 +283,10 @@ class $RoomsTable extends Rooms with TableInfo<$RoomsTable, RoomRow> {
         DriftSqlType.string,
         data['${effectivePrefix}metadata_json'],
       )!,
+      labelsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}labels_json'],
+      )!,
     );
   }
 
@@ -284,6 +307,9 @@ class RoomRow extends DataClass implements Insertable<RoomRow> {
   final bool pinned;
   final bool muted;
   final String metadataJson;
+
+  /// `ChatRoom.labels` as a sorted JSON list.
+  final String labelsJson;
   const RoomRow({
     required this.id,
     required this.type,
@@ -295,6 +321,7 @@ class RoomRow extends DataClass implements Insertable<RoomRow> {
     required this.pinned,
     required this.muted,
     required this.metadataJson,
+    required this.labelsJson,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -315,6 +342,7 @@ class RoomRow extends DataClass implements Insertable<RoomRow> {
     map['pinned'] = Variable<bool>(pinned);
     map['muted'] = Variable<bool>(muted);
     map['metadata_json'] = Variable<String>(metadataJson);
+    map['labels_json'] = Variable<String>(labelsJson);
     return map;
   }
 
@@ -336,6 +364,7 @@ class RoomRow extends DataClass implements Insertable<RoomRow> {
       pinned: Value(pinned),
       muted: Value(muted),
       metadataJson: Value(metadataJson),
+      labelsJson: Value(labelsJson),
     );
   }
 
@@ -355,6 +384,7 @@ class RoomRow extends DataClass implements Insertable<RoomRow> {
       pinned: serializer.fromJson<bool>(json['pinned']),
       muted: serializer.fromJson<bool>(json['muted']),
       metadataJson: serializer.fromJson<String>(json['metadataJson']),
+      labelsJson: serializer.fromJson<String>(json['labelsJson']),
     );
   }
   @override
@@ -371,6 +401,7 @@ class RoomRow extends DataClass implements Insertable<RoomRow> {
       'pinned': serializer.toJson<bool>(pinned),
       'muted': serializer.toJson<bool>(muted),
       'metadataJson': serializer.toJson<String>(metadataJson),
+      'labelsJson': serializer.toJson<String>(labelsJson),
     };
   }
 
@@ -385,6 +416,7 @@ class RoomRow extends DataClass implements Insertable<RoomRow> {
     bool? pinned,
     bool? muted,
     String? metadataJson,
+    String? labelsJson,
   }) => RoomRow(
     id: id ?? this.id,
     type: type ?? this.type,
@@ -398,6 +430,7 @@ class RoomRow extends DataClass implements Insertable<RoomRow> {
     pinned: pinned ?? this.pinned,
     muted: muted ?? this.muted,
     metadataJson: metadataJson ?? this.metadataJson,
+    labelsJson: labelsJson ?? this.labelsJson,
   );
   RoomRow copyWithCompanion(RoomsCompanion data) {
     return RoomRow(
@@ -417,6 +450,9 @@ class RoomRow extends DataClass implements Insertable<RoomRow> {
       metadataJson: data.metadataJson.present
           ? data.metadataJson.value
           : this.metadataJson,
+      labelsJson: data.labelsJson.present
+          ? data.labelsJson.value
+          : this.labelsJson,
     );
   }
 
@@ -432,7 +468,8 @@ class RoomRow extends DataClass implements Insertable<RoomRow> {
           ..write('updatedAt: $updatedAt, ')
           ..write('pinned: $pinned, ')
           ..write('muted: $muted, ')
-          ..write('metadataJson: $metadataJson')
+          ..write('metadataJson: $metadataJson, ')
+          ..write('labelsJson: $labelsJson')
           ..write(')'))
         .toString();
   }
@@ -449,6 +486,7 @@ class RoomRow extends DataClass implements Insertable<RoomRow> {
     pinned,
     muted,
     metadataJson,
+    labelsJson,
   );
   @override
   bool operator ==(Object other) =>
@@ -463,7 +501,8 @@ class RoomRow extends DataClass implements Insertable<RoomRow> {
           other.updatedAt == this.updatedAt &&
           other.pinned == this.pinned &&
           other.muted == this.muted &&
-          other.metadataJson == this.metadataJson);
+          other.metadataJson == this.metadataJson &&
+          other.labelsJson == this.labelsJson);
 }
 
 class RoomsCompanion extends UpdateCompanion<RoomRow> {
@@ -477,6 +516,7 @@ class RoomsCompanion extends UpdateCompanion<RoomRow> {
   final Value<bool> pinned;
   final Value<bool> muted;
   final Value<String> metadataJson;
+  final Value<String> labelsJson;
   final Value<int> rowid;
   const RoomsCompanion({
     this.id = const Value.absent(),
@@ -489,6 +529,7 @@ class RoomsCompanion extends UpdateCompanion<RoomRow> {
     this.pinned = const Value.absent(),
     this.muted = const Value.absent(),
     this.metadataJson = const Value.absent(),
+    this.labelsJson = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   RoomsCompanion.insert({
@@ -502,6 +543,7 @@ class RoomsCompanion extends UpdateCompanion<RoomRow> {
     this.pinned = const Value.absent(),
     this.muted = const Value.absent(),
     this.metadataJson = const Value.absent(),
+    this.labelsJson = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        type = Value(type),
@@ -517,6 +559,7 @@ class RoomsCompanion extends UpdateCompanion<RoomRow> {
     Expression<bool>? pinned,
     Expression<bool>? muted,
     Expression<String>? metadataJson,
+    Expression<String>? labelsJson,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -530,6 +573,7 @@ class RoomsCompanion extends UpdateCompanion<RoomRow> {
       if (pinned != null) 'pinned': pinned,
       if (muted != null) 'muted': muted,
       if (metadataJson != null) 'metadata_json': metadataJson,
+      if (labelsJson != null) 'labels_json': labelsJson,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -545,6 +589,7 @@ class RoomsCompanion extends UpdateCompanion<RoomRow> {
     Value<bool>? pinned,
     Value<bool>? muted,
     Value<String>? metadataJson,
+    Value<String>? labelsJson,
     Value<int>? rowid,
   }) {
     return RoomsCompanion(
@@ -558,6 +603,7 @@ class RoomsCompanion extends UpdateCompanion<RoomRow> {
       pinned: pinned ?? this.pinned,
       muted: muted ?? this.muted,
       metadataJson: metadataJson ?? this.metadataJson,
+      labelsJson: labelsJson ?? this.labelsJson,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -595,6 +641,9 @@ class RoomsCompanion extends UpdateCompanion<RoomRow> {
     if (metadataJson.present) {
       map['metadata_json'] = Variable<String>(metadataJson.value);
     }
+    if (labelsJson.present) {
+      map['labels_json'] = Variable<String>(labelsJson.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -614,6 +663,7 @@ class RoomsCompanion extends UpdateCompanion<RoomRow> {
           ..write('pinned: $pinned, ')
           ..write('muted: $muted, ')
           ..write('metadataJson: $metadataJson, ')
+          ..write('labelsJson: $labelsJson, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3912,6 +3962,7 @@ typedef $$RoomsTableCreateCompanionBuilder =
       Value<bool> pinned,
       Value<bool> muted,
       Value<String> metadataJson,
+      Value<String> labelsJson,
       Value<int> rowid,
     });
 typedef $$RoomsTableUpdateCompanionBuilder =
@@ -3926,6 +3977,7 @@ typedef $$RoomsTableUpdateCompanionBuilder =
       Value<bool> pinned,
       Value<bool> muted,
       Value<String> metadataJson,
+      Value<String> labelsJson,
       Value<int> rowid,
     });
 
@@ -3984,6 +4036,11 @@ class $$RoomsTableFilterComposer extends Composer<_$ChatDatabase, $RoomsTable> {
 
   ColumnFilters<String> get metadataJson => $composableBuilder(
     column: $table.metadataJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get labelsJson => $composableBuilder(
+    column: $table.labelsJson,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4046,6 +4103,11 @@ class $$RoomsTableOrderingComposer
     column: $table.metadataJson,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get labelsJson => $composableBuilder(
+    column: $table.labelsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$RoomsTableAnnotationComposer
@@ -4092,6 +4154,11 @@ class $$RoomsTableAnnotationComposer
     column: $table.metadataJson,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get labelsJson => $composableBuilder(
+    column: $table.labelsJson,
+    builder: (column) => column,
+  );
 }
 
 class $$RoomsTableTableManager
@@ -4132,6 +4199,7 @@ class $$RoomsTableTableManager
                 Value<bool> pinned = const Value.absent(),
                 Value<bool> muted = const Value.absent(),
                 Value<String> metadataJson = const Value.absent(),
+                Value<String> labelsJson = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => RoomsCompanion(
                 id: id,
@@ -4144,6 +4212,7 @@ class $$RoomsTableTableManager
                 pinned: pinned,
                 muted: muted,
                 metadataJson: metadataJson,
+                labelsJson: labelsJson,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4158,6 +4227,7 @@ class $$RoomsTableTableManager
                 Value<bool> pinned = const Value.absent(),
                 Value<bool> muted = const Value.absent(),
                 Value<String> metadataJson = const Value.absent(),
+                Value<String> labelsJson = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => RoomsCompanion.insert(
                 id: id,
@@ -4170,6 +4240,7 @@ class $$RoomsTableTableManager
                 pinned: pinned,
                 muted: muted,
                 metadataJson: metadataJson,
+                labelsJson: labelsJson,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

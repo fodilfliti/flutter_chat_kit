@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_chat_kit/src/controllers/chat_kit.dart';
 import 'package:flutter_chat_kit/src/models/chat_room.dart';
 import 'package:flutter_chat_kit/src/models/chat_user.dart';
+import 'package:flutter_chat_kit/src/models/message_cursor.dart';
 import 'package:flutter_chat_kit/src/models/presence.dart';
+import 'package:flutter_chat_kit/src/models/room_filter.dart';
 import 'package:flutter_chat_kit/src/models/typing.dart';
 import 'package:flutter_chat_kit/src/sync/chat_repository.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
@@ -12,9 +14,14 @@ import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 /// State of the room list: cached rooms at once, then the first page from
 /// the source, search, paging, pin and mute. Create with `ChatKit.inbox()`
 /// and dispose when the screen goes away.
+///
+/// Several controllers can live side by side (a "Chats" tab and a "Groups"
+/// tab): each has its own [filter], search, paging and [totalUnread], and
+/// all of them share the cache and one inbox event subscription.
 class InboxController extends ChangeNotifier {
-  InboxController(this.kit) : _repository = kit.repository {
-    _repository.openInbox();
+  InboxController(this.kit, {this._filter = RoomFilter.all})
+    : _repository = kit.repository {
+    _repository.openInbox(onResync: _resync);
     _presenceSub = _repository.presenceChanges.listen(_onPresence);
     _typingSub = _repository.typingChanges.listen(_onTyping);
     _watch();
@@ -36,8 +43,10 @@ class InboxController extends ChangeNotifier {
   bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _hasMore = true;
+  RoomCursor? _next;
   AppFailure? _failure;
   String _query = '';
+  RoomFilter _filter;
   final Map<String, ChatUser> _users = {};
   final Set<String> _requestedUsers = {};
 
@@ -57,11 +66,25 @@ class InboxController extends ChangeNotifier {
   /// The last refresh or paging failure, cleared by the next success.
   AppFailure? get failure => _failure;
 
-  /// Unread messages over all rooms, muted rooms excluded.
+  /// Unread messages over the rooms of this list, muted rooms excluded.
   int get totalUnread =>
       _rooms.fold(0, (sum, room) => room.muted ? sum : sum + room.unreadCount);
 
   String get query => _query;
+
+  /// Which rooms this list shows. Applied to the cache, and passed to
+  /// `ChatDataSource.fetchRooms` so the backend can filter too.
+  RoomFilter get filter => _filter;
+
+  /// Shows only rooms matching [filter] (for example tabs or chips), then
+  /// refetches the first page.
+  void setFilter(RoomFilter filter) {
+    if (filter == _filter) return;
+    _filter = filter;
+    _watch();
+    notifyListeners();
+    unawaited(refresh());
+  }
 
   /// Peers of direct rooms and authors of last messages, resolved lazily.
   Map<String, ChatUser> get users => _users;
@@ -95,18 +118,14 @@ class InboxController extends ChangeNotifier {
     });
   }
 
-  /// Fetches the first page of rooms (for the current search).
+  /// Fetches the first page of rooms (for the current search and filter).
   Future<void> refresh() async {
     final seq = ++_refreshSeq;
     _isLoading = true;
     _notify();
     try {
-      final hasMore = await _repository.refreshRooms(
-        search: _query.isEmpty ? null : _query,
-      );
-      if (seq != _refreshSeq) return;
-      _hasMore = hasMore;
-      _failure = null;
+      await _fetchFirstPage(seq);
+      if (seq == _refreshSeq) _failure = null;
     } on AppFailure catch (failure) {
       if (seq == _refreshSeq) _failure = failure;
     } on Object {
@@ -123,15 +142,49 @@ class InboxController extends ChangeNotifier {
   /// Fetches the next page of rooms. Ignored while loading or at the end.
   Future<void> loadMore() async {
     if (_isLoadingMore || _isLoading || !_hasMore) return;
+    final seq = _refreshSeq;
     _isLoadingMore = true;
     _notify();
     try {
-      _hasMore = await _repository.loadMoreRooms();
+      final page = await _repository.fetchRooms(
+        after: _next,
+        search: _searchOrNull,
+        filter: _filter,
+      );
+      // A refresh (new search or filter) started meanwhile: stale page.
+      if (seq != _refreshSeq) return;
+      _hasMore = page.hasMore;
+      _next = page.next;
       _failure = null;
     } on AppFailure catch (failure) {
-      _failure = failure;
+      if (seq == _refreshSeq) _failure = failure;
+    } on Object {
+      if (!_disposed) rethrow;
     } finally {
       _isLoadingMore = false;
+      _notify();
+    }
+  }
+
+  String? get _searchOrNull => _query.isEmpty ? null : _query;
+
+  Future<void> _fetchFirstPage(int seq) async {
+    final page = await _repository.fetchRooms(
+      search: _searchOrNull,
+      filter: _filter,
+    );
+    if (seq != _refreshSeq) return;
+    _hasMore = page.hasMore;
+    _next = page.next;
+  }
+
+  /// Called by `ChatRepository.resync` after a reconnect; failures reach
+  /// the caller of `ChatKit.resync`.
+  Future<void> _resync() async {
+    final seq = _refreshSeq;
+    await _fetchFirstPage(seq);
+    if (seq == _refreshSeq) {
+      _failure = null;
       _notify();
     }
   }
@@ -156,7 +209,7 @@ class InboxController extends ChangeNotifier {
   void _watch() {
     unawaited(_roomsSub?.cancel());
     _roomsSub = _repository
-        .watchRooms(search: _query.isEmpty ? null : _query)
+        .watchRooms(search: _searchOrNull, filter: _filter)
         .listen(_onRooms);
   }
 
@@ -220,7 +273,7 @@ class InboxController extends ChangeNotifier {
     unawaited(_roomsSub?.cancel());
     unawaited(_presenceSub?.cancel());
     unawaited(_typingSub?.cancel());
-    if (kit.isOpen) unawaited(_repository.closeInbox());
+    if (kit.isOpen) unawaited(_repository.closeInbox(onResync: _resync));
     super.dispose();
   }
 }

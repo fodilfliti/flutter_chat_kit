@@ -34,6 +34,7 @@ class ChatRoom {
     this.unreadCount = 0,
     this.pinned = false,
     this.muted = false,
+    this.labels = const {},
     this.metadata = const {},
   });
 
@@ -55,6 +56,7 @@ class ChatRoom {
       unreadCount: readInt(json['unread_count']) ?? 0,
       pinned: readBool(json['pinned']),
       muted: readBool(json['muted']),
+      labels: readStringSet(json['labels']),
       metadata: readMap(json['metadata']),
     );
   }
@@ -73,9 +75,15 @@ class ChatRoom {
   final int unreadCount;
   final bool pinned;
   final bool muted;
+
+  /// App-defined categories of this room for the current user, such as
+  /// `archived`, `selling` or `support`. `RoomFilter.labels` selects them.
+  final Set<String> labels;
   final Map<String, Object?> metadata;
 
   bool get isDirect => type == RoomType.direct;
+
+  bool hasLabel(String label) => labels.contains(label);
 
   RoomCursor get cursor => RoomCursor(updatedAt, id);
 
@@ -100,6 +108,7 @@ class ChatRoom {
     int? unreadCount,
     bool? pinned,
     bool? muted,
+    Set<String>? labels,
     Map<String, Object?>? metadata,
   }) {
     return ChatRoom(
@@ -113,6 +122,7 @@ class ChatRoom {
       unreadCount: unreadCount ?? this.unreadCount,
       pinned: pinned ?? this.pinned,
       muted: muted ?? this.muted,
+      labels: labels ?? this.labels,
       metadata: metadata ?? this.metadata,
     );
   }
@@ -130,6 +140,7 @@ class ChatRoom {
       'unread_count': unreadCount,
       'pinned': pinned,
       'muted': muted,
+      'labels': labels.isEmpty ? null : (labels.toList()..sort()),
       'metadata': metadata.isEmpty ? null : metadata,
     });
   }
@@ -147,6 +158,7 @@ class ChatRoom {
         other.unreadCount == unreadCount &&
         other.pinned == pinned &&
         other.muted == muted &&
+        deepEquality.equals(other.labels, labels) &&
         deepEquality.equals(other.metadata, metadata);
   }
 
@@ -162,6 +174,7 @@ class ChatRoom {
     unreadCount,
     pinned,
     muted,
+    deepEquality.hash(labels),
     deepEquality.hash(metadata),
   );
 
