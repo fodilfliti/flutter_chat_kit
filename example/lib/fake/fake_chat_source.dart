@@ -10,15 +10,37 @@ import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 ///
 /// A real app implements `ChatSource` the same way over Firestore,
 /// Supabase or REST (see `doc/adapters/`).
+///
+/// [me] is the profile the source acts as: the personal profile, or the
+/// shop (a business profile answered by several staff members).
 class FakeChatSource with ChatSourceDefaults implements ChatSource {
-  FakeChatSource({Random? random}) : _random = random ?? Random() {
+  FakeChatSource({Random? random, this.me = personalId})
+    : _random = random ?? Random() {
     _seed();
   }
 
-  static const me = 'me';
+  /// The signed-in account's personal profile; also its staff id when it
+  /// answers for the shop.
+  static const personalId = 'me';
+  static const shopId = 'shop';
+
+  final String me;
 
   static const users = <String, ChatUser>{
-    me: ChatUser(id: me, name: 'You'),
+    personalId: ChatUser(id: personalId, name: 'You'),
+    shopId: ChatUser(
+      id: shopId,
+      name: 'Lemsa Shop',
+      avatarUrl: 'https://picsum.photos/seed/lemsa-shop/150',
+      metadata: {'business': true},
+    ),
+    'sara': ChatUser(id: 'sara', name: 'Sara (staff)'),
+    'omar': ChatUser(
+      id: 'omar',
+      name: 'Omar Khelifi',
+      avatarUrl: 'https://i.pravatar.cc/150?u=omar',
+    ),
+    'nadia': ChatUser(id: 'nadia', name: 'Nadia Saidi'),
     'amina': ChatUser(
       id: 'amina',
       name: 'Amina Haddad',
@@ -371,6 +393,7 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
           localId: id,
           roomId: roomId,
           authorId: peer,
+          sentBy: peer == shopId ? 'sara' : null,
           createdAt: _now(),
           text: _replyTo(sent),
           replyToId: _random.nextInt(4) == 0 ? sent.id : null,
@@ -407,13 +430,6 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
     final now = _now();
     DateTime ago(Duration d) => now.subtract(d);
 
-    _presence['amina'] = const Presence(userId: 'amina', isOnline: true);
-    _presence['karim'] = Presence(
-      userId: 'karim',
-      isOnline: false,
-      lastSeenAt: ago(const Duration(minutes: 25)),
-    );
-
     var n = 0;
     Message text(
       String room,
@@ -421,6 +437,7 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
       Duration before,
       String body, {
       String? replyTo,
+      String? sentBy,
     }) {
       final id = '$room-${++n}';
       return TextMessage(
@@ -428,11 +445,108 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
         localId: id,
         roomId: room,
         authorId: author,
+        sentBy: sentBy,
         createdAt: ago(before),
         text: body,
         replyToId: replyTo,
       );
     }
+
+    ChatRoom room(
+      String id,
+      List<String> members, {
+      RoomType type = RoomType.direct,
+      String? title,
+      int unread = 0,
+      bool pinned = false,
+      bool muted = false,
+      Set<String> labels = const {},
+    }) {
+      final messages = _messages[id]!;
+      return ChatRoom(
+        id: id,
+        type: type,
+        title: title,
+        labels: labels,
+        updatedAt: messages.first.createdAt,
+        lastMessage: messages.first,
+        unreadCount: unread,
+        pinned: pinned,
+        muted: muted,
+        members: [
+          for (final m in [me, ...members])
+            RoomMember(
+              userId: m,
+              lastReadAt: messages.first.createdAt,
+              lastDeliveredAt: messages.first.createdAt,
+            ),
+        ],
+      );
+    }
+
+    if (me == shopId) {
+      // The shop's customers. Replies are signed by the staff member who
+      // wrote them (`sentBy`): Sara, or you when you answer for the shop.
+      _messages
+        ..['omar'] = _newestFirst([
+          text(
+            'omar',
+            'omar',
+            const Duration(hours: 5),
+            'Hi, is the blue jacket still available?',
+          ),
+          text(
+            'omar',
+            shopId,
+            const Duration(hours: 4, minutes: 50),
+            'Hello Omar! Yes, in M and L.',
+            sentBy: 'sara',
+          ),
+          text(
+            'omar',
+            'omar',
+            const Duration(hours: 4, minutes: 40),
+            'Great, I will take an M',
+          ),
+          text(
+            'omar',
+            shopId,
+            const Duration(hours: 1),
+            'Reserved for you 👍',
+            sentBy: personalId,
+          ),
+          text('omar', 'omar', const Duration(minutes: 5), 'Thanks! 🙏'),
+        ])
+        ..['nadia'] = _newestFirst([
+          text(
+            'nadia',
+            'nadia',
+            const Duration(minutes: 30),
+            'What time do you open tomorrow?',
+          ),
+          text(
+            'nadia',
+            shopId,
+            const Duration(minutes: 28),
+            'From 9am to 7pm 🙂',
+            sentBy: 'sara',
+          ),
+        ]);
+      for (final r in [
+        room('omar', ['omar'], unread: 1),
+        room('nadia', ['nadia']),
+      ]) {
+        _rooms[r.id] = r;
+      }
+      return;
+    }
+
+    _presence['amina'] = const Presence(userId: 'amina', isOnline: true);
+    _presence['karim'] = Presence(
+      userId: 'karim',
+      isOnline: false,
+      lastSeenAt: ago(const Duration(minutes: 25)),
+    );
 
     final amina = <Message>[
       text(
@@ -545,47 +659,35 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
       ),
     ];
 
+    // You as a customer of a business: its replies come from the shop, and
+    // the staff member who wrote them stays hidden.
+    final shop = <Message>[
+      text(
+        shopId,
+        me,
+        const Duration(days: 2, hours: 1),
+        'Hi! Do you deliver to Oran?',
+      ),
+      text(
+        shopId,
+        shopId,
+        const Duration(days: 2),
+        'Hello! Yes, delivery takes 2 to 3 days.',
+        sentBy: 'sara',
+      ),
+    ];
+
     _messages
       ..['amina'] = _newestFirst(amina)
       ..['karim'] = _newestFirst(karim)
       ..['trip'] = _newestFirst(trip)
+      ..[shopId] = _newestFirst(shop)
       ..['history'] = _history(now);
-
-    ChatRoom room(
-      String id,
-      List<String> members, {
-      RoomType type = RoomType.direct,
-      String? title,
-      int unread = 0,
-      bool pinned = false,
-      bool muted = false,
-      Set<String> labels = const {},
-    }) {
-      final messages = _messages[id]!;
-      return ChatRoom(
-        id: id,
-        type: type,
-        title: title,
-        labels: labels,
-        updatedAt: messages.first.createdAt,
-        lastMessage: messages.first,
-        unreadCount: unread,
-        pinned: pinned,
-        muted: muted,
-        members: [
-          for (final m in [me, ...members])
-            RoomMember(
-              userId: m,
-              lastReadAt: messages.first.createdAt,
-              lastDeliveredAt: messages.first.createdAt,
-            ),
-        ],
-      );
-    }
 
     for (final r in [
       room('amina', ['amina'], unread: 2, labels: {'friends'}),
       room('karim', ['karim'], muted: true),
+      room(shopId, [shopId]),
       room(
         'trip',
         ['amina', 'karim', 'lina'],
@@ -616,7 +718,7 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
   /// 5 000 messages, one every few minutes, with replies to older ones so
   /// "jump to replied message" has something to fetch.
   List<Message> _history(DateTime now) {
-    const authors = [me, 'amina', 'karim', 'sam'];
+    final authors = [me, 'amina', 'karim', 'sam'];
     const lines = [
       'Morning!',
       'Did anyone see the release notes?',

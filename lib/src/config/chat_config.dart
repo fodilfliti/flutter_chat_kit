@@ -22,6 +22,7 @@ class ChatConfig {
     this.groupingWindow = const Duration(minutes: 3),
     this.showAvatarsInDirect = false,
     this.showAuthorNamesInGroup = true,
+    this.showSentBy = true,
     this.swipeToReply = true,
     this.enableReactions = true,
     this.quickReactions = const ['👍', '❤️', '😂', '😮', '😢', '🙏'],
@@ -50,6 +51,11 @@ class ChatConfig {
   final Duration groupingWindow;
   final bool showAvatarsInDirect;
   final bool showAuthorNamesInGroup;
+
+  /// On a shared business profile, show the colleague's name above the
+  /// messages they sent (`Message.sentBy`). Customers never see it: for
+  /// them the message is from the business.
+  final bool showSentBy;
   final bool swipeToReply;
   final bool enableReactions;
   final List<String> quickReactions;
@@ -89,6 +95,7 @@ class ChatConfig {
     Duration? groupingWindow,
     bool? showAvatarsInDirect,
     bool? showAuthorNamesInGroup,
+    bool? showSentBy,
     bool? swipeToReply,
     bool? enableReactions,
     List<String>? quickReactions,
@@ -113,6 +120,7 @@ class ChatConfig {
       showAvatarsInDirect: showAvatarsInDirect ?? this.showAvatarsInDirect,
       showAuthorNamesInGroup:
           showAuthorNamesInGroup ?? this.showAuthorNamesInGroup,
+      showSentBy: showSentBy ?? this.showSentBy,
       swipeToReply: swipeToReply ?? this.swipeToReply,
       enableReactions: enableReactions ?? this.enableReactions,
       quickReactions: quickReactions ?? this.quickReactions,

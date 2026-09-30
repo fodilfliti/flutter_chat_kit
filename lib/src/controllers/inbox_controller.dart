@@ -86,7 +86,8 @@ class InboxController extends ChangeNotifier {
     unawaited(refresh());
   }
 
-  /// Peers of direct rooms and authors of last messages, resolved lazily.
+  /// Peers of direct rooms and authors (and staff senders) of last messages,
+  /// resolved lazily.
   Map<String, ChatUser> get users => _users;
 
   Presence? presenceOf(String userId) => _repository.presence(userId);
@@ -221,7 +222,8 @@ class InboxController extends ChangeNotifier {
     for (final room in rooms) {
       final peer = room.otherUserId(currentUserId);
       final author = room.lastMessage?.authorId;
-      for (final id in [?peer, ?author]) {
+      final sentBy = author == currentUserId ? room.lastMessage?.sentBy : null;
+      for (final id in [?peer, ?author, ?sentBy]) {
         if (id != currentUserId && _requestedUsers.add(id)) missing.add(id);
       }
     }

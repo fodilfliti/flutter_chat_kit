@@ -30,7 +30,8 @@ class MessageRow extends StatelessWidget {
   /// Drawn next to the last (newest) message of a group.
   final Widget? avatar;
 
-  /// Drawn above the first message of a group.
+  /// Drawn above the first message of a group: the author in groups, or the
+  /// colleague who answered for a shared business profile.
   final Widget? authorName;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
@@ -60,7 +61,9 @@ class MessageRow extends StatelessWidget {
         children: [
           if (name != null)
             Padding(
-              padding: const EdgeInsetsDirectional.only(start: 4, bottom: 2),
+              padding: mine
+                  ? const EdgeInsetsDirectional.only(end: 4, bottom: 2)
+                  : const EdgeInsetsDirectional.only(start: 4, bottom: 2),
               child: name,
             ),
           ConstrainedBox(

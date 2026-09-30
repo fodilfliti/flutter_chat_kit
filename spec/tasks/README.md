@@ -19,6 +19,7 @@ Build **one task per session**. Each file is self-contained: Goal, Read first, D
 | [T12](T12-views.md) | `ChatAppBar`, `ChatRoomView`, `InboxView`, `RoomTile`, search | T11 | Done |
 | [T13](T13-example-docs-release.md) | Example app, adapter guides, README, SKILL.md, 0.1.0 | T12 | Done (publish pending owner) |
 | [T14](T14-room-filters-mixed-sources.md) | Several chat lists (`RoomFilter`, labels), mixed backends (`ComposedChatSource`, `PollingRealtime`) | T13 | Done |
+| [T15](T15-profiles-business.md) | Profiles and business accounts (`ChatProfileSwitcher`, `Message.sentBy`, staff labels) | T14 | Done |
 
 ```mermaid
 flowchart LR
@@ -37,6 +38,7 @@ flowchart LR
   T11 --> T12[T12 views]
   T12 --> T13[T13 release]
   T13 --> T14[T14 filters + mixed sources]
+  T14 --> T15[T15 profiles + business]
 ```
 
 T07 can run in parallel with T02–T06.

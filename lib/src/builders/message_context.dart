@@ -18,8 +18,9 @@ enum GroupPosition {
 
   /// Position of [message] given its chronological neighbours.
   ///
-  /// Two messages group when they share an author, fall on the same local
-  /// day, are at most [window] apart, and neither is a [SystemMessage].
+  /// Two messages group when they share an author (and staff sender), fall
+  /// on the same local day, are at most [window] apart, and neither is a
+  /// [SystemMessage].
   static GroupPosition of(
     Message message, {
     required Duration window,
@@ -39,6 +40,7 @@ enum GroupPosition {
   static bool _groups(Message older, Message newer, Duration window) {
     if (older is SystemMessage || newer is SystemMessage) return false;
     if (older.authorId != newer.authorId) return false;
+    if (older.sentBy != newer.sentBy) return false;
     final a = older.createdAt.toLocal();
     final b = newer.createdAt.toLocal();
     if (a.year != b.year || a.month != b.month || a.day != b.day) {
@@ -59,6 +61,8 @@ class MessageContext {
     required this.index,
     required this.uploadProgress,
     this.author,
+    this.agentId,
+    this.sender,
     this.room,
     this.repliedTo,
     this.repliedToAuthor,
@@ -74,6 +78,15 @@ class MessageContext {
 
   /// Resolved author; null until the user resolver answers.
   final ChatUser? author;
+
+  /// `ChatKit.agentId`: the staff member using a shared business profile.
+  final String? agentId;
+
+  /// The staff member in `Message.sentBy`, once resolved.
+  final ChatUser? sender;
+
+  /// Sent as the current profile. For a shared business profile this
+  /// includes messages written by colleagues; see [isSentByMe].
   final bool isMine;
   final GroupPosition groupPosition;
 
@@ -108,4 +121,14 @@ class MessageContext {
   MessageStatus get status => displayStatus ?? message.status;
 
   bool get isGroupRoom => room != null && !room!.isDirect;
+
+  /// [isMine] and written by this person, not by a colleague sharing the
+  /// profile. Only such messages can be edited.
+  bool get isSentByMe {
+    final sentBy = message.sentBy;
+    return isMine && (sentBy == null || sentBy == agentId);
+  }
+
+  /// [isMine] but written by another staff member of the business profile.
+  bool get isSentByColleague => isMine && !isSentByMe;
 }

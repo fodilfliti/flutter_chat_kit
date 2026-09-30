@@ -37,7 +37,8 @@ class RoomTile extends StatelessWidget {
   final double avatarSize;
 
   /// The preview line of [room]'s last message, prefixed with its author
-  /// ("You" or a group member).
+  /// ("You", a group member, or the colleague who answered for a business
+  /// profile).
   static String previewOf(
     RoomContext room,
     ChatStrings strings, {
@@ -53,7 +54,13 @@ class RoomTile extends StatelessWidget {
     }
     if (last is SystemMessage || last.isDeleted) return text;
     if (room.lastMessageIsMine) {
-      return strings.previewWithAuthor(strings.you, text);
+      final colleague = room.lastMessageSentByColleague
+          ? room.lastMessageSender?.name
+          : null;
+      return strings.previewWithAuthor(
+        colleague == null || colleague.isEmpty ? strings.you : colleague,
+        text,
+      );
     }
     final author = room.lastMessageAuthor?.name;
     if (!room.room.isDirect && author != null && author.isNotEmpty) {

@@ -42,6 +42,7 @@ class _InboxPageState extends State<InboxPage> {
           },
         ),
         actions: [
+          const ChatProfileMenuButton(strings: exampleStrings),
           ConnectionButton(backend: widget.backend),
           StatefulBuilder(
             builder: (context, setMenuState) => PopupMenuButton<String>(

@@ -13,8 +13,10 @@ class RoomContext {
     required this.room,
     required this.currentUserId,
     required this.index,
+    this.agentId,
     this.peer,
     this.lastMessageAuthor,
+    this.lastMessageSender,
     this.presence,
     this.typingNames = const [],
   });
@@ -23,9 +25,16 @@ class RoomContext {
   final String currentUserId;
   final int index;
 
+  /// `ChatKit.agentId`: the staff member using a shared business profile.
+  final String? agentId;
+
   /// The other member of a direct room, once resolved.
   final ChatUser? peer;
   final ChatUser? lastMessageAuthor;
+
+  /// The staff member who sent the last message (`Message.sentBy`), once
+  /// resolved.
+  final ChatUser? lastMessageSender;
 
   /// Presence of [peer], when the source reports it.
   final Presence? presence;
@@ -38,6 +47,12 @@ class RoomContext {
   bool get hasUnread => room.unreadCount > 0;
 
   bool get lastMessageIsMine => room.lastMessage?.authorId == currentUserId;
+
+  /// The last message was sent for this profile by another staff member.
+  bool get lastMessageSentByColleague {
+    final sentBy = room.lastMessage?.sentBy;
+    return lastMessageIsMine && sentBy != null && sentBy != agentId;
+  }
 }
 
 /// Wraps or replaces part of an inbox row.

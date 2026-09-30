@@ -19,7 +19,7 @@ class ChatKitExampleApp extends StatefulWidget {
 
 class _ChatKitExampleAppState extends State<ChatKitExampleApp> {
   late final ExampleBackend _backend = widget.backend ?? ExampleBackend();
-  late final Future<void> _opened = _backend.kit.open();
+  late final Future<void> _opened = _backend.open();
 
   @override
   void dispose() {
@@ -35,23 +35,32 @@ class _ChatKitExampleAppState extends State<ChatKitExampleApp> {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(colorSchemeSeed: seed),
       darkTheme: ThemeData(colorSchemeSeed: seed, brightness: Brightness.dark),
-      builder: (context, child) =>
-          ChatKitScope(kit: _backend.kit, child: child!),
-      home: FutureBuilder<void>(
-        future: _opened,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Scaffold(
-              body: Center(child: Text('Could not open: ${snapshot.error}')),
-            );
-          }
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-          return InboxPage(backend: _backend);
-        },
+      // Switching profile rebuilds everything below with the new kit.
+      builder: (context, child) => ChatProfileScope(
+        switcher: _backend.switcher,
+        placeholder: _Opening(opened: _opened),
+        child: child!,
+      ),
+      home: InboxPage(backend: _backend),
+    );
+  }
+}
+
+class _Opening extends StatelessWidget {
+  const _Opening({required this.opened});
+
+  final Future<void> opened;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<void>(
+      future: opened,
+      builder: (context, snapshot) => Scaffold(
+        body: Center(
+          child: snapshot.hasError
+              ? Text('Could not open: ${snapshot.error}')
+              : const CircularProgressIndicator(),
+        ),
       ),
     );
   }

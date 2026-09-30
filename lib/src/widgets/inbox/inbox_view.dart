@@ -99,12 +99,15 @@ class _InboxViewState extends State<InboxView> {
   RoomContext _contextOf(ChatRoom room, int index) {
     final peerId = room.otherUserId(_c.currentUserId);
     final authorId = room.lastMessage?.authorId;
+    final sentBy = room.lastMessage?.sentBy;
     return RoomContext(
       room: room,
       currentUserId: _c.currentUserId,
       index: index,
+      agentId: _c.kit.agentId,
       peer: _c.peerOf(room),
       lastMessageAuthor: authorId == null ? null : _c.users[authorId],
+      lastMessageSender: sentBy == null ? null : _c.users[sentBy],
       presence: peerId == null ? null : _c.presenceOf(peerId),
       typingNames: _c.typingNames(room),
     );

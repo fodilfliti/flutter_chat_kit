@@ -5,8 +5,9 @@ description: >
   (conversation list), direct and group chats, media and voice messages,
   replies, reactions, read receipts, offline cache and outbox. Activate when
   implementing a ChatSource for Firebase, Supabase or REST, customizing message
-  bubbles, adding custom message types (offers, cards), or adding app bar
-  actions to a chat page — not for backend SDK code inside the kit, Riverpod
+  bubbles, adding custom message types (offers, cards), adding app bar
+  actions to a chat page, or letting one account chat as several profiles
+  (personal and business pages answered by staff) — not for backend SDK code inside the kit, Riverpod
   inside the kit, or localizing inside the kit.
 license: MIT
 metadata:
@@ -160,7 +161,8 @@ Rules:
 
 Full guides with schema, realtime mapping and uploads ship in the package:
 `doc/adapters/firestore.md`, `doc/adapters/supabase.md`,
-`doc/adapters/rest_websocket.md`, `doc/adapters/mixing.md`.
+`doc/adapters/rest_websocket.md`, `doc/adapters/mixing.md`,
+`doc/adapters/profiles.md`.
 
 ## Several chat lists
 
@@ -201,6 +203,43 @@ Two unrelated chat systems → two `ChatKit`s, the second with
 `DriftChatCache(executorFactory: (id) => openChatDatabase('support_$id'))`
 and its own `ChatMediaStore` user id.
 
+## Profiles and business accounts
+
+One account, several chat identities (personal profile, business pages):
+`ChatKit.currentUserId` is the **profile** id; `agentId` is the staff
+account acting for it, stamped on sent messages as `Message.sentBy`.
+
+```dart
+final switcher = ChatProfileSwitcher(
+  profiles: [
+    ChatProfile(id: uid, name: 'Ali'),
+    ChatProfile(id: shopId, name: 'Shop', kind: ChatProfileKind.business, agentId: uid),
+  ],
+  createKit: (p) => ChatKit(          // a new kit on every call
+    currentUserId: p.id,
+    agentId: p.agentId,
+    source: MyChatSource(actingAs: p.id),
+  ),
+);
+await switcher.open();
+MaterialApp(builder: (context, child) =>
+    ChatProfileScope(switcher: switcher, child: child!));
+// Inbox app bar: const ChatProfileMenuButton()
+// Code: await switcher.switchTo(id); setProfiles([...]) with unreadCount
+// Sign-out: await switcher.clearAllUserData(); switcher.dispose();
+```
+
+- Only the active profile's kit is open (own database and media folder);
+  `ChatProfileScope` rebuilds the chat tree on each switch, so pages must
+  get the kit from `context.chatKit`.
+- Staff see a colleague's name above their messages
+  (`ChatConfig.showSentBy`) and "Sara: ..." in previews; they can edit only
+  their own (`MessageContext.isSentByMe`). Customers see the business only.
+- Backend: every request acts as a profile; the server checks the account
+  may act as it and sets `sent_by` itself (see `doc/adapters/profiles.md`).
+- Unread counts of inactive profiles come from the backend
+  (`ChatProfile.unreadCount`).
+
 ## Sending from code
 
 ```dart
@@ -234,10 +273,11 @@ ChatRoomView(
 - Register `ChatTheme` in `ThemeData.extensions` (derive it with
   `ChatTheme.fallback(colorScheme)`), or pass `theme:` for one screen.
 - Every builder gets the default widget: wrap it instead of rebuilding it.
-- `MessageContext`: `message`, `author`, `isMine`, `groupPosition`,
-  `status`, `seenBy`, `repliedTo`, `isSelected`, `room`, `uploadProgress`.
-- `RoomContext` (inbox): `room`, `peer`, `lastMessageAuthor`, `presence`,
-  `typingNames`.
+- `MessageContext`: `message`, `author`, `sender` (staff in `sentBy`),
+  `isMine`, `isSentByMe`, `isSentByColleague`, `groupPosition`, `status`,
+  `seenBy`, `repliedTo`, `isSelected`, `room`, `uploadProgress`.
+- `RoomContext` (inbox): `room`, `peer`, `lastMessageAuthor`,
+  `lastMessageSender`, `presence`, `typingNames`.
 - A custom type without a builder renders as "unsupported"; set
   `ChatStrings.customPreview` for its inbox and reply preview text.
 - For fully custom screens, compose `ChatAppBar`, `ChatMessageList`,
@@ -290,7 +330,8 @@ or at sign-in), and still provide it to widgets with `ChatKitScope`.
   paths; they belong to the app.
 - Do not keep a `ChatRoomController` after its page is gone; dispose it.
 - Do not call `kit.close()` while controllers are alive.
-- Do not create a second `ChatKit` for the same user; share one.
+- Do not create a second `ChatKit` for the same user; share one. For
+  several profiles use `ChatProfileSwitcher`, not kits open side by side.
 - Do not client-filter or reorder messages; the kit keeps order and paging.
 - Do not show failures' text from the kit; map `AppFailure` to your own
   messages.
@@ -301,7 +342,8 @@ or at sign-in), and still provide it to widgets with `ChatKitScope`.
 | --- | --- |
 | Firebase / Supabase / REST calls | app `ChatSource` implementation |
 | File storage upload | app `ChatUploader` implementation |
-| Profiles | app `ChatUserResolver` |
+| User names and avatars | app `ChatUserResolver` |
+| Account's chat profiles and their unread counts | app / backend, fed to `ChatProfileSwitcher` |
 | Riverpod providers | app (wrap `ChatKit` / controllers) |
 | Translated strings | app, via `ChatStrings` |
-| Push notifications | app (open the room with `kit.room(id)`) |
+| Push notifications | app (`switcher.switchTo(profileId)` if needed, then open the room) |

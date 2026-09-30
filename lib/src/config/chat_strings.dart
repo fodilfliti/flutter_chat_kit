@@ -72,6 +72,8 @@ class ChatStrings {
     this.clearSearch = 'Clear search',
     this.noResults = 'No results',
     this.loadChatsFailed = "Couldn't load conversations",
+    this.switchProfile = 'Switch profile',
+    this.businessProfile = 'Business',
     this.typing = defaultTyping,
     this.system = defaultSystem,
     this.lastSeen = defaultLastSeen,
@@ -197,6 +199,11 @@ class ChatStrings {
 
   /// Inbox error state.
   final String loadChatsFailed;
+
+  /// `ChatProfileMenuButton`: tooltip, and the subtitle of business
+  /// profiles.
+  final String switchProfile;
+  final String businessProfile;
 
   /// Names of the users currently typing, in arrival order. Never empty.
   final String Function(List<String> names) typing;

@@ -94,7 +94,10 @@ class MessageActionsSheet extends StatelessWidget {
           icon: Icons.copy,
           onTap: onCopy,
         ),
-      if (onEdit != null && mine && !local && ComposerController.canEdit(m))
+      if (onEdit != null &&
+          message.isSentByMe &&
+          !local &&
+          ComposerController.canEdit(m))
         MessageAction(
           id: MessageAction.editId,
           label: strings.edit,

@@ -18,6 +18,10 @@ chat room and inbox UI you can customize piece by piece.
   list from one backend, each with its own paging and unread count.
 - **Mix backends**: data from a REST API with realtime from Firebase,
   Supabase or a WebSocket, or REST alone with built-in polling.
+- **Profiles and businesses**: one account chats as several profiles
+  (personal, business pages) and switches between them; a business can be
+  answered by several staff members, who see who replied while customers
+  see the business.
 - **Smooth scrolling at any size**: a center-anchored list that never jumps
   when older pages, newer pages or new messages arrive; jump to any old
   message (for example a reply) with a highlight.
@@ -128,6 +132,7 @@ Step-by-step guides, with schema, realtime mapping and uploads:
 - [Supabase](doc/adapters/supabase.md)
 - [REST + WebSocket](doc/adapters/rest_websocket.md)
 - [Several chat lists and mixed backends](doc/adapters/mixing.md)
+- [Profiles and business accounts](doc/adapters/profiles.md)
 
 Call `kit.setOnline(online: ...)` from your connectivity source. Going online
 fills the gaps of open rooms, refreshes open chat lists and flushes the
@@ -162,6 +167,38 @@ final source = ComposedChatSource(
   // realtime: PollingRealtime(api),      // REST only, no realtime service
 );
 ```
+
+### Profiles and business accounts
+
+When one account owns several profiles (personal, business pages), let a
+`ChatProfileSwitcher` hold one kit per profile. Only the active one is
+open, with its own database and media folder:
+
+```dart
+final switcher = ChatProfileSwitcher(
+  profiles: [
+    ChatProfile(id: uid, name: 'Ali'),
+    ChatProfile(id: shopId, name: 'Lemsa Shop',
+        kind: ChatProfileKind.business, agentId: uid),
+  ],
+  createKit: (profile) => ChatKit(
+    currentUserId: profile.id,   // rooms and messages belong to the profile
+    agentId: profile.agentId,    // staff member, stamped as Message.sentBy
+    source: MyChatSource(actingAs: profile.id),
+  ),
+);
+await switcher.open();
+
+MaterialApp(
+  builder: (context, child) =>
+      ChatProfileScope(switcher: switcher, child: child!),
+  // ChatProfileMenuButton() in the inbox app bar switches profiles.
+);
+```
+
+Staff on a shared business profile see which colleague sent each message;
+customers only see the business. Backend authorization and schemas are in
+the [profiles guide](doc/adapters/profiles.md).
 
 ## Platform setup
 
@@ -240,8 +277,8 @@ See the [customization cookbook](doc/customization.md) for recipes.
 
 [`example/`](example) is a complete app on an in-memory fake backend:
 inbox, direct and group rooms, a 5 000-message room, a custom "offer"
-message, an offline toggle and random send failures. No accounts or keys
-needed:
+message, a personal and a business profile with staff replies, an offline
+toggle and random send failures. No accounts or keys needed:
 
 ```bash
 cd example

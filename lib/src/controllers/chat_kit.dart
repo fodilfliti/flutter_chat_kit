@@ -32,6 +32,7 @@ class ChatKit extends ChangeNotifier {
   ChatKit({
     required this.currentUserId,
     required this.source,
+    this.agentId,
     this.uploader,
     this.users,
     this.config = const ChatConfig(),
@@ -42,7 +43,8 @@ class ChatKit extends ChangeNotifier {
     ChatMediaStore Function(ChatKit kit)? mediaStore,
     AudioPlayerHub? audio,
   }) : cache = cache ?? DriftChatCache(),
-       audio = audio ?? AudioPlayerHub() {
+       audio = audio ?? AudioPlayerHub(),
+       _ownsAudio = audio == null {
     media =
         mediaStore?.call(this) ??
         ChatMediaStore(
@@ -54,8 +56,16 @@ class ChatKit extends ChangeNotifier {
         );
   }
 
+  /// The profile the kit chats as: rooms, messages and the local database
+  /// belong to it.
   final String currentUserId;
   final ChatSource source;
+
+  /// The person acting for [currentUserId] when a business profile is
+  /// shared by several staff members (usually their account id). Stamped on
+  /// every sent message as `Message.sentBy`, so colleagues see who answered.
+  /// Null for personal profiles.
+  final String? agentId;
 
   /// Null disables media and voice sending.
   final ChatUploader? uploader;
@@ -78,6 +88,7 @@ class ChatKit extends ChangeNotifier {
 
   /// Plays one voice message at a time.
   final AudioPlayerHub audio;
+  final bool _ownsAudio;
 
   bool _isOpen = false;
   bool _isOnline = true;
@@ -189,6 +200,13 @@ class ChatKit extends ChangeNotifier {
   /// Retries every pending or failed send now.
   Future<void> retryPending() async {
     await _outbox?.retryAll();
+  }
+
+  /// Releases the audio player the kit created. [close] first.
+  @override
+  void dispose() {
+    if (_ownsAudio) audio.dispose();
+    super.dispose();
   }
 }
 

@@ -563,7 +563,12 @@ class ChatRoomController extends ChangeNotifier {
       if (arrived > 0) _newMessages.value += arrived;
     }
 
-    _resolveUsers(messages.map((m) => m.authorId));
+    _resolveUsers([
+      for (final m in messages) ...[
+        m.authorId,
+        if (m.authorId == currentUserId) ?m.sentBy,
+      ],
+    ]);
     _maybeMarkRead();
     _notify();
   }
@@ -650,7 +655,12 @@ class ChatRoomController extends ChangeNotifier {
 
   Future<void> _send(Message message) async {
     if (_window is DetachedWindow) await returnToLatest();
-    await _outbox.send(message);
+    final agentId = kit.agentId;
+    await _outbox.send(
+      agentId == null || message.sentBy != null
+          ? message
+          : message.copyWith(sentBy: agentId),
+    );
   }
 
   void _highlight(String localId) {

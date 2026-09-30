@@ -748,6 +748,7 @@ class ChatMessageListState extends State<ChatMessageList> {
     final room = c.room;
     final isGroup = room != null && !room.isDirect;
     final author = c.users[message.authorId];
+    final sentBy = message.sentBy;
     final replyToId = message.replyToId;
     final repliedTo = replyToId == null ? null : c.messageById(replyToId);
     final selecting = _selected.isNotEmpty;
@@ -755,6 +756,8 @@ class ChatMessageListState extends State<ChatMessageList> {
       message: message,
       currentUserId: c.currentUserId,
       author: author,
+      agentId: c.kit.agentId,
+      sender: sentBy == null ? null : c.users[sentBy],
       isMine: mine,
       groupPosition: item.groupPosition,
       index: item.messageIndex,
@@ -810,13 +813,14 @@ class ChatMessageListState extends State<ChatMessageList> {
     }
 
     Widget? name;
-    final authorName = author?.name ?? '';
-    if (!mine &&
-        !isSystem &&
-        isGroup &&
-        config.showAuthorNamesInGroup &&
-        item.groupPosition.isFirst &&
-        authorName.isNotEmpty) {
+    final authorName = mine
+        ? (context_.isSentByColleague && config.showSentBy
+              ? context_.sender?.name ?? ''
+              : '')
+        : isGroup && config.showAuthorNamesInGroup
+        ? author?.name ?? ''
+        : '';
+    if (!isSystem && item.groupPosition.isFirst && authorName.isNotEmpty) {
       final fallback = Text(authorName, style: theme.authorNameStyle);
       name =
           builders.authorNameBuilder?.call(context, context_, fallback) ??

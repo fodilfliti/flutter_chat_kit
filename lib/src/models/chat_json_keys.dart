@@ -21,6 +21,7 @@ class ChatJsonKeys {
     this.replyToId = 'reply_to_id',
     this.reactions = 'reactions',
     this.metadata = 'metadata',
+    this.sentBy = 'sent_by',
     this.text = 'text',
     this.caption = 'caption',
     this.attachments = 'attachments',
@@ -46,6 +47,7 @@ class ChatJsonKeys {
   final String replyToId;
   final String reactions;
   final String metadata;
+  final String sentBy;
   final String text;
   final String caption;
   final String attachments;
@@ -73,6 +75,7 @@ class ChatJsonKeys {
     replyToId,
     reactions,
     metadata,
+    sentBy,
   };
 }
 
@@ -88,6 +91,7 @@ typedef _Base = ({
   String? replyToId,
   Map<String, Set<String>> reactions,
   Map<String, Object?> metadata,
+  String? sentBy,
 });
 
 /// Encodes and decodes [Message] subtypes using [ChatJsonKeys].
@@ -120,6 +124,7 @@ class MessageCodec {
         replyToId: b.replyToId,
         reactions: b.reactions,
         metadata: b.metadata,
+        sentBy: b.sentBy,
         text: readOptionalString(json[k.text]) ?? '',
       ),
       'image' => ImageMessage(
@@ -134,6 +139,7 @@ class MessageCodec {
         replyToId: b.replyToId,
         reactions: b.reactions,
         metadata: b.metadata,
+        sentBy: b.sentBy,
         images: [
           for (final a in readMapList(json[k.attachments]))
             Attachment.fromJson(a),
@@ -152,6 +158,7 @@ class MessageCodec {
         replyToId: b.replyToId,
         reactions: b.reactions,
         metadata: b.metadata,
+        sentBy: b.sentBy,
         video: Attachment.fromJson(readMap(json[k.attachment])),
         caption: readOptionalString(json[k.caption]),
       ),
@@ -167,6 +174,7 @@ class MessageCodec {
         replyToId: b.replyToId,
         reactions: b.reactions,
         metadata: b.metadata,
+        sentBy: b.sentBy,
         audio: Attachment.fromJson(readMap(json[k.attachment])),
         duration: readDuration(json[k.duration]) ?? Duration.zero,
         waveform: readDoubleList(json[k.waveform]),
@@ -183,6 +191,7 @@ class MessageCodec {
         replyToId: b.replyToId,
         reactions: b.reactions,
         metadata: b.metadata,
+        sentBy: b.sentBy,
         file: Attachment.fromJson(readMap(json[k.attachment])),
       ),
       'system' => SystemMessage(
@@ -197,6 +206,7 @@ class MessageCodec {
         replyToId: b.replyToId,
         reactions: b.reactions,
         metadata: b.metadata,
+        sentBy: b.sentBy,
         code: readOptionalString(json[k.code]) ?? '',
         args: readMap(json[k.args]),
       ),
@@ -252,6 +262,7 @@ class MessageCodec {
           ? null
           : writeReactions(message.reactions),
       k.metadata: message.metadata.isEmpty ? null : message.metadata,
+      k.sentBy: message.sentBy,
       ...body,
     });
   }
@@ -275,6 +286,7 @@ class MessageCodec {
       replyToId: readOptionalString(json[keys.replyToId]),
       reactions: readReactions(json[keys.reactions]),
       metadata: readMap(json[keys.metadata]),
+      sentBy: readOptionalString(json[keys.sentBy]),
     );
   }
 
@@ -291,6 +303,7 @@ class MessageCodec {
       replyToId: b.replyToId,
       reactions: b.reactions,
       metadata: b.metadata,
+      sentBy: b.sentBy,
       customType: type,
       data: data,
     );

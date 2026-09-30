@@ -36,7 +36,8 @@ void main() {
       (_) async => temp.path,
     );
     final backend = ExampleBackend(
-      cache: DriftChatCache(executorFactory: (_) => NativeDatabase.memory()),
+      cache: () =>
+          DriftChatCache(executorFactory: (_) => NativeDatabase.memory()),
     );
     await tester.pumpWidget(ChatKitExampleApp(backend: backend));
     await settle(tester, () => shows('Weekend trip'));
@@ -59,6 +60,24 @@ void main() {
     await tester.tap(find.widgetWithText(ChoiceChip, 'Friends'));
     await settle(tester, () => shows('Weekend trip'));
     expect(find.text('Big history (5 000 messages)'), findsNothing);
+
+    // Answer for the shop: its customers, and who of the staff replied.
+    await tester.tap(find.byType(ChatProfileMenuButton));
+    await settle(tester, () => shows('Business'));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.tap(find.text('Lemsa Shop').last);
+    await settle(tester, () => shows('Omar Khelifi'));
+    expect(backend.switcher.active.id, 'shop');
+    expect(find.text('Weekend trip'), findsNothing);
+    await settle(tester, () => shows('Sara (staff): From 9am to 7pm 🙂'));
+    await tester.pump(const Duration(seconds: 1));
+
+    await tester.tap(find.text('Nadia Saidi'));
+    await settle(tester, () => shows('Sara (staff)'));
+    expect(find.text('From 9am to 7pm 🙂'), findsOneWidget);
+    await tester.pageBack();
+    await settle(tester, () => find.byType(InboxView).evaluate().isNotEmpty);
+    await tester.pump(const Duration(seconds: 1));
 
     await tester.pumpWidget(const SizedBox());
     var closed = false;

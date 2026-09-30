@@ -24,6 +24,7 @@ sealed class Message {
     this.replyToId,
     this.reactions = const {},
     this.metadata = const {},
+    this.sentBy,
   });
 
   factory Message.fromJson(
@@ -51,6 +52,11 @@ sealed class Message {
   /// App extras, round-tripped untouched.
   final Map<String, Object?> metadata;
 
+  /// The staff member who sent this message on behalf of [authorId], when a
+  /// business profile is shared by several people (`ChatKit.agentId`).
+  /// Null for personal profiles.
+  final String? sentBy;
+
   /// JSON discriminator: `text`, `image`, `video`, `audio`, `file`,
   /// `system` or `custom`.
   String get type;
@@ -77,6 +83,7 @@ sealed class Message {
     String? replyToId,
     Map<String, Set<String>>? reactions,
     Map<String, Object?>? metadata,
+    String? sentBy,
   });
 
   Map<String, Object?> toJson({ChatJsonKeys keys = const ChatJsonKeys()}) {
@@ -95,7 +102,8 @@ sealed class Message {
         other.status == status &&
         other.replyToId == replyToId &&
         deepEquality.equals(other.reactions, reactions) &&
-        deepEquality.equals(other.metadata, metadata);
+        deepEquality.equals(other.metadata, metadata) &&
+        other.sentBy == sentBy;
   }
 
   @protected
@@ -111,6 +119,7 @@ sealed class Message {
     replyToId,
     deepEquality.hash(reactions),
     deepEquality.hash(metadata),
+    sentBy,
   );
 
   @override
@@ -131,6 +140,7 @@ final class TextMessage extends Message {
     super.replyToId,
     super.reactions,
     super.metadata,
+    super.sentBy,
   });
 
   final String text;
@@ -151,6 +161,7 @@ final class TextMessage extends Message {
     String? replyToId,
     Map<String, Set<String>>? reactions,
     Map<String, Object?>? metadata,
+    String? sentBy,
     String? text,
   }) {
     return TextMessage(
@@ -165,6 +176,7 @@ final class TextMessage extends Message {
       replyToId: replyToId ?? this.replyToId,
       reactions: reactions ?? this.reactions,
       metadata: metadata ?? this.metadata,
+      sentBy: sentBy ?? this.sentBy,
       text: text ?? this.text,
     );
   }
@@ -193,6 +205,7 @@ final class ImageMessage extends Message {
     super.replyToId,
     super.reactions,
     super.metadata,
+    super.sentBy,
   });
 
   final List<Attachment> images;
@@ -214,6 +227,7 @@ final class ImageMessage extends Message {
     String? replyToId,
     Map<String, Set<String>>? reactions,
     Map<String, Object?>? metadata,
+    String? sentBy,
     List<Attachment>? images,
     String? caption,
   }) {
@@ -229,6 +243,7 @@ final class ImageMessage extends Message {
       replyToId: replyToId ?? this.replyToId,
       reactions: reactions ?? this.reactions,
       metadata: metadata ?? this.metadata,
+      sentBy: sentBy ?? this.sentBy,
       images: images ?? this.images,
       caption: caption ?? this.caption,
     );
@@ -262,6 +277,7 @@ final class VideoMessage extends Message {
     super.replyToId,
     super.reactions,
     super.metadata,
+    super.sentBy,
   });
 
   final Attachment video;
@@ -283,6 +299,7 @@ final class VideoMessage extends Message {
     String? replyToId,
     Map<String, Set<String>>? reactions,
     Map<String, Object?>? metadata,
+    String? sentBy,
     Attachment? video,
     String? caption,
   }) {
@@ -298,6 +315,7 @@ final class VideoMessage extends Message {
       replyToId: replyToId ?? this.replyToId,
       reactions: reactions ?? this.reactions,
       metadata: metadata ?? this.metadata,
+      sentBy: sentBy ?? this.sentBy,
       video: video ?? this.video,
       caption: caption ?? this.caption,
     );
@@ -331,6 +349,7 @@ final class AudioMessage extends Message {
     super.replyToId,
     super.reactions,
     super.metadata,
+    super.sentBy,
   });
 
   final Attachment audio;
@@ -355,6 +374,7 @@ final class AudioMessage extends Message {
     String? replyToId,
     Map<String, Set<String>>? reactions,
     Map<String, Object?>? metadata,
+    String? sentBy,
     Attachment? audio,
     Duration? duration,
     List<double>? waveform,
@@ -371,6 +391,7 @@ final class AudioMessage extends Message {
       replyToId: replyToId ?? this.replyToId,
       reactions: reactions ?? this.reactions,
       metadata: metadata ?? this.metadata,
+      sentBy: sentBy ?? this.sentBy,
       audio: audio ?? this.audio,
       duration: duration ?? this.duration,
       waveform: waveform ?? this.waveform,
@@ -405,6 +426,7 @@ final class FileMessage extends Message {
     super.replyToId,
     super.reactions,
     super.metadata,
+    super.sentBy,
   });
 
   final Attachment file;
@@ -425,6 +447,7 @@ final class FileMessage extends Message {
     String? replyToId,
     Map<String, Set<String>>? reactions,
     Map<String, Object?>? metadata,
+    String? sentBy,
     Attachment? file,
   }) {
     return FileMessage(
@@ -439,6 +462,7 @@ final class FileMessage extends Message {
       replyToId: replyToId ?? this.replyToId,
       reactions: reactions ?? this.reactions,
       metadata: metadata ?? this.metadata,
+      sentBy: sentBy ?? this.sentBy,
       file: file ?? this.file,
     );
   }
@@ -469,6 +493,7 @@ final class SystemMessage extends Message {
     super.replyToId,
     super.reactions,
     super.metadata,
+    super.sentBy,
   });
 
   final String code;
@@ -490,6 +515,7 @@ final class SystemMessage extends Message {
     String? replyToId,
     Map<String, Set<String>>? reactions,
     Map<String, Object?>? metadata,
+    String? sentBy,
     String? code,
     Map<String, Object?>? args,
   }) {
@@ -505,6 +531,7 @@ final class SystemMessage extends Message {
       replyToId: replyToId ?? this.replyToId,
       reactions: reactions ?? this.reactions,
       metadata: metadata ?? this.metadata,
+      sentBy: sentBy ?? this.sentBy,
       code: code ?? this.code,
       args: args ?? this.args,
     );
@@ -541,6 +568,7 @@ final class CustomMessage extends Message {
     super.replyToId,
     super.reactions,
     super.metadata,
+    super.sentBy,
   });
 
   final String customType;
@@ -562,6 +590,7 @@ final class CustomMessage extends Message {
     String? replyToId,
     Map<String, Set<String>>? reactions,
     Map<String, Object?>? metadata,
+    String? sentBy,
     String? customType,
     Map<String, Object?>? data,
   }) {
@@ -577,6 +606,7 @@ final class CustomMessage extends Message {
       replyToId: replyToId ?? this.replyToId,
       reactions: reactions ?? this.reactions,
       metadata: metadata ?? this.metadata,
+      sentBy: sentBy ?? this.sentBy,
       customType: customType ?? this.customType,
       data: data ?? this.data,
     );
