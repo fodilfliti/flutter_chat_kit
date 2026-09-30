@@ -413,6 +413,35 @@ void main() {
       expect(all.last.attempts, 2);
     });
 
+    test('stage writes the message and the queue together', () async {
+      OutboxEntry entry(String key) => OutboxEntry(
+        key: key,
+        localId: 'l1',
+        roomId: 'r1',
+        op: OutboxOp.send,
+        createdAt: _t0,
+      );
+      await cache.stage(
+        _msg('l1', status: MessageStatus.pending),
+        enqueue: entry('z-first'),
+      );
+      await cache.enqueue(entry('a-second'));
+      expect((await cache.messageByAnyId('l1'))?.status, MessageStatus.pending);
+      expect(
+        [for (final e in await cache.outbox()) e.key],
+        ['z-first', 'a-second'],
+      );
+      expect(await cache.outboxEntry('z-first'), entry('z-first'));
+      expect(await cache.outboxEntry('missing'), isNull);
+
+      await cache.stage(
+        _msg('srv-1', localId: 'l1'),
+        removeKeys: ['z-first', 'a-second'],
+      );
+      expect((await cache.messageByAnyId('l1'))?.id, 'srv-1');
+      expect(await cache.outbox(), isEmpty);
+    });
+
     test('drafts save, update and clear', () async {
       await cache.saveDraft('r1', 'hel');
       await cache.saveDraft('r1', 'hello', replyToId: 'm1');

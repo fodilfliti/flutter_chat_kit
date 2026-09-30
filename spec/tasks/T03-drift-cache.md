@@ -91,6 +91,7 @@ Web: `driftDatabase(web: DriftWebOptions(sqlite3Wasm: Uri.parse('sqlite3.wasm'),
 - `DriftChatCache(executorFactory:, clock:)`. The default factory `openChatDatabase` uses `driftDatabase(name: chatDatabaseName(userId))` with the web files above. `chatDatabaseName` sanitizes ids and adds a djb2 hash when needed.
 - `ChatKit(cache:)` defaults to `DriftChatCache()`. `clearUserData()` works whether or not the kit is open.
 - Changed in T04: the anchored `watchMessages(limit:, anchorAfter:)` became `watchMessages(roomId, {from, to, limit})`, plus a one-shot `messages(...)` with the same bounds. Both bounds are inclusive, results are newest first, and `limit` keeps the newest. `updatePointers(roomId, userId, {readAt, deliveredAt})` was added for receipts; it keeps the member's role.
+- Changed in T05: `stage(message, {enqueue, removeKeys})` writes a message and its outbox changes in one transaction; `outboxEntry(key)` reads one entry. Outbox order ties break on insertion order (rowid).
 
 ## Done when
 

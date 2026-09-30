@@ -26,6 +26,18 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
   int sendCalls = 0;
   int _serverSeq = 0;
 
+  /// When set, `send` waits for it before answering.
+  Completer<void>? sendGate;
+
+  /// The next `send` of these local ids throws the failure.
+  final Map<String, AppFailure> failSend = {};
+
+  /// Messages received by successful `send` calls, in order.
+  final List<Message> sent = [];
+  final List<Message> edits = [];
+  final List<(String, String)> deleteCalls = [];
+  final List<(String, String, String, bool)> reactCalls = [];
+
   void seedRoom(ChatRoom room) => rooms[room.id] = room;
 
   void seedMessages(String roomId, Iterable<Message> messages) {
@@ -140,8 +152,12 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
 
   @override
   Future<Message> send(Message pending) async {
+    await sendGate?.future;
     _check();
+    final failure = failSend.remove(pending.localId);
+    if (failure != null) throw failure;
     sendCalls++;
+    sent.add(pending);
     final existing = _sentByLocalId[pending.localId];
     if (existing != null) return existing;
     final confirmed = pending.copyWith(
@@ -157,6 +173,7 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
   @override
   Future<Message> edit(Message message) async {
     _check();
+    edits.add(message);
     final list = _messages[message.roomId] ?? [];
     final index = list.indexWhere((m) => m.matches(message.id));
     if (index < 0) throw NotFoundFailure('message:${message.id}');
@@ -169,6 +186,7 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
   @override
   Future<void> delete(String roomId, String messageId) async {
     _check();
+    deleteCalls.add((roomId, messageId));
     _messages[roomId]?.removeWhere((m) => m.matches(messageId));
     emit(MessageChanged(roomId: roomId, change: Deleted(messageId)));
   }
@@ -182,5 +200,16 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
   @override
   Future<void> setTyping(String roomId, {required bool typing}) async {
     typingCalls.add((roomId, typing));
+  }
+
+  @override
+  Future<void> react(
+    String roomId,
+    String messageId,
+    String emoji, {
+    required bool add,
+  }) async {
+    _check();
+    reactCalls.add((roomId, messageId, emoji, add));
   }
 }

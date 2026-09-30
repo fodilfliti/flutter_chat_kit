@@ -255,35 +255,38 @@ class DriftChatCache implements ChatCache {
     final db = _db;
     return db.transaction(() async {
       for (final message in messages) {
-        final existing =
-            await (db.select(db.messages)..where(
-                  (t) =>
-                      t.localId.equals(message.localId) |
-                      t.id.equals(message.id),
-                ))
-                .get();
-        final row = messageToRow(message);
-        if (existing.isEmpty) {
-          await db.into(db.messages).insert(row);
-          continue;
-        }
-        // Keep the row the UI already knows (same localId); drop any
-        // duplicate that holds the server id.
-        final keeper = existing.firstWhere(
-          (r) => r.localId == message.localId,
-          orElse: () => existing.first,
-        );
-        for (final other in existing) {
-          if (other.localId == keeper.localId) continue;
-          await (db.delete(
-            db.messages,
-          )..where((t) => t.localId.equals(other.localId))).go();
-        }
-        await (db.update(db.messages)
-              ..where((t) => t.localId.equals(keeper.localId)))
-            .write(row.copyWith(localId: Value(keeper.localId)));
+        await _upsertMessage(db, message);
       }
     });
+  }
+
+  Future<void> _upsertMessage(ChatDatabase db, Message message) async {
+    final existing =
+        await (db.select(db.messages)..where(
+              (t) =>
+                  t.localId.equals(message.localId) | t.id.equals(message.id),
+            ))
+            .get();
+    final row = messageToRow(message);
+    if (existing.isEmpty) {
+      await db.into(db.messages).insert(row);
+      return;
+    }
+    // Keep the row the UI already knows (same localId); drop any duplicate
+    // that holds the server id.
+    final keeper = existing.firstWhere(
+      (r) => r.localId == message.localId,
+      orElse: () => existing.first,
+    );
+    for (final other in existing) {
+      if (other.localId == keeper.localId) continue;
+      await (db.delete(
+        db.messages,
+      )..where((t) => t.localId.equals(other.localId))).go();
+    }
+    await (db.update(db.messages)
+          ..where((t) => t.localId.equals(keeper.localId)))
+        .write(row.copyWith(localId: Value(keeper.localId)));
   }
 
   @override
@@ -433,10 +436,7 @@ class DriftChatCache implements ChatCache {
                     t.nextAttemptAt.isNull() |
                     t.nextAttemptAt.isSmallerOrEqualValue(at),
               )
-              ..orderBy([
-                (t) => OrderingTerm.asc(t.createdAt),
-                (t) => OrderingTerm.asc(t.key),
-              ]))
+              ..orderBy(_outboxOrder))
             .get();
     return rows.map(outboxFromRow).toList();
   }
@@ -444,13 +444,17 @@ class DriftChatCache implements ChatCache {
   @override
   Future<List<OutboxEntry>> outbox() async {
     final db = _db;
-    final rows =
-        await (db.select(db.outbox)..orderBy([
-              (t) => OrderingTerm.asc(t.createdAt),
-              (t) => OrderingTerm.asc(t.key),
-            ]))
-            .get();
+    final rows = await (db.select(db.outbox)..orderBy(_outboxOrder)).get();
     return rows.map(outboxFromRow).toList();
+  }
+
+  @override
+  Future<OutboxEntry?> outboxEntry(String key) async {
+    final db = _db;
+    final row = await (db.select(
+      db.outbox,
+    )..where((t) => t.key.equals(key))).getSingleOrNull();
+    return row == null ? null : outboxFromRow(row);
   }
 
   @override
@@ -460,6 +464,24 @@ class DriftChatCache implements ChatCache {
   Future<void> removeOutbox(String key) async {
     final db = _db;
     await (db.delete(db.outbox)..where((t) => t.key.equals(key))).go();
+  }
+
+  @override
+  Future<void> stage(
+    Message message, {
+    OutboxEntry? enqueue,
+    List<String> removeKeys = const [],
+  }) {
+    final db = _db;
+    return db.transaction(() async {
+      await _upsertMessage(db, message);
+      if (enqueue != null) {
+        await db.into(db.outbox).insertOnConflictUpdate(outboxToRow(enqueue));
+      }
+      if (removeKeys.isNotEmpty) {
+        await (db.delete(db.outbox)..where((t) => t.key.isIn(removeKeys))).go();
+      }
+    });
   }
 
   @override
@@ -532,6 +554,12 @@ class DriftChatCache implements ChatCache {
       }
     });
   }
+
+  /// Oldest first; ties keep insertion order (an upsert keeps its rowid).
+  static final _outboxOrder = <OrderClauseGenerator<$OutboxTable>>[
+    (t) => OrderingTerm.asc(t.createdAt),
+    (t) => OrderingTerm.asc(t.rowId),
+  ];
 
   static final _newestFirst = <OrderClauseGenerator<$MessagesTable>>[
     (t) => OrderingTerm.desc(t.createdAt),

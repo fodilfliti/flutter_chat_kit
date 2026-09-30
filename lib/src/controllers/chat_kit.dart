@@ -8,6 +8,8 @@ import 'package:flutter_chat_kit/src/source/chat_source.dart';
 import 'package:flutter_chat_kit/src/source/chat_uploader.dart';
 import 'package:flutter_chat_kit/src/source/chat_user_resolver.dart';
 import 'package:flutter_chat_kit/src/sync/chat_repository.dart';
+import 'package:flutter_chat_kit/src/sync/outbox.dart';
+import 'package:flutter_chat_kit/src/sync/retry_policy.dart';
 
 /// The root object of the kit. Create one per signed-in user.
 ///
@@ -28,6 +30,7 @@ class ChatKit extends ChangeNotifier {
     this.uploader,
     this.users,
     this.config = const ChatConfig(),
+    this.retryPolicy = const RetryPolicy(),
     ChatCache? cache,
   }) : cache = cache ?? DriftChatCache();
 
@@ -39,6 +42,9 @@ class ChatKit extends ChangeNotifier {
   final ChatUserResolver? users;
   final ChatConfig config;
 
+  /// Backoff of the outbox.
+  final RetryPolicy retryPolicy;
+
   /// The local store. Only the kit writes to it; widgets read through
   /// controllers.
   final ChatCache cache;
@@ -46,6 +52,7 @@ class ChatKit extends ChangeNotifier {
   bool _isOpen = false;
   bool _isOnline = true;
   ChatRepository? _repository;
+  Outbox? _outbox;
 
   bool get isOpen => _isOpen;
 
@@ -56,6 +63,9 @@ class ChatKit extends ChangeNotifier {
   /// Sync between the source and the cache. Available while open.
   ChatRepository get repository =>
       _repository ?? (throw StateError('ChatKit is not open'));
+
+  /// The write queue (send, edit, delete, react). Available while open.
+  Outbox get outbox => _outbox ?? (throw StateError('ChatKit is not open'));
 
   /// Opens the user's cache and resumes pending sends.
   Future<void> open() async {
@@ -68,7 +78,15 @@ class ChatKit extends ChangeNotifier {
       users: users,
       config: config,
     );
+    final outbox = _outbox = Outbox(
+      currentUserId: currentUserId,
+      source: source,
+      cache: cache,
+      uploader: uploader,
+      retryPolicy: retryPolicy,
+    )..setOnline(online: _isOnline);
     _isOpen = true;
+    unawaited(outbox.flush());
     notifyListeners();
   }
 
@@ -77,7 +95,10 @@ class ChatKit extends ChangeNotifier {
     if (!_isOpen) return;
     _isOpen = false;
     final repository = _repository;
+    final outbox = _outbox;
     _repository = null;
+    _outbox = null;
+    await outbox?.dispose();
     await repository?.dispose();
     await cache.close();
     notifyListeners();
@@ -102,6 +123,7 @@ class ChatKit extends ChangeNotifier {
   void setOnline({required bool online}) {
     if (_isOnline == online) return;
     _isOnline = online;
+    _outbox?.setOnline(online: online);
     final repository = _repository;
     if (repository != null) {
       if (online) {
@@ -116,5 +138,7 @@ class ChatKit extends ChangeNotifier {
   }
 
   /// Retries every pending or failed send now.
-  Future<void> retryPending() async {}
+  Future<void> retryPending() async {
+    await _outbox?.retryAll();
+  }
 }

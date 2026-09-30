@@ -121,8 +121,18 @@ abstract interface class ChatCache {
 
   /// Every entry, oldest first.
   Future<List<OutboxEntry>> outbox();
+  Future<OutboxEntry?> outboxEntry(String key);
   Future<void> updateOutbox(OutboxEntry entry);
   Future<void> removeOutbox(String key);
+
+  /// In one transaction: upserts [message] (like [upsertMessages]), then
+  /// enqueues [enqueue] and removes the entries keyed [removeKeys]. Keeps
+  /// a message and its pending writes consistent across crashes.
+  Future<void> stage(
+    Message message, {
+    OutboxEntry? enqueue,
+    List<String> removeKeys = const [],
+  });
 
   Future<ChatDraft?> draft(String roomId);
 

@@ -9,6 +9,7 @@
 - Customization surface: `ChatTheme` (`ThemeExtension` with `ColorScheme` fallback), `ChatStrings`, `ChatFormatters`, `ChatBuilders`, `InboxBuilders`, `MessageContext`, `GroupPosition`.
 - Built-in SQLite cache: `ChatCache` interface and `DriftChatCache` (one database per user, reactive room and message queries, keyset paging, pending-to-confirmed reconciliation, outbox, drafts, sync state, retention). `ChatKit` opens and clears it.
 - `ChatRepository`: cache-first sync with bounded gap fill, keyset paging in both directions, latest and detached `RoomWindow`s, jump to any message (`fetchAround` or paging back), ordered realtime events, reconnect resync, in-memory typing and presence, and batched user lookups with a TTL.
+- `Outbox` and `RetryPolicy`: persistent, optimistic send, edit, delete and react, with upload progress, exponential backoff, failed state with retry or discard, per-room ordering, and resumption after restart. `ChatKit.setOnline` and `retryPending` drive it.
 
 ## [0.0.1] - 2026-09-30
 
