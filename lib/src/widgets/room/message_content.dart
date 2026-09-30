@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/src/builders/chat_builders.dart';
 import 'package:flutter_chat_kit/src/builders/message_context.dart';
@@ -8,11 +11,15 @@ import 'package:flutter_chat_kit/src/models/attachment.dart';
 import 'package:flutter_chat_kit/src/models/message.dart';
 import 'package:flutter_chat_kit/src/models/message_status.dart';
 import 'package:flutter_chat_kit/src/widgets/common/message_snippet.dart';
+import 'package:flutter_chat_kit/src/widgets/media/chat_media_scope.dart';
+import 'package:flutter_chat_kit/src/widgets/messages/audio_message_view.dart';
 import 'package:flutter_chat_kit/src/widgets/messages/deleted_message_view.dart';
 import 'package:flutter_chat_kit/src/widgets/messages/file_message_view.dart';
+import 'package:flutter_chat_kit/src/widgets/messages/image_message_view.dart';
 import 'package:flutter_chat_kit/src/widgets/messages/system_message_view.dart';
 import 'package:flutter_chat_kit/src/widgets/messages/text_message_view.dart';
 import 'package:flutter_chat_kit/src/widgets/messages/unsupported_message_view.dart';
+import 'package:flutter_chat_kit/src/widgets/messages/video_message_view.dart';
 import 'package:flutter_chat_kit/src/widgets/room/message_bubble.dart';
 import 'package:flutter_chat_kit/src/widgets/room/message_meta.dart';
 import 'package:flutter_chat_kit/src/widgets/room/reactions_bar.dart';
@@ -114,14 +121,6 @@ class MessageContent extends StatelessWidget {
 
     Widget typed(MessageWidgetBuilder? builder, Widget view) =>
         builder?.call(context, message, view) ?? view;
-    Widget caption(String? text) => text == null || text.trim().isEmpty
-        ? const SizedBox.shrink()
-        : TextMessageView(
-            text: text,
-            style: textStyle,
-            onLinkTap: onLinkTap,
-            strings: strings,
-          );
 
     final Widget content;
     var inlineMeta = true;
@@ -144,13 +143,19 @@ class MessageContent extends StatelessWidget {
           );
         case FileMessage(:final file):
           inlineMeta = false;
+          final store = ChatMediaScope.of(context).store;
+          final url = file.remoteUrl;
           content = typed(
             builders.fileBuilder,
             FileMessageView(
               file: file,
               textStyle: textStyle,
               metaStyle: metaStyle,
-              progress: message.status.isLocal ? message.uploadProgress : null,
+              progress: message.status.isLocal
+                  ? message.uploadProgress
+                  : url != null && store != null && store.isSupported
+                  ? store.downloadProgress(url)
+                  : null,
               onTap: onAttachmentTap == null
                   ? null
                   : () => onAttachmentTap!(message, file),
@@ -159,35 +164,58 @@ class MessageContent extends StatelessWidget {
             ),
           );
         case ImageMessage(:final images, caption: final text):
-          inlineMeta = false;
-          content = typed(
-            builders.imageBuilder,
-            _MediaPlaceholder(
-              icon: Icons.photo_outlined,
-              label: strings.photos(images.length),
-              style: textStyle,
-              caption: caption(text),
+          return _mediaBubble(
+            context,
+            theme,
+            m,
+            media: typed(
+              builders.imageBuilder,
+              ImageMessageView(
+                images: images,
+                progress: _uploadProgress,
+                onTap: onAttachmentTap == null
+                    ? null
+                    : (i) => onAttachmentTap!(message, images[i]),
+                heroTags: [
+                  for (var i = 0; i < images.length; i++)
+                    heroTagFor(m.localId, i),
+                ],
+                strings: strings,
+              ),
             ),
+            caption: text,
           );
-        case VideoMessage(caption: final text):
-          inlineMeta = false;
-          content = typed(
-            builders.videoBuilder,
-            _MediaPlaceholder(
-              icon: Icons.videocam_outlined,
-              label: strings.video,
-              style: textStyle,
-              caption: caption(text),
+        case VideoMessage(:final video, caption: final text):
+          return _mediaBubble(
+            context,
+            theme,
+            m,
+            media: typed(
+              builders.videoBuilder,
+              VideoMessageView(
+                video: video,
+                progress: _uploadProgress,
+                onTap: onAttachmentTap == null
+                    ? null
+                    : () => onAttachmentTap!(message, video),
+                heroTag: heroTagFor(m.localId, 0),
+                strings: strings,
+                formatters: formatters,
+              ),
             ),
+            caption: text,
           );
         case AudioMessage():
           inlineMeta = false;
           content = typed(
             builders.audioBuilder,
-            _MediaPlaceholder(
-              icon: Icons.mic_none,
-              label: strings.voice,
-              style: textStyle,
+            AudioMessageView(
+              message: m,
+              color: textStyle.color ?? theme.iconColor,
+              activeColor: mine ? textStyle.color : theme.replyAccentColor,
+              metaStyle: metaStyle,
+              strings: strings,
+              formatters: formatters,
             ),
           );
         case CustomMessage():
@@ -235,6 +263,127 @@ class MessageContent extends StatelessWidget {
           );
     final bubble = MessageBubble(message: message, child: inner);
     return builders.bubbleBuilder?.call(context, message, bubble) ?? bubble;
+  }
+
+  /// Hero tag of media [index] of a message, shared with `MediaViewer`.
+  static Object heroTagFor(String localId, int index) =>
+      'flutter_chat_kit/media/$localId/$index';
+
+  ValueListenable<double?>? get _uploadProgress =>
+      message.status.isLocal ? message.uploadProgress : null;
+
+  /// Images and videos run edge to edge in a thin bubble. Without a caption
+  /// the time sits on the media in a dark pill. No intrinsic sizing: the
+  /// media reserves its aspect ratio before loading.
+  Widget _mediaBubble(
+    BuildContext context,
+    ChatTheme theme,
+    Message m, {
+    required Widget media,
+    required String? caption,
+  }) {
+    final mine = message.isMine;
+    final textStyle = mine ? theme.outgoingTextStyle : theme.incomingTextStyle;
+    final metaStyle = mine ? theme.outgoingMetaStyle : theme.incomingMetaStyle;
+    const inset = 3.0;
+    final radius = MessageBubble.radiusFor(
+      message.groupPosition,
+      isMine: mine,
+      theme: theme,
+    );
+    final hasCaption = caption != null && caption.trim().isNotEmpty;
+    final reply = _reply(context, theme, m, textStyle);
+    final overlayStyle = metaStyle.copyWith(color: Colors.white);
+
+    final mediaStack = Stack(
+      children: [
+        ClipRRect(
+          borderRadius: _shrink(
+            radius,
+            inset,
+            top: reply == null,
+            bottom: !hasCaption,
+          ),
+          child: media,
+        ),
+        if (!hasCaption)
+          PositionedDirectional(
+            end: 6,
+            bottom: 6,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.black45,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                child: _meta(context, theme, m, overlayStyle),
+              ),
+            ),
+          ),
+      ],
+    );
+    final child = ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 300),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (reply != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 4, 4, 6),
+              child: reply,
+            ),
+          mediaStack,
+          if (hasCaption)
+            Padding(
+              padding: theme.bubblePadding,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextMessageView(
+                    text: caption,
+                    style: textStyle,
+                    onLinkTap: onLinkTap,
+                    strings: strings,
+                  ),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: _meta(context, theme, m, metaStyle),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+    final bubble = MessageBubble(
+      message: message,
+      padding: const EdgeInsets.all(inset),
+      clip: true,
+      child: child,
+    );
+    return builders.bubbleBuilder?.call(context, message, bubble) ?? bubble;
+  }
+
+  /// [r] inset by [by]; corners away from the bubble edge ([top] or
+  /// [bottom] false) are square.
+  static BorderRadiusDirectional _shrink(
+    BorderRadiusDirectional r,
+    double by, {
+    required bool top,
+    required bool bottom,
+  }) {
+    Radius less(Radius c, {required bool round}) => round
+        ? Radius.elliptical(math.max(0, c.x - by), math.max(0, c.y - by))
+        : Radius.zero;
+    return BorderRadiusDirectional.only(
+      topStart: less(r.topStart, round: top),
+      topEnd: less(r.topEnd, round: top),
+      bottomStart: less(r.bottomStart, round: bottom),
+      bottomEnd: less(r.bottomEnd, round: bottom),
+    );
   }
 
   Widget _meta(
@@ -295,41 +444,6 @@ class MessageContent extends StatelessWidget {
     );
     return builders.replyPreviewBuilder?.call(context, message, preview) ??
         preview;
-  }
-}
-
-/// Icon and label for media messages until the media views render them.
-class _MediaPlaceholder extends StatelessWidget {
-  const _MediaPlaceholder({
-    required this.icon,
-    required this.label,
-    required this.style,
-    this.caption,
-  });
-
-  final IconData icon;
-  final String label;
-  final TextStyle style;
-  final Widget? caption;
-
-  @override
-  Widget build(BuildContext context) {
-    final caption = this.caption;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: style.color, size: 20),
-            const SizedBox(width: 6),
-            Flexible(child: Text(label, style: style)),
-          ],
-        ),
-        ?caption,
-      ],
-    );
   }
 }
 

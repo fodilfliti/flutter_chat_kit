@@ -99,6 +99,20 @@ class RoomSyncStates extends Table {
   Set<Column<Object>> get primaryKey => {roomId};
 }
 
+/// Index of `ChatMediaStore` files; the bytes live on disk.
+@TableIndex(name: 'media_lru', columns: {#lastAccess})
+@DataClassName('MediaFileRow')
+class MediaFiles extends Table {
+  TextColumn get remoteUrl => text()();
+  TextColumn get fileName => text()();
+  IntColumn get size => integer()();
+  TextColumn get mimeType => text().nullable()();
+  IntColumn get lastAccess => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {remoteUrl};
+}
+
 @DataClassName('DraftRow')
 class Drafts extends Table {
   TextColumn get roomId => text()();

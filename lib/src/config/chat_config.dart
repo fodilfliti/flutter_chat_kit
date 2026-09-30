@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_chat_kit/src/models/attachment.dart';
 
 /// When the message list scrolls to a newly arrived message.
 enum AutoScrollPolicy {
@@ -33,6 +34,8 @@ class ChatConfig {
     this.userCacheTtl = const Duration(hours: 12),
     this.maxAttachmentBytes,
     this.minVoiceDuration = const Duration(seconds: 1),
+    this.maxMediaCacheBytes = 500 * 1024 * 1024,
+    this.autoDownload = const {AttachmentKind.image, AttachmentKind.audio},
   });
 
   /// Messages per fetch.
@@ -70,6 +73,14 @@ class ChatConfig {
   /// Shorter voice recordings are discarded.
   final Duration minVoiceDuration;
 
+  /// Size limit of the local media store; least recently used files go
+  /// first. Null keeps everything.
+  final int? maxMediaCacheBytes;
+
+  /// Kinds downloaded as soon as they show. Others (video and files by
+  /// default) download when tapped.
+  final Set<AttachmentKind> autoDownload;
+
   ChatConfig copyWith({
     int? pageSize,
     int? roomsPageSize,
@@ -90,6 +101,8 @@ class ChatConfig {
     Duration? userCacheTtl,
     int? maxAttachmentBytes,
     Duration? minVoiceDuration,
+    int? maxMediaCacheBytes,
+    Set<AttachmentKind>? autoDownload,
   }) {
     return ChatConfig(
       pageSize: pageSize ?? this.pageSize,
@@ -113,6 +126,8 @@ class ChatConfig {
       userCacheTtl: userCacheTtl ?? this.userCacheTtl,
       maxAttachmentBytes: maxAttachmentBytes ?? this.maxAttachmentBytes,
       minVoiceDuration: minVoiceDuration ?? this.minVoiceDuration,
+      maxMediaCacheBytes: maxMediaCacheBytes ?? this.maxMediaCacheBytes,
+      autoDownload: autoDownload ?? this.autoDownload,
     );
   }
 }

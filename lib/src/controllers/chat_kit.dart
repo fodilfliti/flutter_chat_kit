@@ -4,8 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_chat_kit/src/cache/chat_cache.dart';
 import 'package:flutter_chat_kit/src/cache/drift_chat_cache.dart';
 import 'package:flutter_chat_kit/src/config/chat_config.dart';
+import 'package:flutter_chat_kit/src/controllers/audio_player_hub.dart';
 import 'package:flutter_chat_kit/src/controllers/chat_room_controller.dart';
 import 'package:flutter_chat_kit/src/controllers/inbox_controller.dart';
+import 'package:flutter_chat_kit/src/media/chat_media_store.dart';
 import 'package:flutter_chat_kit/src/source/chat_source.dart';
 import 'package:flutter_chat_kit/src/source/chat_uploader.dart';
 import 'package:flutter_chat_kit/src/source/chat_user_resolver.dart';
@@ -35,7 +37,21 @@ class ChatKit extends ChangeNotifier {
     this.retryPolicy = const RetryPolicy(),
     this.clock = _utcNow,
     ChatCache? cache,
-  }) : cache = cache ?? DriftChatCache();
+    SaveMediaCallback? onSaveMedia,
+    ChatMediaStore Function(ChatKit kit)? mediaStore,
+    AudioPlayerHub? audio,
+  }) : cache = cache ?? DriftChatCache(),
+       audio = audio ?? AudioPlayerHub() {
+    media =
+        mediaStore?.call(this) ??
+        ChatMediaStore(
+          userId: currentUserId,
+          cache: this.cache,
+          clock: clock,
+          maxBytes: config.maxMediaCacheBytes,
+          onSave: onSaveMedia,
+        );
+  }
 
   final String currentUserId;
   final ChatSource source;
@@ -54,6 +70,13 @@ class ChatKit extends ChangeNotifier {
   /// The local store. Only the kit writes to it; widgets read through
   /// controllers.
   final ChatCache cache;
+
+  /// Media files on disk (D11): downloads each file once, keeps the user's
+  /// own uploads, exports with "Save".
+  late final ChatMediaStore media;
+
+  /// Plays one voice message at a time.
+  final AudioPlayerHub audio;
 
   bool _isOpen = false;
   bool _isOnline = true;
@@ -101,6 +124,8 @@ class ChatKit extends ChangeNotifier {
       uploader: uploader,
       retryPolicy: retryPolicy,
       clock: clock,
+      onUploaded: (local, remoteUrl) =>
+          media.adopt(local.localPath!, remoteUrl, mimeType: local.mimeType),
     )..setOnline(online: _isOnline);
     _isOpen = true;
     unawaited(outbox.flush());
@@ -117,18 +142,23 @@ class ChatKit extends ChangeNotifier {
     _outbox = null;
     await outbox?.dispose();
     await repository?.dispose();
+    await audio.stop();
+    media.close();
     await cache.close();
     notifyListeners();
   }
 
-  /// Deletes this user's cached rooms, messages, drafts and pending sends.
+  /// Deletes this user's cached rooms, messages, drafts, pending sends and
+  /// stored media files.
   Future<void> clearUserData() async {
     if (_isOpen) {
+      await media.clear();
       await cache.clear();
       return;
     }
     await cache.open(currentUserId);
     try {
+      await media.clear();
       await cache.clear();
     } finally {
       await cache.close();

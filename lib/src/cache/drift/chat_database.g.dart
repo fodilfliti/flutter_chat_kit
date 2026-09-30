@@ -3484,6 +3484,375 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
   }
 }
 
+class $MediaFilesTable extends MediaFiles
+    with TableInfo<$MediaFilesTable, MediaFileRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MediaFilesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _remoteUrlMeta = const VerificationMeta(
+    'remoteUrl',
+  );
+  @override
+  late final GeneratedColumn<String> remoteUrl = GeneratedColumn<String>(
+    'remote_url',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileNameMeta = const VerificationMeta(
+    'fileName',
+  );
+  @override
+  late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
+    'file_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sizeMeta = const VerificationMeta('size');
+  @override
+  late final GeneratedColumn<int> size = GeneratedColumn<int>(
+    'size',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mimeTypeMeta = const VerificationMeta(
+    'mimeType',
+  );
+  @override
+  late final GeneratedColumn<String> mimeType = GeneratedColumn<String>(
+    'mime_type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastAccessMeta = const VerificationMeta(
+    'lastAccess',
+  );
+  @override
+  late final GeneratedColumn<int> lastAccess = GeneratedColumn<int>(
+    'last_access',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    remoteUrl,
+    fileName,
+    size,
+    mimeType,
+    lastAccess,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'media_files';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MediaFileRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('remote_url')) {
+      context.handle(
+        _remoteUrlMeta,
+        remoteUrl.isAcceptableOrUnknown(data['remote_url']!, _remoteUrlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_remoteUrlMeta);
+    }
+    if (data.containsKey('file_name')) {
+      context.handle(
+        _fileNameMeta,
+        fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileNameMeta);
+    }
+    if (data.containsKey('size')) {
+      context.handle(
+        _sizeMeta,
+        size.isAcceptableOrUnknown(data['size']!, _sizeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sizeMeta);
+    }
+    if (data.containsKey('mime_type')) {
+      context.handle(
+        _mimeTypeMeta,
+        mimeType.isAcceptableOrUnknown(data['mime_type']!, _mimeTypeMeta),
+      );
+    }
+    if (data.containsKey('last_access')) {
+      context.handle(
+        _lastAccessMeta,
+        lastAccess.isAcceptableOrUnknown(data['last_access']!, _lastAccessMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lastAccessMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {remoteUrl};
+  @override
+  MediaFileRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MediaFileRow(
+      remoteUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}remote_url'],
+      )!,
+      fileName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_name'],
+      )!,
+      size: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}size'],
+      )!,
+      mimeType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mime_type'],
+      ),
+      lastAccess: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_access'],
+      )!,
+    );
+  }
+
+  @override
+  $MediaFilesTable createAlias(String alias) {
+    return $MediaFilesTable(attachedDatabase, alias);
+  }
+}
+
+class MediaFileRow extends DataClass implements Insertable<MediaFileRow> {
+  final String remoteUrl;
+  final String fileName;
+  final int size;
+  final String? mimeType;
+  final int lastAccess;
+  const MediaFileRow({
+    required this.remoteUrl,
+    required this.fileName,
+    required this.size,
+    this.mimeType,
+    required this.lastAccess,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['remote_url'] = Variable<String>(remoteUrl);
+    map['file_name'] = Variable<String>(fileName);
+    map['size'] = Variable<int>(size);
+    if (!nullToAbsent || mimeType != null) {
+      map['mime_type'] = Variable<String>(mimeType);
+    }
+    map['last_access'] = Variable<int>(lastAccess);
+    return map;
+  }
+
+  MediaFilesCompanion toCompanion(bool nullToAbsent) {
+    return MediaFilesCompanion(
+      remoteUrl: Value(remoteUrl),
+      fileName: Value(fileName),
+      size: Value(size),
+      mimeType: mimeType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mimeType),
+      lastAccess: Value(lastAccess),
+    );
+  }
+
+  factory MediaFileRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MediaFileRow(
+      remoteUrl: serializer.fromJson<String>(json['remoteUrl']),
+      fileName: serializer.fromJson<String>(json['fileName']),
+      size: serializer.fromJson<int>(json['size']),
+      mimeType: serializer.fromJson<String?>(json['mimeType']),
+      lastAccess: serializer.fromJson<int>(json['lastAccess']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'remoteUrl': serializer.toJson<String>(remoteUrl),
+      'fileName': serializer.toJson<String>(fileName),
+      'size': serializer.toJson<int>(size),
+      'mimeType': serializer.toJson<String?>(mimeType),
+      'lastAccess': serializer.toJson<int>(lastAccess),
+    };
+  }
+
+  MediaFileRow copyWith({
+    String? remoteUrl,
+    String? fileName,
+    int? size,
+    Value<String?> mimeType = const Value.absent(),
+    int? lastAccess,
+  }) => MediaFileRow(
+    remoteUrl: remoteUrl ?? this.remoteUrl,
+    fileName: fileName ?? this.fileName,
+    size: size ?? this.size,
+    mimeType: mimeType.present ? mimeType.value : this.mimeType,
+    lastAccess: lastAccess ?? this.lastAccess,
+  );
+  MediaFileRow copyWithCompanion(MediaFilesCompanion data) {
+    return MediaFileRow(
+      remoteUrl: data.remoteUrl.present ? data.remoteUrl.value : this.remoteUrl,
+      fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      size: data.size.present ? data.size.value : this.size,
+      mimeType: data.mimeType.present ? data.mimeType.value : this.mimeType,
+      lastAccess: data.lastAccess.present
+          ? data.lastAccess.value
+          : this.lastAccess,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MediaFileRow(')
+          ..write('remoteUrl: $remoteUrl, ')
+          ..write('fileName: $fileName, ')
+          ..write('size: $size, ')
+          ..write('mimeType: $mimeType, ')
+          ..write('lastAccess: $lastAccess')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(remoteUrl, fileName, size, mimeType, lastAccess);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MediaFileRow &&
+          other.remoteUrl == this.remoteUrl &&
+          other.fileName == this.fileName &&
+          other.size == this.size &&
+          other.mimeType == this.mimeType &&
+          other.lastAccess == this.lastAccess);
+}
+
+class MediaFilesCompanion extends UpdateCompanion<MediaFileRow> {
+  final Value<String> remoteUrl;
+  final Value<String> fileName;
+  final Value<int> size;
+  final Value<String?> mimeType;
+  final Value<int> lastAccess;
+  final Value<int> rowid;
+  const MediaFilesCompanion({
+    this.remoteUrl = const Value.absent(),
+    this.fileName = const Value.absent(),
+    this.size = const Value.absent(),
+    this.mimeType = const Value.absent(),
+    this.lastAccess = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MediaFilesCompanion.insert({
+    required String remoteUrl,
+    required String fileName,
+    required int size,
+    this.mimeType = const Value.absent(),
+    required int lastAccess,
+    this.rowid = const Value.absent(),
+  }) : remoteUrl = Value(remoteUrl),
+       fileName = Value(fileName),
+       size = Value(size),
+       lastAccess = Value(lastAccess);
+  static Insertable<MediaFileRow> custom({
+    Expression<String>? remoteUrl,
+    Expression<String>? fileName,
+    Expression<int>? size,
+    Expression<String>? mimeType,
+    Expression<int>? lastAccess,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (remoteUrl != null) 'remote_url': remoteUrl,
+      if (fileName != null) 'file_name': fileName,
+      if (size != null) 'size': size,
+      if (mimeType != null) 'mime_type': mimeType,
+      if (lastAccess != null) 'last_access': lastAccess,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MediaFilesCompanion copyWith({
+    Value<String>? remoteUrl,
+    Value<String>? fileName,
+    Value<int>? size,
+    Value<String?>? mimeType,
+    Value<int>? lastAccess,
+    Value<int>? rowid,
+  }) {
+    return MediaFilesCompanion(
+      remoteUrl: remoteUrl ?? this.remoteUrl,
+      fileName: fileName ?? this.fileName,
+      size: size ?? this.size,
+      mimeType: mimeType ?? this.mimeType,
+      lastAccess: lastAccess ?? this.lastAccess,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (remoteUrl.present) {
+      map['remote_url'] = Variable<String>(remoteUrl.value);
+    }
+    if (fileName.present) {
+      map['file_name'] = Variable<String>(fileName.value);
+    }
+    if (size.present) {
+      map['size'] = Variable<int>(size.value);
+    }
+    if (mimeType.present) {
+      map['mime_type'] = Variable<String>(mimeType.value);
+    }
+    if (lastAccess.present) {
+      map['last_access'] = Variable<int>(lastAccess.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MediaFilesCompanion(')
+          ..write('remoteUrl: $remoteUrl, ')
+          ..write('fileName: $fileName, ')
+          ..write('size: $size, ')
+          ..write('mimeType: $mimeType, ')
+          ..write('lastAccess: $lastAccess, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$ChatDatabase extends GeneratedDatabase {
   _$ChatDatabase(QueryExecutor e) : super(e);
   $ChatDatabaseManager get managers => $ChatDatabaseManager(this);
@@ -3494,6 +3863,7 @@ abstract class _$ChatDatabase extends GeneratedDatabase {
   late final $OutboxTable outbox = $OutboxTable(this);
   late final $RoomSyncStatesTable roomSyncStates = $RoomSyncStatesTable(this);
   late final $DraftsTable drafts = $DraftsTable(this);
+  late final $MediaFilesTable mediaFiles = $MediaFilesTable(this);
   late final Index roomsOrder = Index(
     'rooms_order',
     'CREATE INDEX rooms_order ON rooms (pinned, updated_at, id)',
@@ -3505,6 +3875,10 @@ abstract class _$ChatDatabase extends GeneratedDatabase {
   late final Index outboxDue = Index(
     'outbox_due',
     'CREATE INDEX outbox_due ON outbox (next_attempt_at)',
+  );
+  late final Index mediaLru = Index(
+    'media_lru',
+    'CREATE INDEX media_lru ON media_files (last_access)',
   );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -3518,9 +3892,11 @@ abstract class _$ChatDatabase extends GeneratedDatabase {
     outbox,
     roomSyncStates,
     drafts,
+    mediaFiles,
     roomsOrder,
     messagesRoomOrder,
     outboxDue,
+    mediaLru,
   ];
 }
 
@@ -5322,6 +5698,217 @@ typedef $$DraftsTableProcessedTableManager =
       DraftRow,
       PrefetchHooks Function()
     >;
+typedef $$MediaFilesTableCreateCompanionBuilder =
+    MediaFilesCompanion Function({
+      required String remoteUrl,
+      required String fileName,
+      required int size,
+      Value<String?> mimeType,
+      required int lastAccess,
+      Value<int> rowid,
+    });
+typedef $$MediaFilesTableUpdateCompanionBuilder =
+    MediaFilesCompanion Function({
+      Value<String> remoteUrl,
+      Value<String> fileName,
+      Value<int> size,
+      Value<String?> mimeType,
+      Value<int> lastAccess,
+      Value<int> rowid,
+    });
+
+class $$MediaFilesTableFilterComposer
+    extends Composer<_$ChatDatabase, $MediaFilesTable> {
+  $$MediaFilesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get remoteUrl => $composableBuilder(
+    column: $table.remoteUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get size => $composableBuilder(
+    column: $table.size,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mimeType => $composableBuilder(
+    column: $table.mimeType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastAccess => $composableBuilder(
+    column: $table.lastAccess,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MediaFilesTableOrderingComposer
+    extends Composer<_$ChatDatabase, $MediaFilesTable> {
+  $$MediaFilesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get remoteUrl => $composableBuilder(
+    column: $table.remoteUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get size => $composableBuilder(
+    column: $table.size,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mimeType => $composableBuilder(
+    column: $table.mimeType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastAccess => $composableBuilder(
+    column: $table.lastAccess,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MediaFilesTableAnnotationComposer
+    extends Composer<_$ChatDatabase, $MediaFilesTable> {
+  $$MediaFilesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get remoteUrl =>
+      $composableBuilder(column: $table.remoteUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get fileName =>
+      $composableBuilder(column: $table.fileName, builder: (column) => column);
+
+  GeneratedColumn<int> get size =>
+      $composableBuilder(column: $table.size, builder: (column) => column);
+
+  GeneratedColumn<String> get mimeType =>
+      $composableBuilder(column: $table.mimeType, builder: (column) => column);
+
+  GeneratedColumn<int> get lastAccess => $composableBuilder(
+    column: $table.lastAccess,
+    builder: (column) => column,
+  );
+}
+
+class $$MediaFilesTableTableManager
+    extends
+        RootTableManager<
+          _$ChatDatabase,
+          $MediaFilesTable,
+          MediaFileRow,
+          $$MediaFilesTableFilterComposer,
+          $$MediaFilesTableOrderingComposer,
+          $$MediaFilesTableAnnotationComposer,
+          $$MediaFilesTableCreateCompanionBuilder,
+          $$MediaFilesTableUpdateCompanionBuilder,
+          (
+            MediaFileRow,
+            BaseReferences<_$ChatDatabase, $MediaFilesTable, MediaFileRow>,
+          ),
+          MediaFileRow,
+          PrefetchHooks Function()
+        > {
+  $$MediaFilesTableTableManager(_$ChatDatabase db, $MediaFilesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MediaFilesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MediaFilesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MediaFilesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> remoteUrl = const Value.absent(),
+                Value<String> fileName = const Value.absent(),
+                Value<int> size = const Value.absent(),
+                Value<String?> mimeType = const Value.absent(),
+                Value<int> lastAccess = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MediaFilesCompanion(
+                remoteUrl: remoteUrl,
+                fileName: fileName,
+                size: size,
+                mimeType: mimeType,
+                lastAccess: lastAccess,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String remoteUrl,
+                required String fileName,
+                required int size,
+                Value<String?> mimeType = const Value.absent(),
+                required int lastAccess,
+                Value<int> rowid = const Value.absent(),
+              }) => MediaFilesCompanion.insert(
+                remoteUrl: remoteUrl,
+                fileName: fileName,
+                size: size,
+                mimeType: mimeType,
+                lastAccess: lastAccess,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$MediaFilesTable, MediaFileRow>(table),
+                  BaseReferences<
+                    _$ChatDatabase,
+                    $MediaFilesTable,
+                    MediaFileRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MediaFilesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$ChatDatabase,
+      $MediaFilesTable,
+      MediaFileRow,
+      $$MediaFilesTableFilterComposer,
+      $$MediaFilesTableOrderingComposer,
+      $$MediaFilesTableAnnotationComposer,
+      $$MediaFilesTableCreateCompanionBuilder,
+      $$MediaFilesTableUpdateCompanionBuilder,
+      (
+        MediaFileRow,
+        BaseReferences<_$ChatDatabase, $MediaFilesTable, MediaFileRow>,
+      ),
+      MediaFileRow,
+      PrefetchHooks Function()
+    >;
 
 class $ChatDatabaseManager {
   final _$ChatDatabase _db;
@@ -5340,4 +5927,6 @@ class $ChatDatabaseManager {
       $$RoomSyncStatesTableTableManager(_db, _db.roomSyncStates);
   $$DraftsTableTableManager get drafts =>
       $$DraftsTableTableManager(_db, _db.drafts);
+  $$MediaFilesTableTableManager get mediaFiles =>
+      $$MediaFilesTableTableManager(_db, _db.mediaFiles);
 }

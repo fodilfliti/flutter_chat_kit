@@ -13,12 +13,15 @@ import 'package:flutter_chat_kit/src/config/chat_formatters.dart';
 import 'package:flutter_chat_kit/src/config/chat_strings.dart';
 import 'package:flutter_chat_kit/src/config/chat_theme.dart';
 import 'package:flutter_chat_kit/src/controllers/chat_room_controller.dart';
+import 'package:flutter_chat_kit/src/models/attachment.dart';
 import 'package:flutter_chat_kit/src/models/chat_user.dart';
 import 'package:flutter_chat_kit/src/models/message.dart';
 import 'package:flutter_chat_kit/src/models/message_cursor.dart';
 import 'package:flutter_chat_kit/src/models/typing.dart';
 import 'package:flutter_chat_kit/src/widgets/common/chat_avatar.dart';
 import 'package:flutter_chat_kit/src/widgets/common/message_snippet.dart';
+import 'package:flutter_chat_kit/src/widgets/media/chat_media_scope.dart';
+import 'package:flutter_chat_kit/src/widgets/media/media_viewer.dart';
 import 'package:flutter_chat_kit/src/widgets/messages/text_message_view.dart';
 import 'package:flutter_chat_kit/src/widgets/room/date_separator.dart';
 import 'package:flutter_chat_kit/src/widgets/room/floating_date_header.dart';
@@ -575,6 +578,21 @@ class ChatMessageListState extends State<ChatMessageList> {
       _afterFrame(_jumpToBottom);
     }
 
+    final kit = c.kit;
+    return ChatMediaScope(
+      store: kit.media,
+      audio: kit.audio,
+      autoDownload: _config.autoDownload,
+      child: _layout(context, theme, platform),
+    );
+  }
+
+  Widget _layout(
+    BuildContext context,
+    ChatTheme theme,
+    TargetPlatform platform,
+  ) {
+    final c = _controller;
     return LayoutBuilder(
       builder: (context, constraints) {
         final padding = widget.padding ?? theme.listPadding;
@@ -761,7 +779,9 @@ class ChatMessageListState extends State<ChatMessageList> {
           : null,
       onRetry: () => unawaited(c.retry(message.localId)),
       onLinkTap: widget.onLinkTap,
-      onAttachmentTap: widget.onAttachmentTap,
+      onAttachmentTap: selecting
+          ? null
+          : widget.onAttachmentTap ?? _openAttachment,
     );
 
     final isSystem = message is SystemMessage;
@@ -834,6 +854,68 @@ class ChatMessageListState extends State<ChatMessageList> {
       );
     }
     return builders.messageBuilder?.call(context, context_, row) ?? row;
+  }
+
+  /// Images and videos open the viewer over the loaded media of the room,
+  /// oldest first; files and voice notes are saved to the device.
+  void _openAttachment(MessageContext message, Attachment attachment) {
+    final kind = attachment.kind;
+    if (kind == AttachmentKind.image || kind == AttachmentKind.video) {
+      final items = <MediaItem>[];
+      var initial = 0;
+      for (final m in _controller.messages.reversed) {
+        if (m.isDeleted) continue;
+        final media = switch (m) {
+          ImageMessage(:final images) => images,
+          VideoMessage(:final video) => [video],
+          _ => const <Attachment>[],
+        };
+        for (var i = 0; i < media.length; i++) {
+          if (m.localId == message.message.localId && media[i] == attachment) {
+            initial = items.length;
+          }
+          items.add(
+            MediaItem(
+              attachment: media[i],
+              heroTag: MessageContent.heroTagFor(m.localId, i),
+              messageId: m.localId,
+            ),
+          );
+        }
+      }
+      unawaited(
+        MediaViewer.show(
+          context,
+          items: items,
+          initialIndex: initial,
+          strings: widget.strings,
+          store: _controller.kit.media,
+          audio: _controller.kit.audio,
+        ),
+      );
+      return;
+    }
+    unawaited(_save(attachment));
+  }
+
+  Future<void> _save(Attachment attachment) async {
+    final url = attachment.remoteUrl;
+    final store = _controller.kit.media;
+    if (url == null || !store.isSupported) return;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final strings = widget.strings;
+    try {
+      final saved = await store.save(
+        url,
+        name: attachment.name,
+        mimeType: attachment.mimeType,
+      );
+      if (saved) {
+        messenger?.showSnackBar(SnackBar(content: Text(strings.saved)));
+      }
+    } on Object {
+      messenger?.showSnackBar(SnackBar(content: Text(strings.downloadFailed)));
+    }
   }
 
   Future<void> _showActions(MessageContext message) {

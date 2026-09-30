@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_chat_kit/src/media/media_entry.dart';
 import 'package:flutter_chat_kit/src/models/chat_room.dart';
 import 'package:flutter_chat_kit/src/models/chat_user.dart';
 import 'package:flutter_chat_kit/src/models/message.dart';
@@ -142,4 +143,15 @@ abstract interface class ChatCache {
   /// Keeps the newest [keep] messages of the room (plus unsent ones) and
   /// moves the sync state's oldest cursor accordingly.
   Future<void> trim(String roomId, {required int keep});
+
+  /// The media store's index entry for [remoteUrl].
+  Future<MediaEntry?> mediaEntry(String remoteUrl);
+
+  /// Inserts or replaces the entry with the same URL.
+  Future<void> putMedia(MediaEntry entry);
+  Future<void> touchMedia(String remoteUrl, DateTime at);
+
+  /// Every entry, least recently used first.
+  Future<List<MediaEntry>> mediaEntries();
+  Future<void> removeMedia(List<String> remoteUrls);
 }

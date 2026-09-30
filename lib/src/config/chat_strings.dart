@@ -48,12 +48,22 @@ class ChatStrings {
     this.statusDelivered = 'Delivered',
     this.statusSeen = 'Seen',
     this.messageOptions = 'Message options',
+    this.save = 'Save',
+    this.saved = 'Saved',
+    this.download = 'Download',
+    this.downloadFailed = "Couldn't download",
+    this.play = 'Play',
+    this.pause = 'Pause',
+    this.close = 'Close',
     this.typing = defaultTyping,
     this.system = defaultSystem,
     this.lastSeen = defaultLastSeen,
     this.photos = defaultPhotos,
     this.reaction = defaultReaction,
     this.reactWith = defaultReactWith,
+    this.playbackSpeed = defaultPlaybackSpeed,
+    this.moreMedia = defaultMoreMedia,
+    this.mediaPosition = defaultMediaPosition,
   });
 
   final String typeMessage;
@@ -119,6 +129,19 @@ class ChatStrings {
   /// Accessibility label of the long-press actions sheet.
   final String messageOptions;
 
+  /// Exports a media file or document.
+  final String save;
+  final String saved;
+  final String download;
+  final String downloadFailed;
+
+  /// Voice message and video controls.
+  final String play;
+  final String pause;
+
+  /// Closes the media viewer.
+  final String close;
+
   /// Names of the users currently typing, in arrival order. Never empty.
   final String Function(List<String> names) typing;
 
@@ -136,6 +159,15 @@ class ChatStrings {
 
   /// Tooltip of a quick-reaction button.
   final String Function(String emoji) reactWith;
+
+  /// Voice message speed button, for example `1.5x`.
+  final String Function(double speed) playbackSpeed;
+
+  /// Overlay on the last cell of an image grid with `count` more images.
+  final String Function(int count) moreMedia;
+
+  /// Media viewer title, for example `3 of 12` (`index` starts at 1).
+  final String Function(int index, int total) mediaPosition;
 
   static String defaultTyping(List<String> names) {
     return switch (names.length) {
@@ -161,4 +193,16 @@ class ChatStrings {
       count == 1 ? '$emoji, 1 reaction' : '$emoji, $count reactions';
 
   static String defaultReactWith(String emoji) => 'React with $emoji';
+
+  static String defaultPlaybackSpeed(double speed) {
+    final text = speed == speed.roundToDouble()
+        ? speed.toStringAsFixed(0)
+        : speed.toString();
+    return '${text}x';
+  }
+
+  static String defaultMoreMedia(int count) => '+$count';
+
+  static String defaultMediaPosition(int index, int total) =>
+      '$index of $total';
 }

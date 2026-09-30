@@ -3,6 +3,7 @@ import 'package:flutter_chat_kit/src/cache/chat_cache.dart';
 import 'package:flutter_chat_kit/src/cache/drift/chat_database.dart';
 import 'package:flutter_chat_kit/src/cache/drift/converters.dart';
 import 'package:flutter_chat_kit/src/cache/drift/open_chat_database.dart';
+import 'package:flutter_chat_kit/src/media/media_entry.dart';
 import 'package:flutter_chat_kit/src/models/chat_room.dart';
 import 'package:flutter_chat_kit/src/models/chat_user.dart';
 import 'package:flutter_chat_kit/src/models/message.dart';
@@ -554,6 +555,68 @@ class DriftChatCache implements ChatCache {
       }
     });
   }
+
+  @override
+  Future<MediaEntry?> mediaEntry(String remoteUrl) async {
+    final db = _db;
+    final row = await (db.select(
+      db.mediaFiles,
+    )..where((t) => t.remoteUrl.equals(remoteUrl))).getSingleOrNull();
+    return row == null ? null : _mediaFromRow(row);
+  }
+
+  @override
+  Future<void> putMedia(MediaEntry entry) {
+    final db = _db;
+    return db
+        .into(db.mediaFiles)
+        .insertOnConflictUpdate(
+          MediaFilesCompanion.insert(
+            remoteUrl: entry.remoteUrl,
+            fileName: entry.fileName,
+            size: entry.size,
+            mimeType: Value(entry.mimeType),
+            lastAccess: toMicros(entry.lastAccess),
+          ),
+        );
+  }
+
+  @override
+  Future<void> touchMedia(String remoteUrl, DateTime at) {
+    final db = _db;
+    return (db.update(db.mediaFiles)
+          ..where((t) => t.remoteUrl.equals(remoteUrl)))
+        .write(MediaFilesCompanion(lastAccess: Value(toMicros(at))));
+  }
+
+  @override
+  Future<List<MediaEntry>> mediaEntries() async {
+    final db = _db;
+    final rows =
+        await (db.select(db.mediaFiles)..orderBy([
+              (t) => OrderingTerm.asc(t.lastAccess),
+              (t) => OrderingTerm.asc(t.remoteUrl),
+            ]))
+            .get();
+    return rows.map(_mediaFromRow).toList();
+  }
+
+  @override
+  Future<void> removeMedia(List<String> remoteUrls) async {
+    if (remoteUrls.isEmpty) return;
+    final db = _db;
+    await (db.delete(
+      db.mediaFiles,
+    )..where((t) => t.remoteUrl.isIn(remoteUrls))).go();
+  }
+
+  static MediaEntry _mediaFromRow(MediaFileRow row) => MediaEntry(
+    remoteUrl: row.remoteUrl,
+    fileName: row.fileName,
+    size: row.size,
+    mimeType: row.mimeType,
+    lastAccess: fromMicros(row.lastAccess),
+  );
 
   /// Oldest first; ties keep insertion order (an upsert keeps its rowid).
   static final _outboxOrder = <OrderClauseGenerator<$OutboxTable>>[

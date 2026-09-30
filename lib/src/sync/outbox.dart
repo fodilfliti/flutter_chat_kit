@@ -49,7 +49,13 @@ class Outbox {
     this.retryPolicy = const RetryPolicy(),
     this._clock = _utcNow,
     this._random,
+    this.onUploaded,
   });
+
+  /// Called after each attachment upload with the local file and its new
+  /// URL; `ChatKit` copies the file into the media store. Errors are
+  /// ignored.
+  final Future<void> Function(Attachment local, String remoteUrl)? onUploaded;
 
   final String currentUserId;
   final ChatSource _source;
@@ -421,6 +427,14 @@ class Outbox {
           ),
         );
         if (written == null) throw const CancelledFailure();
+        final adopt = onUploaded;
+        if (adopt != null && attachments[index].localPath != null) {
+          try {
+            await adopt(attachments[index], done.remoteUrl);
+          } on Object {
+            // The send goes on; the file downloads when first viewed.
+          }
+        }
       }
       progress.value = 1;
     }
