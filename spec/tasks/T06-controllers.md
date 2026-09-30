@@ -69,7 +69,7 @@ class ComposerController extends ChangeNotifier {
   Message? get replyTo; Message? get editing;
   List<Attachment> get staged;
   bool get canSend;
-  void reply(Message m); void startEdit(TextMessage m); void cancel();
+  void reply(Message m); void startEdit(Message m); void cancel();
   void stage(List<Attachment> files); void unstage(Attachment a);
   Future<void> submit();                              // calls ChatRoomController
   // Draft saved to cache (debounced) and restored on creation.
@@ -79,9 +79,25 @@ class ComposerController extends ChangeNotifier {
 
 ## Done when
 
-- [ ] `ChatKit.inbox()` / `ChatKit.room(id)` return new controllers the caller disposes
-- [ ] Tests with fake source: inbox ordering and unread total; search debounce; room opens with cached messages first; `newMessagesCount` increments only when not at bottom; `markRead` called once when reaching bottom; `seenBy` from pointers in a 3-member group; typing throttle; draft persistence; edit and reply flows
-- [ ] All subscriptions/timers cancelled in `dispose` (test: no pending timers)
+- [x] `ChatKit.inbox()` / `ChatKit.room(id)` return new controllers the caller disposes
+- [x] Tests with fake source: inbox ordering and unread total; search debounce; room opens with cached messages first; `newMessagesCount` increments only when not at bottom; `markRead` called once when reaching bottom; `seenBy` from pointers in a 3-member group; typing throttle; draft persistence; edit and reply flows
+- [x] All subscriptions/timers cancelled in `dispose` (test: no pending timers)
+
+## As built
+
+- `ChatSource` gained optional `setPinned(roomId, {pinned})` and `setMuted(roomId, {muted})` (no-ops in `ChatSourceDefaults`).
+- `ChatRepository` gained `markRead` (cache pointer first, zeroes the room's `unreadCount`, then the source), `setRoomFlags` (optimistic pin / mute, reverted and rethrown on `AppFailure`), `setTyping`, and `presenceChanges`.
+- `ChatKit.clock` (UTC time source) feeds the repository, the outbox and the controllers; tests replace it.
+- `InboxController`: `hasLoadedCache`, `isLoadingMore`, `users`, `presenceOf(userId)`, `peerOf(room)` for direct rooms; peers and last-message authors are resolved lazily. Muted rooms are left out of `totalUnread`. A failed pin or mute sets `failure`.
+- `ChatRoomController`:
+  - `ready` completes once cached messages are shown and the first sync ended; `isSyncing`, `isLoadingNewer`, `isJumping`, `hasMoreNewer`, `hasLoadedCache`, `isAtBottom`, `members` added.
+  - `messageById(id)` looks in the visible messages, then loads from the cache (for reply previews).
+  - The window set by the first sync is dropped if the user already paged or jumped.
+  - `markRead` goes to the newest confirmed message from others, once per newer message, only at the bottom of the latest window; the divider uses the read pointer captured before the first mark.
+  - `sendMedia`: all images in one message, one message per video, audio or file; the caption goes on the first image or video message, else follows as a text; `replyToId` only on the first message; `ValidationFailure({'attachments': 'too_large'})` over `maxAttachmentBytes`. Sending from a detached window returns to the latest first.
+  - `edit` changes text, or the caption of image and video messages. `discard` returns whether a message was removed.
+  - Background lookups ignore results and errors after `dispose` (the kit may close right after).
+- `ComposerController(room, {draftDebounce})`: `restored` future, `isEditing`, `isSubmitting`, `clearStaged`, static `canEdit`. `startEdit` accepts text, image and video messages and keeps the previous text, which comes back after the edit or `cancel` and is what the draft stores meanwhile. Typing uses `ChatKit.clock` for the throttle; errors are ignored.
 
 ## Do not
 

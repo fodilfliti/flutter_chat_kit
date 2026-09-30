@@ -10,7 +10,7 @@ Build **one task per session**. Each file is self-contained: Goal, Read first, D
 | [T03](T03-drift-cache.md) | Drift cache: tables, DAOs, watch queries, per-user DB | T02 | Done |
 | [T04](T04-repository-sync.md) | `ChatRepository`: cache-first, gap fill, keyset paging, fetchAround, realtime | T03 | Done |
 | [T05](T05-outbox.md) | `Outbox`: optimistic send, upload progress, retry, failed, reconcile | T04 | Done |
-| [T06](T06-controllers.md) | `InboxController`, `ChatRoomController`, `ComposerController` | T05 | Open |
+| [T06](T06-controllers.md) | `InboxController`, `ChatRoomController`, `ComposerController` | T05 | Done |
 | [T07](T07-theme-config-builders.md) | `ChatTheme`, `ChatConfig`, `ChatStrings`, `ChatFormatters`, builders, `MessageContext` | T01 | Done |
 | [T08](T08-message-list-scroll.md) | `ChatMessageList` scroll engine | T06, T07 | Open |
 | [T09](T09-message-widgets.md) | Bubble, text, file, system, ticks, reply, reactions, actions | T08 | Open |

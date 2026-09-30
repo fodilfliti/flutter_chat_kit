@@ -76,9 +76,16 @@ abstract interface class ChatSource {
     String emoji, {
     required bool add,
   });
+
+  /// Pins or unpins the room for the current user.
+  Future<void> setPinned(String roomId, {required bool pinned});
+
+  /// Mutes or unmutes the room's notifications for the current user.
+  Future<void> setMuted(String roomId, {required bool muted});
 }
 
-/// Defaults for optional capabilities of [ChatSource].
+/// Defaults for optional capabilities of [ChatSource]. Pin and mute stay
+/// local to the device.
 mixin ChatSourceDefaults implements ChatSource {
   @override
   Future<ChatPage<Message>?> fetchAround(
@@ -97,4 +104,10 @@ mixin ChatSourceDefaults implements ChatSource {
     String emoji, {
     required bool add,
   }) async {}
+
+  @override
+  Future<void> setPinned(String roomId, {required bool pinned}) async {}
+
+  @override
+  Future<void> setMuted(String roomId, {required bool muted}) async {}
 }

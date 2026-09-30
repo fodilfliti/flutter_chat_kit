@@ -212,4 +212,19 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
     _check();
     reactCalls.add((roomId, messageId, emoji, add));
   }
+
+  final List<(String, bool)> pinCalls = [];
+  final List<(String, bool)> muteCalls = [];
+
+  @override
+  Future<void> setPinned(String roomId, {required bool pinned}) async {
+    _check();
+    pinCalls.add((roomId, pinned));
+  }
+
+  @override
+  Future<void> setMuted(String roomId, {required bool muted}) async {
+    _check();
+    muteCalls.add((roomId, muted));
+  }
 }

@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_chat_kit/src/cache/chat_cache.dart';
 import 'package:flutter_chat_kit/src/cache/drift_chat_cache.dart';
 import 'package:flutter_chat_kit/src/config/chat_config.dart';
+import 'package:flutter_chat_kit/src/controllers/chat_room_controller.dart';
+import 'package:flutter_chat_kit/src/controllers/inbox_controller.dart';
 import 'package:flutter_chat_kit/src/source/chat_source.dart';
 import 'package:flutter_chat_kit/src/source/chat_uploader.dart';
 import 'package:flutter_chat_kit/src/source/chat_user_resolver.dart';
@@ -31,6 +33,7 @@ class ChatKit extends ChangeNotifier {
     this.users,
     this.config = const ChatConfig(),
     this.retryPolicy = const RetryPolicy(),
+    this.clock = _utcNow,
     ChatCache? cache,
   }) : cache = cache ?? DriftChatCache();
 
@@ -44,6 +47,9 @@ class ChatKit extends ChangeNotifier {
 
   /// Backoff of the outbox.
   final RetryPolicy retryPolicy;
+
+  /// Time source (UTC) for new messages, sync and retries. Tests replace it.
+  final DateTime Function() clock;
 
   /// The local store. Only the kit writes to it; widgets read through
   /// controllers.
@@ -67,6 +73,15 @@ class ChatKit extends ChangeNotifier {
   /// The write queue (send, edit, delete, react). Available while open.
   Outbox get outbox => _outbox ?? (throw StateError('ChatKit is not open'));
 
+  /// A new inbox controller. The caller disposes it.
+  // A factory for a new, disposable controller, not a conversion.
+  // ignore: use_to_and_as_if_applicable
+  InboxController inbox() => InboxController(this);
+
+  /// A new controller for [roomId]. The caller disposes it (before
+  /// [close]).
+  ChatRoomController room(String roomId) => ChatRoomController(this, roomId);
+
   /// Opens the user's cache and resumes pending sends.
   Future<void> open() async {
     if (_isOpen) return;
@@ -77,6 +92,7 @@ class ChatKit extends ChangeNotifier {
       cache: cache,
       users: users,
       config: config,
+      clock: clock,
     );
     final outbox = _outbox = Outbox(
       currentUserId: currentUserId,
@@ -84,6 +100,7 @@ class ChatKit extends ChangeNotifier {
       cache: cache,
       uploader: uploader,
       retryPolicy: retryPolicy,
+      clock: clock,
     )..setOnline(online: _isOnline);
     _isOpen = true;
     unawaited(outbox.flush());
@@ -142,3 +159,5 @@ class ChatKit extends ChangeNotifier {
     await _outbox?.retryAll();
   }
 }
+
+DateTime _utcNow() => DateTime.now().toUtc();

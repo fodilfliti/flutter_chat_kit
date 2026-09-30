@@ -261,6 +261,42 @@ class ChatRepository {
     if (firstError != null) Error.throwWithStackTrace(firstError, firstStack!);
   }
 
+  // --------------------------------------------------------- room actions
+
+  /// Moves the current user's read pointer to [upTo] and clears the room's
+  /// unread count, in the cache first, then on the source.
+  Future<void> markRead(String roomId, MessageCursor upTo) async {
+    await _cache.updatePointers(roomId, currentUserId, readAt: upTo.createdAt);
+    final room = await _cache.watchRoom(roomId).first;
+    if (room != null && room.unreadCount != 0) {
+      await _cache.upsertRooms([room.copyWith(unreadCount: 0)]);
+    }
+    await _source.markRead(roomId, upTo);
+  }
+
+  /// Pins or mutes a room: the cache changes at once and is restored when
+  /// the source rejects it.
+  Future<void> setRoomFlags(String roomId, {bool? pinned, bool? muted}) async {
+    final room = await _cache.watchRoom(roomId).first;
+    if (room == null) return;
+    await _cache.upsertRooms([room.copyWith(pinned: pinned, muted: muted)]);
+    try {
+      if (pinned != null && pinned != room.pinned) {
+        await _source.setPinned(roomId, pinned: pinned);
+      }
+      if (muted != null && muted != room.muted) {
+        await _source.setMuted(roomId, muted: muted);
+      }
+    } on AppFailure {
+      await _cache.upsertRooms([room]);
+      rethrow;
+    }
+  }
+
+  /// Tells the other members whether the current user is typing.
+  Future<void> setTyping(String roomId, {required bool typing}) =>
+      _source.setTyping(roomId, typing: typing);
+
   // --------------------------------------------------------------- typing
 
   TypingState typing(String roomId) =>
@@ -277,6 +313,9 @@ class ChatRepository {
 
   Stream<Presence> watchPresence(String userId) =>
       _presenceController.stream.where((p) => p.userId == userId);
+
+  /// Every presence change received while the inbox is open.
+  Stream<Presence> get presenceChanges => _presenceController.stream;
 
   // ---------------------------------------------------------------- users
 
