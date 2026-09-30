@@ -44,8 +44,41 @@ test/widgets/message_widgets_test.dart
 
 ## Done when
 
-- [ ] Widget tests: a `CustomMessage('offer')` renders through `customBuilders`; missing builder renders unsupported view; `bubbleBuilder` wraps default; reply preview tap calls `jumpToMessage`; reactions toggle; actions sheet contains app-added action; failed message shows retry
-- [ ] Golden-free; semantics labels on ticks and actions
+- [x] Widget tests: a `CustomMessage('offer')` renders through `customBuilders`; missing builder renders unsupported view; `bubbleBuilder` wraps default; reply preview tap calls `jumpToMessage`; reactions toggle; actions sheet contains app-added action; failed message shows retry
+- [x] Golden-free; semantics labels on ticks and actions
+
+## As built
+
+- `MessageContent` is the default rendering; `ChatMessageList` always uses it (its T08 `contentBuilder` hook is gone: `ChatBuilders` covers every layer).
+  - Order: `bubbleBuilder(MessageBubble)` → per-type builder (`textBuilder`, `fileBuilder`, `imageBuilder`, …) → default view.
+  - A `CustomMessage` with a `customBuilders` entry renders without a bubble (apps draw their own card); without one it shows `UnsupportedMessageView` (`unsupportedBuilder`).
+  - System messages are a centered `SystemMessageView` pill (`systemBuilder`).
+  - Reactions (`reactionsBuilder`) and the failed notice with a retry button sit under the bubble.
+- Time and ticks (`MessageMeta`) sit inline after short texts and wrap to their own line after long ones (a `Wrap`, no custom render object); media and files put them on a line below. `timestampBuilder` and `statusBuilder` wrap each part.
+- `MessageContext` gained:
+  - `currentUserId`;
+  - `repliedToAuthor`;
+  - `displayStatus`: the list passes `ChatRoomController.effectiveStatus`, and `status` returns it;
+  - `isSelectionMode`.
+- Callbacks on `ChatMessageList` (and `MessageContent`):
+  - `onReply` enables swipe-to-reply (with `ChatConfig.swipeToReply`) and the reply action;
+  - `onEdit` enables the edit action;
+  - `onLinkTap(Uri)` (`https:`, `mailto:`, `tel:`), for example with `url_launcher` in the app;
+  - `onAttachmentTap(message, attachment)`.
+  Reply preview taps call `jumpToMessage`; reaction chips and quick reactions call `react` (when `ChatConfig.enableReactions`); retry calls `retry`.
+- Long press opens `MessageActionsSheet` unless `onMessageLongPress` is set.
+  - `MessageActionsSheet.defaults(...)` filters by capability: reply for confirmed messages; copy when there is text or a caption; edit for own confirmed text, image or video; retry for own failed messages; delete for own messages (pending or failed ones are discarded).
+  - `builders.messageActions` edits the list. Copy writes to the clipboard and shows `strings.copied` in a `SnackBar` when a `ScaffoldMessenger` exists.
+- While any message is selected, taps and long presses toggle selection and rows show a check circle.
+- `TextMessageView`:
+  - `linkPattern` / `uriOf` detect URLs (`http(s)://`, `www.`), e-mails, and phone numbers with 8–15 digits;
+  - `isEmojiOnly` covers one to three emoji, drawn at 2.4× size;
+  - texts over `collapseAfter` (700) characters collapse behind `readMore` / `readLess`.
+- `FileMessageView.iconFor(attachment)` picks the icon by extension, then by MIME type. The upload ring only listens while the message is local.
+- `ReplyPreview(snippet, title, onTap, onClose)` is shared with the composer (T11). `messageSnippet(message, strings)` and `copyableText(message)` live in `widgets/common/message_snippet.dart` for the inbox too.
+- `ChatAvatar` stays in `widgets/common/` (from T08).
+- New `ChatStrings`: `readMore`, `readLess`, `replyUnavailable`, `statusPending`, `statusSent`, `statusDelivered`, `statusSeen`, `messageOptions`, `reaction(emoji, count)`, `reactWith(emoji)`.
+- Image, video and audio messages show an icon-and-label placeholder (plus caption) until T10 plugs in the media views.
 
 ## Do not
 

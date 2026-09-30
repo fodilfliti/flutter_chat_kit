@@ -60,7 +60,7 @@ class MessageRow extends StatelessWidget {
         children: [
           if (name != null)
             Padding(
-              padding: const EdgeInsets.only(left: 4, bottom: 2),
+              padding: const EdgeInsetsDirectional.only(start: 4, bottom: 2),
               child: name,
             ),
           ConstrainedBox(
@@ -69,21 +69,46 @@ class MessageRow extends StatelessWidget {
           ),
         ],
       );
+      final selecting = message.isSelectionMode;
       body = Row(
         mainAxisAlignment: mine
             ? MainAxisAlignment.end
             : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          if (selecting)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 8, bottom: 4),
+              child: Icon(
+                message.isSelected
+                    ? Icons.check_circle
+                    : Icons.radio_button_unchecked,
+                size: 22,
+                color: message.isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : theme.iconColor,
+              ),
+            ),
           if (showAvatar && !mine)
             Padding(
-              padding: const EdgeInsets.only(right: 6),
+              padding: const EdgeInsetsDirectional.only(end: 6),
               child: SizedBox(
                 width: theme.avatarSize,
                 child: position.isLast ? avatar : null,
               ),
             ),
-          Flexible(child: column),
+          if (selecting)
+            Expanded(
+              child: Align(
+                alignment: mine
+                    ? AlignmentDirectional.centerEnd
+                    : AlignmentDirectional.centerStart,
+                heightFactor: 1,
+                child: column,
+              ),
+            )
+          else
+            Flexible(child: column),
         ],
       );
     }

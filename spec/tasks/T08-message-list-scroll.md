@@ -35,7 +35,8 @@ class ChatMessageList extends StatefulWidget {
   const ChatMessageList({
     required this.controller, this.builders = const ChatBuilders(), this.config, this.strings,
     this.onMessageTap, this.onMessageLongPress, this.onAvatarTap, this.padding,
-    this.contentBuilder,     // T09 injects default message content; placeholder text until then
+    // T09 replaced contentBuilder with MessageContent + ChatBuilders, and added
+    // onReply, onEdit, onLinkTap, onAttachmentTap.
   });
 }
 ```

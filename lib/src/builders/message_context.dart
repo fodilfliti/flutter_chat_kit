@@ -53,6 +53,7 @@ enum GroupPosition {
 class MessageContext {
   const MessageContext({
     required this.message,
+    required this.currentUserId,
     required this.isMine,
     required this.groupPosition,
     required this.index,
@@ -60,12 +61,16 @@ class MessageContext {
     this.author,
     this.room,
     this.repliedTo,
+    this.repliedToAuthor,
     this.seenBy = const [],
+    this.displayStatus,
     this.isSelected = false,
+    this.isSelectionMode = false,
     this.isHighlighted = false,
   });
 
   final Message message;
+  final String currentUserId;
 
   /// Resolved author; null until the user resolver answers.
   final ChatUser? author;
@@ -83,14 +88,24 @@ class MessageContext {
   /// The message this one replies to, when it is loaded.
   final Message? repliedTo;
 
+  /// Author of [repliedTo], when resolved.
+  final ChatUser? repliedToAuthor;
+
   /// Other members whose read pointer covers this message.
   final List<RoomMember> seenBy;
+
+  /// Status derived from the members' read pointers; see [status].
+  final MessageStatus? displayStatus;
   final bool isSelected;
+
+  /// True while at least one message is selected: taps toggle selection.
+  final bool isSelectionMode;
 
   /// True while the jump-to-message highlight runs.
   final bool isHighlighted;
 
-  MessageStatus get status => message.status;
+  /// The status to show: [displayStatus] when set, else the stored one.
+  MessageStatus get status => displayStatus ?? message.status;
 
   bool get isGroupRoom => room != null && !room!.isDirect;
 }

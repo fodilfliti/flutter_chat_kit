@@ -40,10 +40,20 @@ class ChatStrings {
     this.camera = 'Camera',
     this.gallery = 'Gallery',
     this.attachmentTooLarge = 'File is too large',
+    this.readMore = 'Read more',
+    this.readLess = 'Show less',
+    this.replyUnavailable = 'Original message unavailable',
+    this.statusPending = 'Sending',
+    this.statusSent = 'Sent',
+    this.statusDelivered = 'Delivered',
+    this.statusSeen = 'Seen',
+    this.messageOptions = 'Message options',
     this.typing = defaultTyping,
     this.system = defaultSystem,
     this.lastSeen = defaultLastSeen,
     this.photos = defaultPhotos,
+    this.reaction = defaultReaction,
+    this.reactWith = defaultReactWith,
   });
 
   final String typeMessage;
@@ -92,6 +102,23 @@ class ChatStrings {
   final String gallery;
   final String attachmentTooLarge;
 
+  /// Expands and collapses a long text message.
+  final String readMore;
+  final String readLess;
+
+  /// Reply preview of a message that is not loaded or was removed.
+  final String replyUnavailable;
+
+  /// Accessibility labels of the delivery ticks (failed uses
+  /// [failedToSend]).
+  final String statusPending;
+  final String statusSent;
+  final String statusDelivered;
+  final String statusSeen;
+
+  /// Accessibility label of the long-press actions sheet.
+  final String messageOptions;
+
   /// Names of the users currently typing, in arrival order. Never empty.
   final String Function(List<String> names) typing;
 
@@ -103,6 +130,12 @@ class ChatStrings {
 
   /// Inbox preview for an image message with `count` images.
   final String Function(int count) photos;
+
+  /// Accessibility label of a reaction chip.
+  final String Function(String emoji, int count) reaction;
+
+  /// Tooltip of a quick-reaction button.
+  final String Function(String emoji) reactWith;
 
   static String defaultTyping(List<String> names) {
     return switch (names.length) {
@@ -123,4 +156,9 @@ class ChatStrings {
 
   static String defaultPhotos(int count) =>
       count == 1 ? 'Photo' : '$count photos';
+
+  static String defaultReaction(String emoji, int count) =>
+      count == 1 ? '$emoji, 1 reaction' : '$emoji, $count reactions';
+
+  static String defaultReactWith(String emoji) => 'React with $emoji';
 }

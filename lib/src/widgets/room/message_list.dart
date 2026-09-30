@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_chat_kit/src/builders/chat_builders.dart';
 import 'package:flutter_chat_kit/src/builders/message_context.dart';
 import 'package:flutter_chat_kit/src/config/chat_config.dart';
@@ -17,18 +18,19 @@ import 'package:flutter_chat_kit/src/models/message.dart';
 import 'package:flutter_chat_kit/src/models/message_cursor.dart';
 import 'package:flutter_chat_kit/src/models/typing.dart';
 import 'package:flutter_chat_kit/src/widgets/common/chat_avatar.dart';
+import 'package:flutter_chat_kit/src/widgets/common/message_snippet.dart';
+import 'package:flutter_chat_kit/src/widgets/messages/text_message_view.dart';
 import 'package:flutter_chat_kit/src/widgets/room/date_separator.dart';
 import 'package:flutter_chat_kit/src/widgets/room/floating_date_header.dart';
+import 'package:flutter_chat_kit/src/widgets/room/message_actions_sheet.dart';
+import 'package:flutter_chat_kit/src/widgets/room/message_content.dart';
 import 'package:flutter_chat_kit/src/widgets/room/message_grouping.dart';
 import 'package:flutter_chat_kit/src/widgets/room/message_row.dart';
 import 'package:flutter_chat_kit/src/widgets/room/scroll_to_bottom_button.dart';
+import 'package:flutter_chat_kit/src/widgets/room/swipe_to_reply.dart';
 import 'package:flutter_chat_kit/src/widgets/room/typing_indicator.dart';
 import 'package:flutter_chat_kit/src/widgets/room/unread_divider.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
-
-/// Renders the content of one message (the bubble and what is inside).
-typedef MessageContentBuilder =
-    Widget Function(BuildContext context, MessageContext message);
 
 typedef MessageCallback = void Function(MessageContext message);
 
@@ -40,6 +42,10 @@ typedef MessageCallback = void Function(MessageContext message);
 ///
 /// It reads everything from [controller] and reports the viewport back
 /// through `ChatRoomController.onViewportChanged`.
+///
+/// Messages render with [MessageContent] and [ChatBuilders]. Long press
+/// opens [MessageActionsSheet] unless [onMessageLongPress] is set; while
+/// messages are selected, taps and long presses toggle selection.
 class ChatMessageList extends StatefulWidget {
   const ChatMessageList({
     required this.controller,
@@ -50,8 +56,11 @@ class ChatMessageList extends StatefulWidget {
     this.onMessageTap,
     this.onMessageLongPress,
     this.onAvatarTap,
+    this.onReply,
+    this.onEdit,
+    this.onLinkTap,
+    this.onAttachmentTap,
     this.padding,
-    this.contentBuilder,
     super.key,
   });
 
@@ -63,16 +72,24 @@ class ChatMessageList extends StatefulWidget {
   final ChatStrings strings;
   final ChatFormatters formatters;
   final MessageCallback? onMessageTap;
+
+  /// Replaces the default actions sheet.
   final MessageCallback? onMessageLongPress;
 
   /// Called with the author's user id.
   final ValueChanged<String>? onAvatarTap;
 
+  /// Enables swipe-to-reply and the reply action; usually
+  /// `ComposerController.reply`.
+  final MessageCallback? onReply;
+
+  /// Enables the edit action; usually `ComposerController.startEdit`.
+  final MessageCallback? onEdit;
+  final LinkTapCallback? onLinkTap;
+  final AttachmentTapCallback? onAttachmentTap;
+
   /// Defaults to `ChatTheme.listPadding`.
   final EdgeInsets? padding;
-
-  /// Renders message content. Defaults to a plain bubble.
-  final MessageContentBuilder? contentBuilder;
 
   /// The nearest list state, for example to jump from a reply preview.
   static ChatMessageListState? maybeOf(BuildContext context) =>
@@ -709,8 +726,11 @@ class ChatMessageListState extends State<ChatMessageList> {
     final isGroup = room != null && !room.isDirect;
     final author = c.users[message.authorId];
     final replyToId = message.replyToId;
+    final repliedTo = replyToId == null ? null : c.messageById(replyToId);
+    final selecting = _selected.isNotEmpty;
     final context_ = MessageContext(
       message: message,
+      currentUserId: c.currentUserId,
       author: author,
       isMine: mine,
       groupPosition: item.groupPosition,
@@ -719,19 +739,30 @@ class ChatMessageListState extends State<ChatMessageList> {
           ? c.progressOf(message.localId)
           : _noProgress,
       room: room,
-      repliedTo: replyToId == null ? null : c.messageById(replyToId),
+      repliedTo: repliedTo,
+      repliedToAuthor: repliedTo == null ? null : c.users[repliedTo.authorId],
       seenBy: mine && isGroup ? c.seenBy(message) : const [],
+      displayStatus: mine ? c.effectiveStatus(message) : null,
       isSelected: _selected.contains(message.localId),
+      isSelectionMode: selecting,
       isHighlighted: c.highlightedId.value == message.localId,
     );
 
-    final content =
-        widget.contentBuilder?.call(context, context_) ??
-        _FallbackContent(
-          message: context_,
-          strings: widget.strings,
-          builders: builders,
-        );
+    final reactionsOn = config.enableReactions;
+    final content = MessageContent(
+      message: context_,
+      builders: builders,
+      strings: widget.strings,
+      formatters: widget.formatters,
+      showReactions: reactionsOn,
+      onReplyTap: (id) => unawaited(jumpToMessage(id)),
+      onReactionTap: reactionsOn && !message.status.isLocal
+          ? (emoji) => unawaited(c.react(message.id, emoji))
+          : null,
+      onRetry: () => unawaited(c.retry(message.localId)),
+      onLinkTap: widget.onLinkTap,
+      onAttachmentTap: widget.onAttachmentTap,
+    );
 
     final isSystem = message is SystemMessage;
     final showAvatar =
@@ -769,17 +800,83 @@ class ChatMessageListState extends State<ChatMessageList> {
 
     final onTap = widget.onMessageTap;
     final onLongPress = widget.onMessageLongPress;
-    final row = MessageRow(
+    void toggle() => c.toggleSelect(message.localId);
+    final onReply = widget.onReply;
+    Widget row = MessageRow(
       message: context_,
       content: content,
       maxContentWidth: maxWidth,
       showAvatar: showAvatar,
       avatar: avatar,
       authorName: name,
-      onTap: onTap == null ? null : () => onTap(context_),
-      onLongPress: onLongPress == null ? null : () => onLongPress(context_),
+      onTap: selecting
+          ? toggle
+          : onTap == null
+          ? null
+          : () => onTap(context_),
+      onLongPress: selecting
+          ? toggle
+          : isSystem
+          ? null
+          : onLongPress != null
+          ? () => onLongPress(context_)
+          : () => unawaited(_showActions(context_)),
     );
+    if (onReply != null && config.swipeToReply) {
+      row = SwipeToReply(
+        enabled:
+            !selecting &&
+            !isSystem &&
+            !message.isDeleted &&
+            !message.status.isLocal,
+        onReply: () => onReply(context_),
+        child: row,
+      );
+    }
     return builders.messageBuilder?.call(context, context_, row) ?? row;
+  }
+
+  Future<void> _showActions(MessageContext message) {
+    final c = _controller;
+    final m = message.message;
+    final strings = widget.strings;
+    final onReply = widget.onReply;
+    final onEdit = widget.onEdit;
+    final text = copyableText(m);
+    var actions = MessageActionsSheet.defaults(
+      message: message,
+      strings: strings,
+      onReply: onReply == null ? null : () => onReply(message),
+      onCopy: text == null ? null : () => _copy(text),
+      onEdit: onEdit == null ? null : () => onEdit(message),
+      onRetry: () => c.retry(m.localId),
+      onDelete: () => m.status.isLocal
+          ? unawaited(c.discard(m.localId))
+          : unawaited(c.delete(m.id)),
+    );
+    actions =
+        widget.builders.messageActions?.call(context, message, actions) ??
+        actions;
+    final reactions = _config.enableReactions && !m.status.isLocal;
+    if (actions.isEmpty && !reactions) return Future.value();
+    return MessageActionsSheet.show(
+      context,
+      actions: actions,
+      quickReactions: reactions ? _config.quickReactions : const [],
+      selectedReactions: {
+        for (final e in m.reactions.entries)
+          if (e.value.contains(c.currentUserId)) e.key,
+      },
+      onReact: reactions ? (emoji) => unawaited(c.react(m.id, emoji)) : null,
+      strings: strings,
+    );
+  }
+
+  void _copy(String text) {
+    unawaited(Clipboard.setData(ClipboardData(text: text)));
+    ScaffoldMessenger.maybeOf(
+      context,
+    )?.showSnackBar(SnackBar(content: Text(widget.strings.copied)));
   }
 
   Widget _typing(BuildContext context) {
@@ -826,62 +923,6 @@ class ChatMessageListState extends State<ChatMessageList> {
               ),
             )
           : null,
-    );
-  }
-}
-
-/// Plain content used until the app (or the kit's message widgets)
-/// provides a [MessageContentBuilder].
-class _FallbackContent extends StatelessWidget {
-  const _FallbackContent({
-    required this.message,
-    required this.strings,
-    required this.builders,
-  });
-
-  final MessageContext message;
-  final ChatStrings strings;
-  final ChatBuilders builders;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = ChatTheme.of(context);
-    final m = message.message;
-    if (m is SystemMessage) {
-      return Text(
-        strings.system(m.code, m.args),
-        style: theme.systemMessageStyle,
-        textAlign: TextAlign.center,
-      );
-    }
-    if (m is CustomMessage && !m.isDeleted) {
-      final custom = builders.customBuilders[m.customType];
-      if (custom != null) return custom(context, message);
-    }
-    final mine = message.isMine;
-    final text = m.isDeleted
-        ? strings.messageDeleted
-        : switch (m) {
-            TextMessage(:final text) => text,
-            ImageMessage(:final caption, :final images) =>
-              caption ?? strings.photos(images.length),
-            VideoMessage(:final caption) => caption ?? strings.video,
-            AudioMessage() => strings.voice,
-            FileMessage(:final file) => file.name ?? strings.file,
-            SystemMessage() || CustomMessage() => strings.unsupportedMessage,
-          };
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: mine ? theme.outgoingBubbleColor : theme.incomingBubbleColor,
-        borderRadius: BorderRadius.circular(theme.bubbleRadius),
-      ),
-      child: Padding(
-        padding: theme.bubblePadding,
-        child: Text(
-          text,
-          style: mine ? theme.outgoingTextStyle : theme.incomingTextStyle,
-        ),
-      ),
     );
   }
 }
