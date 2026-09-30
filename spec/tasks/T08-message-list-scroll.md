@@ -54,8 +54,27 @@ class ChatMessageList extends StatefulWidget {
 
 ## Done when
 
-- [ ] Widget tests: loading older keeps the first visible message at the same screen offset; a new incoming message while scrolled up does not move the list and increments the badge; own message scrolls to bottom; jump to a message not loaded triggers `fetchAround` and highlights it; separators appear between days; grouping positions correct
-- [ ] Manual check in example with 5 000 messages: no dropped frames on fling (profile mode)
+- [x] Widget tests: loading older keeps the first visible message at the same screen offset; a new incoming message while scrolled up does not move the list and increments the badge; own message scrolls to bottom; jump to a message not loaded triggers `fetchAround` and highlights it; separators appear between days; grouping positions correct
+- [ ] Manual check in example with 5 000 messages: no dropped frames on fling (profile mode) — pending until the example app (T13)
+
+## As built
+
+- **Center-anchored layout.** A single `SuperSliverList` shifts the viewport when an item is inserted at index 0, because it sums estimated extents. So the list is split at an anchor cursor (the newest message when the window opened) into two slivers of one reversed `CustomScrollView`:
+  - the *older* sliver (anchor and older, newest first) is the `center`, starting at scroll offset 0 and growing up;
+  - the *newer* sliver (after the anchor, oldest first) sits before the center and grows down, so the bottom is `minScrollExtent` (negative once newer messages arrive).
+  Incoming messages and newer pages extend the newer sliver; older pages extend the older one. Neither moves what is on screen. The anchor resets to the newest message when a new slice replaces the messages (jump, return to latest).
+- "At bottom" is `pixels <= minScrollExtent + 48`, and scrolling to the bottom targets `minScrollExtent`. After the first layout the list jumps to the true bottom, because the bottom padding sits below the center.
+- **Jump.** `ChatMessageListState.jumpToMessage(id)` calls the controller, re-anchors if the target was not loaded, waits a frame, then:
+  - animates to the target's offset, estimated from the sliver's measured or estimated row extents;
+  - reveals the built row with `Scrollable.ensureVisible` at alignment `0.5` (centered instead of `0.3`).
+  `ListController.animateToItem` is not used: its precise final step miscomputes offsets for slivers placed before the center.
+- `ChatMessageListState.scrollToBottom()` (returns to latest when detached) and `ChatMessageList.maybeOf(context)` let the screen drive the list. `showsScrollToBottom` is a `ValueListenable<bool>`.
+- `ChatMessageList` also takes `formatters` (date labels). `ChatStrings` gained `startOfConversation` and `scrollToBottom`; every label comes from `ChatStrings`.
+- `buildChatListItems(messages, {groupingWindow, unreadDividerCursor, isStartOfHistory})` returns a sealed `ChatListItem` (`MessageListItem`, `DateSeparatorItem`, `UnreadDividerItem`) with stable keys; the last date separator only shows at the start of history.
+- `MessageRow(message: MessageContext, content, maxContentWidth, showAvatar, avatar, authorName, onTap, onLongPress)` handles spacing by group position, highlight and selection color (`AnimatedContainer`), centered system messages, and the avatar on the last row of a group.
+- `ChatAvatar(name, url, size)` (network image with initials fallback) is shared with the inbox.
+- Upload progress is only listened to for local (pending) messages; confirmed rows get a constant `null` progress.
+- Until T09, rows use a plain fallback bubble with text from `ChatStrings`.
 
 ## Do not
 

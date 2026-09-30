@@ -31,6 +31,8 @@ class ChatStrings {
     this.noChats = 'No conversations yet',
     this.noMessages = 'Say hello',
     this.loadFailed = "Couldn't load messages",
+    this.startOfConversation = 'This is the start of the conversation',
+    this.scrollToBottom = 'Scroll to latest',
     this.photo = 'Photo',
     this.video = 'Video',
     this.voice = 'Voice message',
@@ -76,6 +78,12 @@ class ChatStrings {
   final String noChats;
   final String noMessages;
   final String loadFailed;
+
+  /// Shown above the oldest message once the whole history is loaded.
+  final String startOfConversation;
+
+  /// Tooltip of the scroll-to-bottom button.
+  final String scrollToBottom;
   final String photo;
   final String video;
   final String voice;

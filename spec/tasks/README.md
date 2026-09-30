@@ -12,7 +12,7 @@ Build **one task per session**. Each file is self-contained: Goal, Read first, D
 | [T05](T05-outbox.md) | `Outbox`: optimistic send, upload progress, retry, failed, reconcile | T04 | Done |
 | [T06](T06-controllers.md) | `InboxController`, `ChatRoomController`, `ComposerController` | T05 | Done |
 | [T07](T07-theme-config-builders.md) | `ChatTheme`, `ChatConfig`, `ChatStrings`, `ChatFormatters`, builders, `MessageContext` | T01 | Done |
-| [T08](T08-message-list-scroll.md) | `ChatMessageList` scroll engine | T06, T07 | Open |
+| [T08](T08-message-list-scroll.md) | `ChatMessageList` scroll engine | T06, T07 | Done |
 | [T09](T09-message-widgets.md) | Bubble, text, file, system, ticks, reply, reactions, actions | T08 | Open |
 | [T10](T10-media-voice.md) | Images, gallery, video, audio player hub, voice recorder controller | T09 | Open |
 | [T11](T11-composer.md) | `ChatComposer`, attachment sheet, voice record button, reply/edit banner | T08, T10 | Open |

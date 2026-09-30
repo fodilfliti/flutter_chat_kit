@@ -23,6 +23,7 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
   final List<(String, bool)> typingCalls = [];
   final List<({String roomId, MessageCursor? before, MessageCursor? after})>
   fetchCalls = [];
+  final List<(String, String)> aroundCalls = [];
   int sendCalls = 0;
   int _serverSeq = 0;
 
@@ -125,6 +126,7 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
   }) async {
     if (!supportsAround) return null;
     _check();
+    aroundCalls.add((roomId, messageId));
     final all = messagesOf(roomId);
     final index = all.indexWhere((m) => m.matches(messageId));
     if (index < 0) throw NotFoundFailure('message:$messageId');
