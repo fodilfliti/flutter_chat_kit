@@ -1,5 +1,19 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- `ChatStyle`: wrap any part of the app to style and scale every chat widget below it. It takes a `ChatPreset` (`classic`, `whatsApp`, `telegram`, `minimal`, `cards`) and simple options (seed color, bubble radius, shadows and border, message text, font, `ChatTiles` layout, tile radius, square avatars, wallpaper). `customize` reaches every part of `ChatTheme`. The theme is built in a fixed order: preset, options, `customize`, scale. Nested styles change only what they pass and never scale twice. Sheets and dialogs keep the style.
+- `ChatScale` and `ChatStyle.scale`: one size factor and one text factor, recomputed on every resize and rotation. Works with any scale package (`ChatScale(1.w, text: 1.sp)` for flutter_scale_kit or flutter_screenutil), or `ChatScale.byScreen()` and `ChatScale.fixed()` without one. Scales multiply for a zoom setting. The example tests it against the real flutter_scale_kit on phones, landscape and tablets.
+- `InboxView.roomBuilder` opens a room that keeps the inbox's style; `onRoomTap` is now optional. `ChatStyle.push` and `ChatStyle.carry` keep the style on other pages and follow later changes. `ChatStyle.scaleOf` returns the current scale.
+- `context.chatTheme`, a shortcut for `ChatTheme.of(context)`.
+
+### Changed
+
+- A `theme:` passed to `InboxView` or `ChatRoomView` is scaled by the `ChatStyle` above it.
+- The README is rewritten for app developers: a 3-step quick start, styling, and a section on screen-size and theme kits. The agent skill covers `ChatStyle` and scaling.
+
 ## [0.1.0] - 2026-09-30
 
 First usable release: a backend-agnostic chat room and inbox with an offline

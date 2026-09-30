@@ -318,6 +318,79 @@ void main() {
       await close(tester);
     });
 
+    testWidgets('roomBuilder opens the room with the list style', (
+      tester,
+    ) async {
+      h = Harness();
+      h.source.seedRoom(inboxRoom('alpha'));
+      await drive(tester, h.open());
+      inbox = h.kit.inbox();
+      ChatTheme? roomTheme;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ChatStyle(
+              bubbleRadius: 3,
+              scale: ChatScale.fixed(2),
+              child: InboxView(
+                controller: inbox,
+                roomBuilder: (context, room) => Scaffold(
+                  body: Builder(
+                    builder: (context) {
+                      roomTheme = context.chatTheme;
+                      return Text('room ${room.id}');
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await settle(tester, until: () => inbox.rooms.isNotEmpty);
+      await settle(tester);
+      await tester.tap(find.text('alpha'));
+      await settle(tester, until: () => roomTheme != null);
+      await settle(tester);
+      expect(find.text('room alpha'), findsOneWidget);
+      expect(roomTheme!.outgoingBubble.radius, 6);
+      expect(roomTheme!.scale, 2);
+      await close(tester);
+    });
+
+    testWidgets('a theme passed to the view gets the ChatStyle scale', (
+      tester,
+    ) async {
+      h = Harness();
+      h.source.seedRoom(inboxRoom('alpha'));
+      await drive(tester, h.open());
+      inbox = h.kit.inbox();
+      final own = ChatTheme.fallback(
+        ColorScheme.fromSeed(seedColor: Colors.orange),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ChatStyle(
+              scale: ChatScale.fixed(1.5),
+              child: InboxView(
+                controller: inbox,
+                theme: own,
+                onRoomTap: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await settle(tester, until: () => inbox.rooms.isNotEmpty);
+      await settle(tester);
+      final tile = tester.element(find.byType(RoomTile).first);
+      final used = ChatTheme.of(tile);
+      expect(used.scale, 1.5);
+      expect(used.outgoingBubble.color, own.outgoingBubble.color);
+      await close(tester);
+    });
+
     testWidgets('search filters the rooms', (tester) async {
       await open(tester, [
         inboxRoom('alpha', updated: 2),

@@ -6,7 +6,9 @@ Backend-agnostic chat kit: models, SQLite cache, outbox, controllers, customizab
 - App implements ChatSource (fetch rooms/messages, events stream, send, edit, delete, markRead), ChatUploader, ChatUserResolver
 - Kit owns Drift cache (one DB per user), per-room sync, keyset pagination, offline outbox with retry
 - ChatKit root + ChatKitScope; InboxController, ChatRoomController, ComposerController (ChangeNotifier, no Riverpod)
-- ChatRoomView / InboxView; every piece replaceable via ChatBuilders / InboxBuilders; CustomMessage + customBuilders for app types (e.g. offer)
-- ChatTheme (ThemeExtension, grouped: ChatBubbleStyle, ChatRoomTileStyle plain/divided/card, ChatComposerStyle, ...; scaled() for zoom or screenutil), ChatConfig, ChatStrings (app passes strings), ChatFormatters
+- ChatRoomView / InboxView (roomBuilder pushes the room with the style); every piece replaceable via ChatBuilders / InboxBuilders; CustomMessage + customBuilders for app types (e.g. offer)
+- ChatStyle wraps any subtree: ChatPreset (classic, whatsApp, telegram, minimal, cards), simple options (seedColor, bubbleRadius, tiles: ChatTiles, ...), customize, scale; ChatStyle.push / carry keep it on routes
+- ChatScale: size + text factor, re-read on resize/rotation; ChatScale(1.w, text: 1.sp) for flutter_scale_kit / screenutil, ChatScale.byScreen(), ChatScale.fixed(); options take design numbers (never .w)
+- ChatTheme (ThemeExtension, grouped: ChatBubbleStyle, ChatRoomTileStyle plain/divided/card, ChatComposerStyle, ...; built by ChatStyle; scaled() for hand-built themes), context.chatTheme, ChatConfig, ChatStrings (app passes strings), ChatFormatters
 - No firebase, supabase, dio, riverpod, slang in lib/
 - Build order: spec/tasks/README.md

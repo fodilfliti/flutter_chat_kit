@@ -21,6 +21,7 @@ Build **one task per session**. Each file is self-contained: Goal, Read first, D
 | [T14](T14-room-filters-mixed-sources.md) | Several chat lists (`RoomFilter`, labels), mixed backends (`ComposedChatSource`, `PollingRealtime`) | T13 | Done |
 | [T15](T15-profiles-business.md) | Profiles and business accounts (`ChatProfileSwitcher`, `Message.sentBy`, staff labels) | T14 | Done |
 | [T16](T16-styling-custom-messages.md) | Grouped `ChatTheme` styles, `scaled`, room tile shapes, custom resolver + bubbled custom messages, example style lab | T15 | Done |
+| [T17](T17-chat-style.md) | `ChatStyle` widget (presets, simple options, any scale package, nesting, routes keep the style), README for Flutter devs | T16 | Done |
 
 ```mermaid
 flowchart LR
@@ -41,6 +42,7 @@ flowchart LR
   T13 --> T14[T14 filters + mixed sources]
   T14 --> T15[T15 profiles + business]
   T15 --> T16[T16 styling + custom messages]
+  T16 --> T17[T17 ChatStyle]
 ```
 
 T07 can run in parallel with T02–T06.

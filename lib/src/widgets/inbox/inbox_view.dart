@@ -7,20 +7,28 @@ import 'package:flutter_chat_kit/src/config/chat_strings.dart';
 import 'package:flutter_chat_kit/src/config/chat_theme.dart';
 import 'package:flutter_chat_kit/src/controllers/inbox_controller.dart';
 import 'package:flutter_chat_kit/src/models/chat_room.dart';
+import 'package:flutter_chat_kit/src/widgets/common/chat_style.dart';
 import 'package:flutter_chat_kit/src/widgets/inbox/inbox_search_bar.dart';
 import 'package:flutter_chat_kit/src/widgets/inbox/room_swipe_actions.dart';
 import 'package:flutter_chat_kit/src/widgets/inbox/room_tile.dart';
 
+/// Builds the page of a room opened from the inbox.
+typedef ChatRoomPageBuilder =
+    Widget Function(BuildContext context, ChatRoom room);
+
 /// The room list: search bar, optional [header], [RoomTile]s with pin and
 /// mute swipe actions, pull to refresh, and the next page loaded near the
-/// end. Tapping a room calls [onRoomTap]; the view never navigates.
+/// end.
 ///
-/// Long press shows the swipe actions in a sheet unless [onRoomLongPress]
-/// is set.
+/// Tapping a room pushes the page from [roomBuilder], which keeps the
+/// surrounding `ChatStyle`, or calls [onRoomTap] for your own navigation
+/// (a router package, a split view). Long press shows the swipe actions in
+/// a sheet unless [onRoomLongPress] is set.
 class InboxView extends StatefulWidget {
   const InboxView({
     required this.controller,
-    required this.onRoomTap,
+    this.onRoomTap,
+    this.roomBuilder,
     this.onRoomLongPress,
     this.builders = const InboxBuilders(),
     this.showSearch = true,
@@ -30,10 +38,20 @@ class InboxView extends StatefulWidget {
     this.formatters = const ChatFormatters(),
     this.loadMoreThreshold = 400,
     super.key,
-  });
+  }) : assert(
+         onRoomTap != null || roomBuilder != null,
+         'Pass roomBuilder (or onRoomTap for your own navigation).',
+       );
 
   final InboxController controller;
-  final ValueChanged<ChatRoom> onRoomTap;
+
+  /// Your own navigation; wins over [roomBuilder]. Use
+  /// `ChatStyle.carry(context)` to keep the style on the page you open.
+  final ValueChanged<ChatRoom>? onRoomTap;
+
+  /// Pushes this page with `ChatStyle.push`, so the room keeps the style
+  /// of the list.
+  final ChatRoomPageBuilder? roomBuilder;
   final ValueChanged<ChatRoom>? onRoomLongPress;
   final InboxBuilders builders;
   final bool showSearch;
@@ -41,7 +59,8 @@ class InboxView extends StatefulWidget {
   /// Shown below the search bar, such as stories or a banner.
   final Widget? header;
 
-  /// Applied to this list only; defaults to the ambient `ChatTheme`.
+  /// Applied to this list only; defaults to the ambient `ChatTheme`. The
+  /// scale of a surrounding `ChatStyle` still applies.
   final ChatTheme? theme;
   final ChatStrings strings;
   final ChatFormatters formatters;
@@ -165,14 +184,27 @@ class _InboxViewState extends State<InboxView> {
     );
   }
 
+  void _openRoom(ChatRoom room) {
+    if (widget.onRoomTap case final onTap?) return onTap(room);
+    final builder = widget.roomBuilder;
+    if (builder == null) return;
+    unawaited(
+      ChatStyle.push<void>(context, (context) => builder(context, room)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final chatTheme = widget.theme;
     final child = ListenableBuilder(listenable: _c, builder: _build);
     if (chatTheme == null) return child;
     final base = Theme.of(context);
+    final scale = ChatStyle.scaleOf(context);
+    final scaled = scale.isNone
+        ? chatTheme
+        : chatTheme.scaled(scale.size, textFactor: scale.text);
     return Theme(
-      data: base.copyWith(extensions: [...base.extensions.values, chatTheme]),
+      data: base.copyWith(extensions: [...base.extensions.values, scaled]),
       child: child,
     );
   }
@@ -248,7 +280,7 @@ class _InboxViewState extends State<InboxView> {
         builders: widget.builders,
         strings: _strings,
         formatters: widget.formatters,
-        onTap: () => widget.onRoomTap(room),
+        onTap: () => _openRoom(room),
         onLongPress: onLongPress != null
             ? () => onLongPress(room)
             : actions.isEmpty

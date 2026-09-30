@@ -5,6 +5,7 @@ import 'package:flutter_chat_kit/flutter_chat_kit.dart';
 import 'package:flutter_chat_kit_example/backend.dart';
 import 'package:flutter_chat_kit_example/pages/inbox_page.dart';
 import 'package:flutter_chat_kit_example/style/style_settings.dart';
+import 'package:flutter_scale_kit/flutter_scale_kit.dart';
 
 void main() => runApp(const ChatKitExampleApp());
 
@@ -33,26 +34,30 @@ class _ChatKitExampleAppState extends State<ChatKitExampleApp> {
 
   @override
   Widget build(BuildContext context) {
-    // A new ThemeData per change: every chat widget reads ChatTheme in
-    // build, so the whole app restyles (and rescales) at once.
-    return ListenableBuilder(
-      listenable: _style,
-      builder: (context, _) => MaterialApp(
-        title: 'flutter_chat_kit example',
-        debugShowCheckedModeBanner: false,
-        theme: _style.theme(Brightness.light),
-        darkTheme: _style.theme(Brightness.dark),
-        themeMode: _style.themeMode,
-        // Switching profile rebuilds everything below with the new kit.
-        builder: (context, child) => StyleScope(
-          settings: _style,
-          child: ChatProfileScope(
-            switcher: _backend.switcher,
-            placeholder: _Opening(opened: _opened),
-            child: child!,
+    // The app's own screen-size package; the chat uses its factors only
+    // when "Scale kit" is picked in the style sheet.
+    return ScaleKitBuilder(
+      designWidth: 375,
+      designHeight: 812,
+      child: ListenableBuilder(
+        listenable: _style,
+        builder: (context, _) => MaterialApp(
+          title: 'flutter_chat_kit example',
+          debugShowCheckedModeBanner: false,
+          theme: _style.theme(Brightness.light),
+          darkTheme: _style.theme(Brightness.dark),
+          themeMode: _style.themeMode,
+          // Switching profile rebuilds everything below with the new kit.
+          builder: (context, child) => StyleScope(
+            settings: _style,
+            child: ChatProfileScope(
+              switcher: _backend.switcher,
+              placeholder: _Opening(opened: _opened),
+              child: child!,
+            ),
           ),
+          home: InboxPage(backend: _backend),
         ),
-        home: InboxPage(backend: _backend),
       ),
     );
   }

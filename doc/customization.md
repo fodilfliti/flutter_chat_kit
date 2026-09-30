@@ -4,6 +4,8 @@ Every screen is built from small, public widgets, and every visible part has
 a builder that receives the **default widget**. Wrap the default to add
 something, or ignore it to replace the part completely.
 
+- `ChatStyle`: the easy way. Wrap the chat, pick a preset and a few
+  options, and set the screen scale. Builds the `ChatTheme` for you.
 - `ChatTheme`: one style per part (bubbles, list, composer, room tiles, ...)
   with every color, text style, size, radius, border and shadow, plus a
   global scale.
@@ -12,6 +14,65 @@ something, or ignore it to replace the part completely.
 - `ChatStrings`: every piece of text, English by default.
 - `ChatFormatters`: times, dates, durations, file sizes.
 - `ChatConfig`: behavior (page sizes, grouping, reactions, auto-download).
+
+## ChatStyle
+
+Wrap any part of the app; every chat widget below it gets the style, and
+rooms opened with `InboxView(roomBuilder:)` or `ChatStyle.push` keep it:
+
+```dart
+ChatStyle(
+  preset: ChatPreset.whatsApp,
+  seedColor: Colors.teal,
+  bubbleRadius: 12,
+  bubbleShadows: true,
+  messageStyle: const TextStyle(fontSize: 15),
+  tiles: ChatTiles.cards,
+  tileRadius: 20,
+  squareAvatars: true,
+  customize: (theme) => theme.copyWith(
+    messageList: theme.messageList.copyWith(maxBubbleWidthFactor: 0.7),
+  ),
+  scale: (context) => ChatScale(1.w, text: 1.sp),
+  child: InboxView(
+    controller: inbox,
+    roomBuilder: (context, room) => RoomPage(roomId: room.id),
+  ),
+)
+```
+
+The theme is built in this order: `preset` (or the `ChatTheme` registered
+in `ThemeData`, or one made from the app colors), the named options,
+`customize`, then `scale`. So `customize` sees the options, and the scale
+multiplies everything once.
+
+- **Nested styles** change only what they pass: an inner
+  `ChatStyle(bubbleRadius: 4)` keeps the outer preset, colors and scale.
+  Nested `customize` functions run outer first.
+- **Own navigation**: capture `final keepStyle = ChatStyle.carry(context)`
+  before pushing, and build `keepStyle(page)`. The page follows later
+  style changes.
+- **Sheets and dialogs** opened from inside keep the style on their own.
+- **Presets**: `ChatPreset.values` lists them all. Make your own once, as
+  a top-level value:
+
+  ```dart
+  final brandChat = ChatPreset(
+    name: 'Brand',
+    seedColor: const Color(0xFF6A5AE0),
+    bubbleRadius: 14,
+    tiles: ChatTiles.divided,
+    build: (scheme, text) {
+      final base = ChatTheme.fallback(scheme, textTheme: text);
+      return base.copyWith(
+        incomingBubble: base.incomingBubble.copyWith(color: scheme.surface),
+      );
+    },
+  );
+  ```
+
+`ChatTheme` below is what `ChatStyle` produces; use it directly when you
+need a part that has no named option.
 
 ## Theme
 
@@ -138,9 +199,36 @@ Square avatars: `base.copyWith(avatar: base.avatar.copyWith(radius: 10))`.
 
 ### Scale
 
-`scaled` multiplies every size, radius, padding, border and shadow, and
-every font size (separately with `textFactor`). Apply it **last**, since it
-multiplies the values set before it:
+Give `ChatStyle` a `scale` function. It returns a `ChatScale`: one factor
+for every size, radius, padding, border and shadow, and one for fonts.
+`ChatStyle` calls it again whenever the screen size changes (resize,
+rotation), and applies it last, once:
+
+```dart
+// flutter_scale_kit or flutter_screenutil: 14 in the chat == 14.w.
+ChatStyle(scale: (context) => ChatScale(1.w, text: 1.sp), child: ...)
+
+// No package: by the screen's shortest side, stable on rotation.
+ChatStyle(scale: ChatScale.byScreen(designWidth: 375), child: ...)
+
+// A fixed zoom, or a user setting on top of the screen scale.
+ChatStyle(scale: ChatScale.fixed(1.2, text: 1.1), child: ...)
+ChatStyle(
+  scale: (context) => ChatScale(1.w, text: 1.sp) * ChatScale(zoom),
+  child: ...,
+)
+```
+
+Scale packages compute `14.w` as `14 × 1.w` with no rounding, so passing
+`1.w` makes every chat size equal to writing `.w` on it yourself.
+`example/test/scale_kit_test.dart` checks this against the real
+flutter_scale_kit on phones, rotated phones and tablets. Pass design
+numbers to the options (`bubbleRadius: 12`, not `12.w`), or they are scaled
+twice. See the README section "Screen size and theme kits" for the full
+explanation, rotation, and flutter_scale_theme_kit.
+
+Without `ChatStyle`, `ChatTheme.scaled` does the same on a theme you build
+yourself. Apply it **last**, since it multiplies the values set before it:
 
 ```dart
 ChatTheme.fallback(scheme)
@@ -148,37 +236,16 @@ ChatTheme.fallback(scheme)
     .scaled(1.2, textFactor: 1.1)
 ```
 
-Widgets read the theme in `build`, so rebuilding `ThemeData` with a new
-factor refreshes the whole chat. With a screen-size package such as
-`flutter_screenutil`, build the theme inside `ScreenUtilInit`:
-
-```dart
-ScreenUtilInit(
-  designSize: const Size(390, 844),
-  builder: (context, child) => MaterialApp(
-    theme: ThemeData(
-      colorScheme: scheme,
-      extensions: [
-        ChatTheme.fallback(scheme).scaled(
-          ScreenUtil().scaleWidth,
-          textFactor: ScreenUtil().scaleText,
-        ),
-      ],
-    ),
-    home: child,
-  ),
-  child: const InboxPage(),
-)
-```
-
-Your own chat widgets (custom messages, headers) can follow the same scale
-with `ChatTheme.of(context).size(12)` and `.fontSize(14)`.
+Your own chat widgets (custom messages, headers) follow the same scale
+with `context.chatTheme.size(12)` and `context.chatTheme.fontSize(14)`.
+Inside a `ChatStyle`, a `theme:` passed to `InboxView` or `ChatRoomView`
+is scaled by it too.
 
 The example app has a live style sheet (palette button): presets, colors,
-dark mode, scale, message font size, bubble radius, shadows and borders,
-tile layout and radius, and square avatars, applied to the screen behind
-it. See `example/lib/style/style_settings.dart` for how each control maps
-to the theme.
+dark mode, screen scale (design, by screen, flutter_scale_kit), zoom,
+message font size, bubble radius, shadows and borders, tile layout and
+radius, and square avatars. See `example/lib/style/style_settings.dart`:
+each control is one `ChatStyle` option.
 
 ## Bubble
 
@@ -367,7 +434,7 @@ select shows a selection bar with copy, delete, and forward when you pass
 ```dart
 InboxView(
   controller: inbox,
-  onRoomTap: openRoom,
+  roomBuilder: (context, room) => RoomPage(roomId: room.id),
   builders: InboxBuilders(
     trailingBuilder: (context, r, defaultChild) =>
         r.room.metadata['vip'] == true

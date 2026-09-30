@@ -13,6 +13,7 @@ dependencies:
     sdk: flutter
   flutter_chat_kit:
     path: ../
+  flutter_scale_kit: ^2.0.2
   lemsa_core_kit: ^1.1.0
 
 dev_dependencies:

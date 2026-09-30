@@ -64,16 +64,16 @@ void main() {
     await frames();
     await tester.tap(cards);
     await frames();
-    expect(style.tileLayout, TileLayout.card);
+    expect(style.tiles, ChatTiles.cards);
     final tile = themeOf('Weekend trip').roomTile;
     expect(tile.shape, isA<RoundedRectangleBorder>());
     expect(tile.margin, isNot(EdgeInsets.zero));
-    style.scale = 1.2;
+    style.zoom = 1.2;
     await frames();
     expect(themeOf('Weekend trip').scale, closeTo(1.2, 1e-9));
     style
       ..applyPreset(ChatPreset.classic)
-      ..scale = 1;
+      ..zoom = 1;
     await tester.tapAt(const Offset(20, 120));
     await frames();
 
@@ -85,6 +85,16 @@ void main() {
     expect(find.text('Camping tent (4 people)'), findsOneWidget);
     expect(find.text('4 members'), findsOneWidget);
     expect(find.byType(ChatComposer), findsOneWidget);
+
+    // The room was opened from the styled list: it follows the sheet live.
+    ChatTheme roomTheme() =>
+        ChatTheme.of(tester.element(find.byType(ChatComposer)));
+    expect(roomTheme().outgoingBubble.radius, 18);
+    style.bubbleRadius = 4;
+    await frames();
+    expect(roomTheme().outgoingBubble.radius, 4);
+    style.reset();
+    await frames();
 
     await tester.pageBack();
     await settle(tester, () => find.byType(InboxView).evaluate().isNotEmpty);

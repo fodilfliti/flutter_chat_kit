@@ -6,9 +6,10 @@ import 'package:flutter_chat_kit/src/config/chat_styles.dart';
 /// Visual settings for the chat room and inbox, one style per part.
 ///
 /// Every size, color, text style, border and shadow the default widgets
-/// draw comes from here. Register it on `ThemeData.extensions`, usually
-/// derived from the app's color scheme so light and dark themes animate
-/// between each other:
+/// draw comes from here. The easy way to set it is the `ChatStyle` widget
+/// (presets, simple options, screen scale). It can also be registered on
+/// `ThemeData.extensions`, usually derived from the app's color scheme so
+/// light and dark themes animate between each other:
 ///
 /// ```dart
 /// final chat = ChatTheme.fallback(scheme);
@@ -132,8 +133,8 @@ class ChatTheme extends ThemeExtension<ChatTheme> {
   /// Multiplies every size, radius, padding, border and shadow by [factor],
   /// and every font size by [textFactor] (default [factor]).
   ///
-  /// With `flutter_screenutil`, build the theme inside `ScreenUtilInit` and
-  /// pass `ScreenUtil().scaleWidth` and `ScreenUtil().scaleText`.
+  /// `ChatStyle(scale: ...)` calls this for you; use it directly only on a
+  /// theme you build yourself, and last.
   ChatTheme scaled(double factor, {double? textFactor}) {
     final text = textFactor ?? factor;
     return ChatTheme(
@@ -264,4 +265,11 @@ class ChatTheme extends ThemeExtension<ChatTheme> {
     final size = style.fontSize;
     return size == null ? style : style.copyWith(fontSize: size * factor);
   }
+}
+
+/// `context.chatTheme` for custom chat widgets:
+/// `Padding(padding: EdgeInsets.all(context.chatTheme.size(12)))`.
+extension ChatThemeContext on BuildContext {
+  /// Same as [ChatTheme.of].
+  ChatTheme get chatTheme => ChatTheme.of(this);
 }

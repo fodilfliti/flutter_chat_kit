@@ -8,6 +8,7 @@ import 'package:flutter_chat_kit/src/controllers/chat_room_controller.dart';
 import 'package:flutter_chat_kit/src/controllers/composer_controller.dart';
 import 'package:flutter_chat_kit/src/media/default_pickers.dart';
 import 'package:flutter_chat_kit/src/models/message.dart';
+import 'package:flutter_chat_kit/src/widgets/common/chat_style.dart';
 import 'package:flutter_chat_kit/src/widgets/composer/attachment_sheet.dart';
 import 'package:flutter_chat_kit/src/widgets/composer/chat_composer.dart';
 import 'package:flutter_chat_kit/src/widgets/messages/text_message_view.dart';
@@ -67,7 +68,8 @@ class ChatRoomView extends StatefulWidget {
   /// Also used for `appBarActions`, `appBarBuilder` and `composerBuilder`.
   final ChatBuilders builders;
 
-  /// Applied to this screen only; defaults to the ambient `ChatTheme`.
+  /// Applied to this screen only; defaults to the ambient `ChatTheme`. The
+  /// scale of a surrounding `ChatStyle` still applies.
   final ChatTheme? theme;
 
   /// Defaults to the kit's config.
@@ -132,8 +134,12 @@ class ChatRoomViewState extends State<ChatRoomView> {
     );
     if (chatTheme == null) return child;
     final base = Theme.of(context);
+    final scale = ChatStyle.scaleOf(context);
+    final scaled = scale.isNone
+        ? chatTheme
+        : chatTheme.scaled(scale.size, textFactor: scale.text);
     return Theme(
-      data: base.copyWith(extensions: [...base.extensions.values, chatTheme]),
+      data: base.copyWith(extensions: [...base.extensions.values, scaled]),
       child: child,
     );
   }

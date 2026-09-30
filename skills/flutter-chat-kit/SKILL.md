@@ -4,11 +4,14 @@ description: >
   Use flutter_chat_kit to build chat screens: a chat room page, an inbox
   (conversation list), direct and group chats, media and voice messages,
   replies, reactions, read receipts, offline cache and outbox. Activate when
-  implementing a ChatSource for Firebase, Supabase or REST, customizing message
-  bubbles, adding custom message types (offers, cards), adding app bar
-  actions to a chat page, or letting one account chat as several profiles
-  (personal and business pages answered by staff) — not for backend SDK code inside the kit, Riverpod
-  inside the kit, or localizing inside the kit.
+  implementing a ChatSource for Firebase, Supabase or REST, styling the chat
+  (ChatStyle, presets like WhatsApp or Telegram, bubbles, inbox rows),
+  scaling it with flutter_scale_kit, flutter_screenutil or
+  flutter_scale_theme_kit, adding custom message types (offers, cards),
+  adding app bar actions to a chat page, or letting one account chat as
+  several profiles (personal and business pages answered by staff) — not for
+  backend SDK code inside the kit, Riverpod inside the kit, or localizing
+  inside the kit.
 license: MIT
 metadata:
   author: fodilfliti
@@ -44,7 +47,8 @@ Use this package for:
 | `ChatUserResolver` | app | `resolve(Set<String> ids)` → names and avatars; kit batches and caches |
 | `ChatKit` | kit | one per signed-in user: cache, sync, outbox, media store |
 | `InboxController` / `ChatRoomController` | kit | created by `kit.inbox(filter:)` / `kit.room(id)`; **the page disposes them** |
-| `InboxView` / `ChatRoomView` | kit | complete screens; they never navigate, taps come back as callbacks |
+| `InboxView` / `ChatRoomView` | kit | complete screens; `InboxView(roomBuilder:)` pushes the room, or `onRoomTap` for app navigation |
+| `ChatStyle` | kit | look and screen scale of every chat widget below it; builds the `ChatTheme` |
 
 Widgets never talk to the source directly. Only the kit writes the cache.
 
@@ -88,10 +92,14 @@ class _InboxPageState extends State<InboxPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: Text(t.chats)),
-    body: InboxView(
-      controller: _inbox,
-      strings: chatStrings,
-      onRoomTap: (room) => context.router.push(RoomRoute(roomId: room.id)),
+    body: ChatStyle(              // optional; see "Style and scale"
+      preset: ChatPreset.whatsApp,
+      child: InboxView(
+        controller: _inbox,
+        strings: chatStrings,
+        // Pushes the room with ChatStyle.push: the room keeps the style.
+        roomBuilder: (context, room) => RoomPage(roomId: room.id),
+      ),
     ),
   );
 }
@@ -120,6 +128,23 @@ class _RoomPageState extends State<RoomPage> {
 
 `context.chatKit` reads the kit from `ChatKitScope`; use `late final` so the
 controller is created once, on first build.
+
+With a router (auto_route, go_router), use `onRoomTap` and keep the style
+on the pushed page. Capture it before navigating:
+
+```dart
+onRoomTap: (room) {
+  final keepStyle = ChatStyle.carry(context);
+  Navigator.of(context).push(MaterialPageRoute(
+    builder: (_) => keepStyle(RoomPage(roomId: room.id)),
+  ));
+},
+```
+
+A route page built by the router outside the style gets it by wrapping its
+body in the same `ChatStyle` (put the options in one app widget, for example
+`ChatArea`, and use it in both places), or by a `ChatStyle` in
+`MaterialApp.builder` that covers every route.
 
 ## Implementing `ChatSource`
 
@@ -251,16 +276,82 @@ The composer inside `ChatRoomView` handles text, media, voice, reply and
 edit. Messages appear immediately as pending, then move to sent, delivered
 and read; failed ones show a retry action.
 
+## Style and scale
+
+Default: no styling code. The chat follows the app's `ThemeData` colors,
+fonts and dark mode. To change it, wrap the chat part in `ChatStyle`:
+
+```dart
+ChatStyle(
+  preset: ChatPreset.whatsApp,   // classic, whatsApp, telegram, minimal, cards
+  seedColor: Colors.teal,        // chat colors from one color, light and dark
+  bubbleRadius: 12,              // design numbers, never 12.w
+  bubbleShadows: true,
+  bubbleBorder: false,
+  messageStyle: const TextStyle(fontSize: 15),
+  fontFamily: 'Inter',
+  tiles: ChatTiles.divided,      // plain, divided, cards
+  tileRadius: 20,
+  squareAvatars: true,
+  wallpaper: const BoxDecoration(color: Color(0xFFEFEAE2)),
+  customize: (theme) => theme.copyWith(
+    incomingBubble: theme.incomingBubble.copyWith(color: Colors.white),
+  ),
+  scale: (context) => ChatScale(1.w, text: 1.sp),
+  child: ...,
+)
+```
+
+- Order: preset (or registered `ChatTheme`, or app colors) → options →
+  `customize` → `scale`. `customize` is for parts without an option.
+- Where: around the inbox page (chat part only), in `MaterialApp.builder`
+  (all chats), or nested for one screen; a nested `ChatStyle` changes only
+  what it passes and never scales twice.
+- Rooms from `roomBuilder`, `ChatStyle.push(context, builder)` and pages
+  wrapped with `ChatStyle.carry(context)` keep the style and follow its
+  changes. Sheets and dialogs keep it on their own.
+- App widgets read it with `context.chatTheme`; sizes with
+  `context.chatTheme.size(8)`, fonts with `.fontSize(14)`.
+- Custom presets: create once as a top-level `final ChatPreset(...)`.
+
+Scale (`scale:` is a function; `ChatStyle` re-runs it on resize and
+rotation):
+
+| App uses | `scale:` |
+| --- | --- |
+| flutter_scale_kit (`ScaleKitBuilder` above `MaterialApp`) | `(context) => ChatScale(1.w, text: 1.sp)` |
+| flutter_screenutil (`ScreenUtilInit`) | `(context) => ChatScale(1.w, text: 1.sp)` |
+| nothing | `ChatScale.byScreen()` (shortest side / 375, clamped 0.85–1.3) |
+| fixed zoom | `ChatScale.fixed(1.2, text: 1.1)` |
+| user zoom on top | `(context) => ChatScale(1.w, text: 1.sp) * ChatScale(zoom)` |
+
+- `14.w == 14 × 1.w` (no rounding), so every chat size equals `.w` on the
+  design number; fonts equal `.sp`. Proven by
+  `example/test/scale_kit_test.dart` on phones, landscape and tablets.
+- The chat does not use `.h`; radii follow `.w`, not `.r`.
+- Never double scale: no `.w` / `.sp` in `ChatStyle` options or
+  `customize`; no `.scaled()` on a registered `ChatTheme` when `ChatStyle`
+  scales; keep `ThemeData` text sizes unscaled (`createResponsiveTextTheme`
+  on a text theme without written sizes, like flutter_scale_theme_kit's,
+  is fine).
+- If `ScaleKitBuilder.enabled` toggles at runtime, start the scale function
+  with `ScaleKitScope.watch(context);`.
+
+flutter_scale_theme_kit: pass `appST.light` / `appST.dark` to `MaterialApp`
+as usual; the chat follows its colors and mode. To use tokens, read
+`context.st` in the widget that builds `ChatStyle`:
+`bubbleRadius: st.radius.lgValue` (design px), and in `customize` set
+`outgoingBubble.color: st.primary`, `incomingBubble.color: st.surface`,
+`border: BorderSide(color: st.border)`. When registering a `ChatTheme`,
+keep the kit's extensions: `extensions: [...appST.light.extensions.values,
+chatTheme]`.
+
 ## Customizing
 
 ```dart
 ChatRoomView(
   controller: room,
-  theme: ChatTheme.fallback(scheme)
-      .withMessageText(const TextStyle(fontSize: 14, color: Colors.grey))
-      .copyWith(roomTile: ChatRoomTileStyle.card(scheme, radius: 16))
-      .mapBubbles((b) => b.copyWith(radius: 8))
-      .scaled(1.1), // always last
+  theme: myChatTheme, // one screen only; still scaled by ChatStyle above
   builders: ChatBuilders(
     bubbleBuilder: (context, m, defaultChild) => defaultChild,
     customBuilders: {'offer': (context, m) => OfferCard(message: m)},
@@ -281,19 +372,18 @@ ChatRoomView(
 );
 ```
 
-- Register `ChatTheme` in `ThemeData.extensions` (derive it with
-  `ChatTheme.fallback(colorScheme)`), or pass `theme:` for one screen.
-  It is grouped: `outgoingBubble` / `incomingBubble` (`ChatBubbleStyle`:
+- Prefer `ChatStyle`. Otherwise register `ChatTheme` in
+  `ThemeData.extensions` (derive it with `ChatTheme.fallback(colorScheme)`),
+  or pass `theme:` for one screen. It is grouped: `outgoingBubble` / `incomingBubble` (`ChatBubbleStyle`:
   color or gradient, text, radius, border, shadows), `messageList`
   (spacing, avatars, `background`), `status`, `dateSeparator`,
   `systemMessage`, `unreadDivider`, `reactions`, `replyPreview`, `media`,
   `composer`, `appBar`, `avatar` (`radius` null = circle), `roomTile`
   (`ChatRoomTileStyle.plain` / `.divided` / `.card`, any `shape`) and
   `badge`. Change a group with `copyWith` on it, then on the theme.
-- `scaled(factor, textFactor:)` resizes everything; call it last. For
-  `flutter_screenutil`, build the theme inside `ScreenUtilInit` with
-  `ScreenUtil().scaleWidth` / `scaleText`. App widgets follow the scale
-  with `ChatTheme.of(context).size(v)` / `.fontSize(v)`.
+- Helpers: `withMessageText(style)`, `mapBubbles((b) => ...)`,
+  `mapText((s) => ...)`. `scaled(factor, textFactor:)` resizes a theme you
+  build yourself; call it last, and not when `ChatStyle` has a `scale`.
 - Custom types: `customBuilders[type]` first, then the `customBuilder`
   resolver, then "unsupported". `bubbledCustomTypes` keeps the bubble;
   inside it use `theme.bubble(isMine: m.isMine).textStyle` for colors.
@@ -360,6 +450,10 @@ or at sign-in), and still provide it to widgets with `ChatKitScope`.
 - Do not client-filter or reorder messages; the kit keeps order and paging.
 - Do not show failures' text from the kit; map `AppFailure` to your own
   messages.
+- Do not pass scaled values (`12.w`, `15.sp`) to `ChatStyle` or a
+  `ChatTheme`; give design numbers and one `scale:`.
+- Do not add a scale package to make the chat scale; the app passes its
+  factor through `ChatScale`.
 
 ## Where things go
 
@@ -371,4 +465,5 @@ or at sign-in), and still provide it to widgets with `ChatKitScope`.
 | Account's chat profiles and their unread counts | app / backend, fed to `ChatProfileSwitcher` |
 | Riverpod providers | app (wrap `ChatKit` / controllers) |
 | Translated strings | app, via `ChatStrings` |
+| Chat look and screen scale | app, one `ChatStyle` (or an app widget wrapping it) |
 | Push notifications | app (`switcher.switchTo(profileId)` if needed, then open the room) |

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/flutter_chat_kit.dart';
 import 'package:flutter_chat_kit_example/backend.dart';
 import 'package:flutter_chat_kit_example/pages/room_page.dart';
+import 'package:flutter_chat_kit_example/style/style_settings.dart';
 import 'package:flutter_chat_kit_example/style/style_sheet.dart';
 
 class InboxPage extends StatefulWidget {
@@ -20,14 +21,6 @@ class _InboxPageState extends State<InboxPage> {
   void dispose() {
     _inbox.dispose();
     super.dispose();
-  }
-
-  void _open(ChatRoom room) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => RoomPage(backend: widget.backend, roomId: room.id),
-      ),
-    );
   }
 
   @override
@@ -66,11 +59,16 @@ class _InboxPageState extends State<InboxPage> {
         children: [
           OfflineBanner(kit: widget.backend.kit),
           _FilterChips(inbox: _inbox),
+          // Only the chat is styled; rooms opened from the list keep the
+          // style and follow the sheet live.
           Expanded(
-            child: InboxView(
-              controller: _inbox,
-              onRoomTap: _open,
-              strings: exampleStrings,
+            child: StyleScope.of(context).chatStyle(
+              child: InboxView(
+                controller: _inbox,
+                strings: exampleStrings,
+                roomBuilder: (context, room) =>
+                    RoomPage(backend: widget.backend, roomId: room.id),
+              ),
             ),
           ),
         ],

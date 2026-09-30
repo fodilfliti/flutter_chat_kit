@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_chat_kit/flutter_chat_kit.dart';
 import 'package:flutter_chat_kit_example/style/style_settings.dart';
 
 /// App bar button that opens the live style sheet.
@@ -112,7 +113,7 @@ class _StyleSheet extends StatelessWidget {
             spacing: 8,
             runSpacing: 4,
             children: [
-              for (final preset in ChatPreset.all)
+              for (final preset in ChatPreset.values)
                 ChoiceChip(
                   label: Text(preset.name),
                   selected: s.preset == preset,
@@ -139,12 +140,30 @@ class _StyleSheet extends StatelessWidget {
         ),
         toggle('Dark mode', value: s.dark, onChanged: (v) => s.dark = v),
         section('Size'),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SegmentedButton<ScreenScale>(
+            segments: const [
+              ButtonSegment(value: ScreenScale.off, label: Text('Design')),
+              ButtonSegment(
+                value: ScreenScale.byScreen,
+                label: Text('By screen'),
+              ),
+              ButtonSegment(
+                value: ScreenScale.scaleKit,
+                label: Text('Scale kit'),
+              ),
+            ],
+            selected: {s.screen},
+            onSelectionChanged: (v) => s.screen = v.first,
+          ),
+        ),
         slider(
-          'Scale',
-          s.scale,
+          'Zoom',
+          s.zoom,
           0.8,
           1.4,
-          (v) => s.scale = v,
+          (v) => s.zoom = v,
           divisions: 12,
           format: times,
         ),
@@ -190,14 +209,14 @@ class _StyleSheet extends StatelessWidget {
         section('Inbox'),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: SegmentedButton<TileLayout>(
+          child: SegmentedButton<ChatTiles>(
             segments: const [
-              ButtonSegment(value: TileLayout.plain, label: Text('Plain')),
-              ButtonSegment(value: TileLayout.divided, label: Text('Lines')),
-              ButtonSegment(value: TileLayout.card, label: Text('Cards')),
+              ButtonSegment(value: ChatTiles.plain, label: Text('Plain')),
+              ButtonSegment(value: ChatTiles.divided, label: Text('Lines')),
+              ButtonSegment(value: ChatTiles.cards, label: Text('Cards')),
             ],
-            selected: {s.tileLayout},
-            onSelectionChanged: (v) => s.tileLayout = v.first,
+            selected: {s.tiles},
+            onSelectionChanged: (v) => s.tiles = v.first,
           ),
         ),
         slider(
@@ -206,7 +225,7 @@ class _StyleSheet extends StatelessWidget {
           0,
           28,
           (v) => s.tileRadius = v,
-          enabled: s.tileLayout == TileLayout.card,
+          enabled: s.tiles == ChatTiles.cards,
         ),
         toggle(
           'Square avatars',
