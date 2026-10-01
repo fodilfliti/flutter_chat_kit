@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/flutter_chat_kit.dart';
 import 'package:flutter_chat_kit_example/custom/booking_card.dart';
 import 'package:flutter_chat_kit_example/custom/offer_cards.dart';
+import 'package:flutter_chat_kit_example/i18n/strings.g.dart';
 
 /// One type, several cards: `data['variant']` picks the widget.
 const offerType = 'offer';
@@ -31,15 +32,15 @@ ChatBuilders exampleBuilders(ChatRoomController room) {
     customBuilder: (context, m) {
       final message = m.message as CustomMessage;
       if (message.customType != offerType) return null;
+      final t = context.t.custom;
       return switch (message.data['variant'] ?? productVariant) {
         productVariant => ProductOfferCard(
           message: m,
-          onRespond: (accepted) =>
-              reply(m, accepted ? 'Deal! ✅' : 'No thanks, maybe next time'),
+          onRespond: (accepted) => reply(m, accepted ? t.deal : t.noThanks),
         ),
         quoteVariant => QuoteCard(
           message: m,
-          onAccept: () => reply(m, 'Quote accepted, please go ahead ✅'),
+          onAccept: () => reply(m, t.quoteAccepted),
         ),
         _ => null,
       };
@@ -48,13 +49,22 @@ ChatBuilders exampleBuilders(ChatRoomController room) {
 }
 
 /// Inbox and reply preview text for custom messages.
-String? customPreview(String customType, Map<String, Object?> data) {
+String? customPreview(
+  Translations t,
+  String customType,
+  Map<String, Object?> data,
+) {
+  final title = '${data['title'] ?? ''}';
   return switch (customType) {
-    offerType when data['variant'] == quoteVariant =>
-      'Quote: ${data['title']} (${formatAmount(quoteTotal(data), data)})',
-    offerType =>
-      'Offer: ${data['title']} (${formatAmount(data['amount'], data)})',
-    bookingType => '📅 ${data['title']}',
+    offerType when data['variant'] == quoteVariant => t.custom.quotePreview(
+      title: title,
+      amount: formatAmount(quoteTotal(data), data),
+    ),
+    offerType => t.custom.offerPreview(
+      title: title,
+      amount: formatAmount(data['amount'], data),
+    ),
+    bookingType => '📅 $title',
     _ => null,
   };
 }
@@ -78,35 +88,39 @@ List<AttachmentOption> customOptions(
   BuildContext context,
   ChatRoomController room,
 ) {
+  final t = context.t.custom;
   return [
     AttachmentOption(
       icon: Icons.local_offer_outlined,
-      label: 'Offer',
+      label: t.offer,
       onSelected: () => unawaited(showOfferDialog(context, room)),
     ),
     AttachmentOption(
       icon: Icons.request_quote_outlined,
-      label: 'Quote',
-      onSelected: () => unawaited(sendSampleQuote(room)),
+      label: t.quote,
+      onSelected: () => unawaited(sendSampleQuote(context, room)),
     ),
     AttachmentOption(
       icon: Icons.event_outlined,
-      label: 'Booking',
+      label: t.booking,
       onSelected: () => unawaited(pickAndSendBooking(context, room)),
     ),
   ];
 }
 
-Future<void> sendSampleQuote(ChatRoomController room) {
+/// The sender's language goes into the data: the message is the same for
+/// everyone in the room, whatever their app language.
+Future<void> sendSampleQuote(BuildContext context, ChatRoomController room) {
+  final t = context.t.custom;
   return room.sendCustom(offerType, {
     'variant': quoteVariant,
-    'title': 'Custom order',
+    'title': t.customOrder,
     'currency': 'USD',
     'validDays': 3,
     'items': [
-      {'label': 'Leather wallet', 'amount': 40},
-      {'label': 'Name engraving', 'amount': 8},
-      {'label': 'Gift box', 'amount': 4},
+      {'label': t.wallet, 'amount': 40},
+      {'label': t.engraving, 'amount': 8},
+      {'label': t.giftBox, 'amount': 4},
     ],
   });
 }
@@ -127,10 +141,10 @@ Future<void> pickAndSendBooking(
     context: context,
     initialTime: const TimeOfDay(hour: 10, minute: 0),
   );
-  if (time == null) return;
+  if (time == null || !context.mounted) return;
   final at = DateTime(day.year, day.month, day.day, time.hour, time.minute);
   await room.sendCustom(bookingType, {
-    'title': 'Meeting',
+    'title': context.t.custom.meeting,
     'at': at.toIso8601String(),
     'place': 'Café du Port, Oran',
   });
@@ -182,21 +196,22 @@ class _OfferDialogState extends State<_OfferDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
     return AlertDialog(
-      title: const Text('Make an offer'),
+      title: Text(t.app.makeOffer),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
             controller: _title,
             autofocus: true,
-            decoration: const InputDecoration(labelText: 'What'),
+            decoration: InputDecoration(labelText: t.custom.what),
           ),
           TextField(
             controller: _amount,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Price',
+            decoration: InputDecoration(
+              labelText: t.custom.price,
               suffixText: 'USD',
             ),
             onSubmitted: (_) => _submit(),
@@ -206,9 +221,9 @@ class _OfferDialogState extends State<_OfferDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(t.custom.cancel),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Send')),
+        FilledButton(onPressed: _submit, child: Text(t.custom.send)),
       ],
     );
   }

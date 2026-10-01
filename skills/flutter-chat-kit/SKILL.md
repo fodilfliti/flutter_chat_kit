@@ -422,17 +422,38 @@ The kit shows **English defaults** and never localizes. Build one
 `ChatStrings` from the app's translations and pass it to both views:
 
 ```dart
-ChatStrings chatStrings(Translations t) => ChatStrings(
-  typeMessage: t.chat.typeMessage,
-  send: t.chat.send,
-  typing: (names) => t.chat.typing(n: names.length, name: names.first),
-  members: (count) => t.chat.members(n: count),
-  system: (code, args) => t.chat.system(code: code, args: args),
-);
+ChatStrings buildChatStrings(Translations t) {   // slang
+  final c = t.chat;
+  return ChatStrings(
+    typeMessage: c.typeMessage,
+    send: c.send,
+    // ... set every field, or the rest stays English ...
+    typing: (names) => switch (names) {
+      [] => '',
+      [final name] => c.typingOne(name: name),
+      [final a, final b] => c.typingTwo(a: a, b: b),
+      _ => c.typingMany(n: names.length),
+    },
+    members: (count) => c.members(n: count),       // slang plural
+    system: (code, args) => switch (code) {
+      'room_created' => c.system.roomCreated(
+          name: '${args['name']}', title: '${args['title']}'),
+      _ => ChatStrings.defaultSystem(code, args),
+    },
+  );
+}
+// build(): strings: buildChatStrings(context.t) — rebuilds on language change
 ```
 
+The example app is a complete reference: `example/lib/i18n/` (en, fr, ar
+JSON with a key per `ChatStrings` field, `chat_strings.dart`, a language
+button) and `example/test/translation_test.dart`. Pass the same strings to
+`InboxView`, `ChatRoomView` and `ChatProfileMenuButton`.
+
 System messages store only `code` + `args`; `ChatStrings.system` renders
-them. Dates and sizes go through `ChatFormatters` (intl).
+them. Dates go through `ChatFormatters` (intl) with the app locale: set
+`MaterialApp.locale` and `GlobalMaterialLocalizations.delegates`; RTL
+languages flip the chat automatically.
 
 ## Riverpod (app side)
 

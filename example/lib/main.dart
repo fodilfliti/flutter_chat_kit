@@ -3,11 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/flutter_chat_kit.dart';
 import 'package:flutter_chat_kit_example/backend.dart';
+import 'package:flutter_chat_kit_example/i18n/strings.g.dart';
 import 'package:flutter_chat_kit_example/pages/inbox_page.dart';
 import 'package:flutter_chat_kit_example/style/style_settings.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_scale_kit/flutter_scale_kit.dart';
 
-void main() => runApp(const ChatKitExampleApp());
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  LocaleSettings.useDeviceLocaleSync();
+  runApp(const ChatKitExampleApp());
+}
 
 class ChatKitExampleApp extends StatefulWidget {
   const ChatKitExampleApp({this.backend, this.style, super.key});
@@ -36,27 +42,35 @@ class _ChatKitExampleAppState extends State<ChatKitExampleApp> {
   Widget build(BuildContext context) {
     // The app's own screen-size package; the chat uses its factors only
     // when "Scale kit" is picked in the style sheet.
-    return ScaleKitBuilder(
-      designWidth: 375,
-      designHeight: 812,
-      child: ListenableBuilder(
-        listenable: _style,
-        builder: (context, _) => MaterialApp(
-          title: 'flutter_chat_kit example',
-          debugShowCheckedModeBanner: false,
-          theme: _style.theme(Brightness.light),
-          darkTheme: _style.theme(Brightness.dark),
-          themeMode: _style.themeMode,
-          // Switching profile rebuilds everything below with the new kit.
-          builder: (context, child) => StyleScope(
-            settings: _style,
-            child: ChatProfileScope(
-              switcher: _backend.switcher,
-              placeholder: _Opening(opened: _opened),
-              child: child!,
+    // slang rebuilds everything that reads `context.t` when the language
+    // changes; MaterialApp's locale gives the chat localized dates and the
+    // text direction.
+    return TranslationProvider(
+      child: ScaleKitBuilder(
+        designWidth: 375,
+        designHeight: 812,
+        child: ListenableBuilder(
+          listenable: _style,
+          builder: (context, _) => MaterialApp(
+            onGenerateTitle: (context) => context.t.app.title,
+            locale: TranslationProvider.of(context).flutterLocale,
+            supportedLocales: AppLocaleUtils.supportedLocales,
+            localizationsDelegates: GlobalMaterialLocalizations.delegates,
+            debugShowCheckedModeBanner: false,
+            theme: _style.theme(Brightness.light),
+            darkTheme: _style.theme(Brightness.dark),
+            themeMode: _style.themeMode,
+            // Switching profile rebuilds everything below with the new kit.
+            builder: (context, child) => StyleScope(
+              settings: _style,
+              child: ChatProfileScope(
+                switcher: _backend.switcher,
+                placeholder: _Opening(opened: _opened),
+                child: child!,
+              ),
             ),
+            home: InboxPage(backend: _backend),
           ),
-          home: InboxPage(backend: _backend),
         ),
       ),
     );
@@ -75,7 +89,7 @@ class _Opening extends StatelessWidget {
       builder: (context, snapshot) => Scaffold(
         body: Center(
           child: snapshot.hasError
-              ? Text('Could not open: ${snapshot.error}')
+              ? Text(context.t.app.couldNotOpen(error: '${snapshot.error}'))
               : const CircularProgressIndicator(),
         ),
       ),

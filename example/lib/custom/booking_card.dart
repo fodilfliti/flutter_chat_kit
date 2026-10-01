@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/flutter_chat_kit.dart';
+import 'package:flutter_chat_kit_example/i18n/strings.g.dart';
 
 /// `booking`: listed in `bubbledCustomTypes`, so the kit draws the bubble,
 /// the reply preview, the time and the ticks around it. The content uses
@@ -38,7 +39,7 @@ class BookingCard extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          '📅 ${data['title'] ?? 'Booking'}',
+          '📅 ${data['title'] ?? context.t.custom.booking}',
           style: bubble.textStyle.copyWith(fontWeight: FontWeight.w700),
         ),
         if (when.isNotEmpty) row(Icons.schedule, when),

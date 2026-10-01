@@ -172,7 +172,11 @@ class RoomTile extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Text(
-          formatters.formatRoomTime(time, strings),
+          formatters.formatRoomTime(
+            time,
+            strings,
+            locale: Localizations.maybeLocaleOf(context)?.toString(),
+          ),
           style: highlight ? style.unreadTimeStyle : style.timeStyle,
         ),
         SizedBox(height: theme.size(6)),

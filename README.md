@@ -616,7 +616,10 @@ ChatRoomView(
 - **Custom messages**: one builder per type (as many as you want, see
   below), and `bubbledCustomTypes` to draw them inside the normal bubble.
 - **Text**: every string is in `ChatStrings`, English by default. Fill it
-  from slang, intl or any localization tool.
+  from slang, intl or any localization tool. The example app is translated
+  with slang into French and Arabic (right to left), with a language
+  button; copy `example/lib/i18n/`. Dates follow `MaterialApp.locale`. See
+  [Text and translation](doc/customization.md#text-and-translation).
 - **Formats**: `ChatFormatters` for times, dates, durations and sizes.
 - **Behavior**: `ChatConfig` for page sizes, grouping, reactions,
   auto-download and limits.

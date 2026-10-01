@@ -165,8 +165,11 @@ class _ChatAppBarState extends State<ChatAppBar> {
       if (presence.isOnline) return strings.online;
       final lastSeen = presence.lastSeenAt;
       if (lastSeen == null) return null;
-      return strings.lastSeen(
-        widget.formatters.formatLastSeen(lastSeen, strings),
+      return widget.formatters.formatLastSeen(
+        lastSeen,
+        strings,
+        now: _c.kit.clock(),
+        locale: Localizations.maybeLocaleOf(context)?.toString(),
       );
     }
     return strings.members(room.members.length);

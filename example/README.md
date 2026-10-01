@@ -48,6 +48,26 @@ matching `drift`) into `web/`, then run `flutter run -d chrome`.
   directions; tap a reply preview to jump to a much older message.
 - **Selection**: long-press a message and choose "Select" to copy, delete or
   forward several messages.
+- **Languages**: tap the translate button (inbox or room) and pick English,
+  Français or العربية. Every chat text, the example's own screens, the
+  custom cards, plurals ("4 أعضاء", "4 membres") and dates follow at once,
+  and Arabic turns the whole app right to left. Messages from the fake
+  backend stay as they were written; system messages are translated from
+  their code.
+
+## Translations (slang)
+
+The texts live in `lib/i18n/en.i18n.json`, `fr.i18n.json` and
+`ar.i18n.json`. After editing them, regenerate the code:
+
+```bash
+dart run slang
+```
+
+`lib/i18n/chat_strings.dart` turns the `chat` section into a full
+`ChatStrings`. `test/translation_test.dart` checks that no chat text is
+left in English in Arabic, that only real look-alikes stay the same in
+French, and that switching the language updates the running app.
 
 ## Where to look
 
@@ -59,7 +79,8 @@ matching `drift`) into `web/`, then run `flutter run -d chrome`.
 | `lib/style/style_sheet.dart` | the live style sheet |
 | `lib/custom/custom_messages.dart` | custom types: the `customBuilder` resolver for variants, `bubbledCustomTypes`, previews, attachment options |
 | `lib/custom/offer_cards.dart`, `booking_card.dart` | cards that follow the chat theme and scale |
-| `lib/backend.dart` | creating and opening `ChatKit`, connectivity, strings |
+| `lib/backend.dart` | creating and opening `ChatKit`, connectivity |
+| `lib/i18n/` | slang translations, `ChatStrings` from them, the language button |
 | `lib/pages/inbox_page.dart` | `InboxView` inside your own `Scaffold` |
 | `lib/pages/room_page.dart` | `ChatRoomView` with header, app bar actions and forward |
 

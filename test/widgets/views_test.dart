@@ -175,6 +175,27 @@ void main() {
       await close(tester);
     });
 
+    testWidgets('direct room shows when the peer was last seen', (
+      tester,
+    ) async {
+      await open(tester, directRoom());
+      final inbox = h.kit.inbox();
+      await settle(tester);
+      final yesterday = h.kit.clock().subtract(const Duration(days: 1));
+      h.source.emit(
+        PresenceChanged(
+          Presence(userId: 'u2', isOnline: false, lastSeenAt: yesterday),
+        ),
+      );
+      await settle(
+        tester,
+        until: () => find.textContaining('last seen').evaluate().isNotEmpty,
+      );
+      expect(find.text('last seen Yesterday'), findsOneWidget);
+      inbox.dispose();
+      await close(tester);
+    });
+
     testWidgets('creates and disposes its own composer', (tester) async {
       await open(tester, groupRoom());
       final state = tester.state<ChatRoomViewState>(find.byType(ChatRoomView));

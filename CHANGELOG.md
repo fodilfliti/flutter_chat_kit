@@ -10,6 +10,12 @@
 - `context.chatTheme`, a shortcut for `ChatTheme.of(context)`.
 - Names and avatars from the backend: `ChatPage.users` carries the people of a page (from `fetchRooms`, `fetchMessages` and `fetchAround`), the `UsersChanged` event pushes live changes from either `events()` stream, and `ChatKit.updateUsers` sets them from app code. The kit saves them in the cache, replaces them when they change, and updates open inboxes and rooms at once. Users that arrive this way count as fresh, so `ChatUserResolver` is only asked for the rest. `ChatRepository.putUsers` and `ChatRepository.userChanges` expose the same flow.
 - `PollingRealtime` compares the users of each polled page and emits `UsersChanged` for new or changed ones.
+- The example app is translated with slang into English, French and Arabic, with a language button. Every `ChatStrings` field, the example screens, the custom cards, plurals and dates follow the language, and Arabic is right to left. A test checks that no chat text is left in English.
+
+### Fixed
+
+- Date separators, the floating date header, inbox times and "last seen" now use the app locale (they were always English).
+- "last seen" no longer shows its prefix twice in the room app bar.
 
 ### Changed
 

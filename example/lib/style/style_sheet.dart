@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/flutter_chat_kit.dart';
+import 'package:flutter_chat_kit_example/i18n/strings.g.dart';
 import 'package:flutter_chat_kit_example/style/style_settings.dart';
 
 /// App bar button that opens the live style sheet.
@@ -11,7 +12,7 @@ class StyleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      tooltip: 'Chat style',
+      tooltip: context.t.style.button,
       icon: const Icon(Icons.palette_outlined),
       onPressed: () => unawaited(showStyleSheet(context)),
     );
@@ -55,8 +56,18 @@ class _StyleSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = StyleScope.of(context);
+    final t = context.t.style;
     final scheme = Theme.of(context).colorScheme;
     final label = Theme.of(context).textTheme.titleSmall;
+
+    String presetName(ChatPreset preset) => switch (preset.name) {
+      'classic' => t.presets.classic,
+      'whatsApp' => t.presets.whatsApp,
+      'telegram' => t.presets.telegram,
+      'minimal' => t.presets.minimal,
+      'cards' => t.presets.cards,
+      final name => name,
+    };
 
     Widget section(String title) => Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
@@ -100,13 +111,13 @@ class _StyleSheet extends StatelessWidget {
       onChanged: onChanged,
     );
 
-    String times(double v) => '×${v.toStringAsFixed(2)}';
+    String times(double v) => 'Ã—${v.toStringAsFixed(2)}';
 
     return ListView(
       controller: scroll,
       padding: const EdgeInsets.only(bottom: 24),
       children: [
-        section('Preset'),
+        section(t.preset),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Wrap(
@@ -115,14 +126,14 @@ class _StyleSheet extends StatelessWidget {
             children: [
               for (final preset in ChatPreset.values)
                 ChoiceChip(
-                  label: Text(preset.name),
+                  label: Text(presetName(preset)),
                   selected: s.preset == preset,
                   onSelected: (_) => s.applyPreset(preset),
                 ),
             ],
           ),
         ),
-        section('Colors'),
+        section(t.colors),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Wrap(
@@ -138,20 +149,20 @@ class _StyleSheet extends StatelessWidget {
             ],
           ),
         ),
-        toggle('Dark mode', value: s.dark, onChanged: (v) => s.dark = v),
-        section('Size'),
+        toggle(t.darkMode, value: s.dark, onChanged: (v) => s.dark = v),
+        section(t.size),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SegmentedButton<ScreenScale>(
-            segments: const [
-              ButtonSegment(value: ScreenScale.off, label: Text('Design')),
+            segments: [
+              ButtonSegment(value: ScreenScale.off, label: Text(t.design)),
               ButtonSegment(
                 value: ScreenScale.byScreen,
-                label: Text('By screen'),
+                label: Text(t.byScreen),
               ),
               ButtonSegment(
                 value: ScreenScale.scaleKit,
-                label: Text('Scale kit'),
+                label: Text(t.scaleKit),
               ),
             ],
             selected: {s.screen},
@@ -159,7 +170,7 @@ class _StyleSheet extends StatelessWidget {
           ),
         ),
         slider(
-          'Zoom',
+          t.zoom,
           s.zoom,
           0.8,
           1.4,
@@ -168,7 +179,7 @@ class _StyleSheet extends StatelessWidget {
           format: times,
         ),
         slider(
-          'Text size',
+          t.textSize,
           s.textScale,
           0.8,
           1.4,
@@ -176,51 +187,47 @@ class _StyleSheet extends StatelessWidget {
           divisions: 12,
           format: times,
         ),
-        section('Messages'),
+        section(t.messages),
         slider(
-          'Message font size',
+          t.messageFontSize,
           s.messageFontSize,
           12,
           22,
           (v) => s.messageFontSize = v,
         ),
-        toggle(
-          'Grey message text',
-          value: s.greyText,
-          onChanged: (v) => s.greyText = v,
-        ),
+        toggle(t.greyText, value: s.greyText, onChanged: (v) => s.greyText = v),
         slider(
-          'Bubble radius',
+          t.bubbleRadius,
           s.bubbleRadius,
           0,
           28,
           (v) => s.bubbleRadius = v,
         ),
         toggle(
-          'Bubble shadows',
+          t.bubbleShadows,
           value: s.bubbleShadows,
           onChanged: (v) => s.bubbleShadows = v,
         ),
         toggle(
-          'Bubble border',
+          t.bubbleBorder,
           value: s.bubbleBorder,
           onChanged: (v) => s.bubbleBorder = v,
         ),
-        section('Inbox'),
+        section(t.inbox),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SegmentedButton<ChatTiles>(
-            segments: const [
-              ButtonSegment(value: ChatTiles.plain, label: Text('Plain')),
-              ButtonSegment(value: ChatTiles.divided, label: Text('Lines')),
-              ButtonSegment(value: ChatTiles.cards, label: Text('Cards')),
+            segments: [
+              ButtonSegment(value: ChatTiles.plain, label: Text(t.plain)),
+              ButtonSegment(value: ChatTiles.divided, label: Text(t.lines)),
+              ButtonSegment(value: ChatTiles.cards, label: Text(t.cards)),
             ],
             selected: {s.tiles},
             onSelectionChanged: (v) => s.tiles = v.first,
           ),
         ),
         slider(
-          'Card radius',
+          t.cardRadius,
           s.tileRadius,
           0,
           28,
@@ -228,7 +235,7 @@ class _StyleSheet extends StatelessWidget {
           enabled: s.tiles == ChatTiles.cards,
         ),
         toggle(
-          'Square avatars',
+          t.squareAvatars,
           value: s.squareAvatars,
           onChanged: (v) => s.squareAvatars = v,
         ),
@@ -237,7 +244,7 @@ class _StyleSheet extends StatelessWidget {
           child: OutlinedButton.icon(
             onPressed: s.reset,
             icon: const Icon(Icons.restart_alt),
-            label: Text('Reset "${s.preset.name}"'),
+            label: Text(t.reset(name: presetName(s.preset))),
           ),
         ),
       ],

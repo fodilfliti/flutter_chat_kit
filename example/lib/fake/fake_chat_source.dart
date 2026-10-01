@@ -627,7 +627,13 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
         authorId: 'amina',
         createdAt: ago(const Duration(days: 5)),
         code: 'room_created',
-        args: const {'text': 'Amina created the group "Weekend trip"'},
+        // The app translates `code` with `name` and `title`; `text` is
+        // the fallback for codes it does not know.
+        args: const {
+          'name': 'Amina',
+          'title': 'Weekend trip',
+          'text': 'Amina created the group "Weekend trip"',
+        },
       ),
       text('trip', 'amina', const Duration(days: 4), 'Who is driving?'),
       text(

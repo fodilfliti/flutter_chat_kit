@@ -13,8 +13,12 @@ dependencies:
     sdk: flutter
   flutter_chat_kit:
     path: ../
+  flutter_localizations:
+    sdk: flutter
   flutter_scale_kit: ^2.0.2
   lemsa_core_kit: ^1.1.0
+  slang: ^4.19.2
+  slang_flutter: ^4.19.0
 
 dev_dependencies:
   drift: ^2.35.0

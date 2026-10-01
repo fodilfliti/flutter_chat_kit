@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/flutter_chat_kit.dart';
 import 'package:flutter_chat_kit_example/backend.dart';
 import 'package:flutter_chat_kit_example/custom/custom_messages.dart';
+import 'package:flutter_chat_kit_example/i18n/chat_strings.dart';
+import 'package:flutter_chat_kit_example/i18n/language_button.dart';
+import 'package:flutter_chat_kit_example/i18n/strings.g.dart';
 import 'package:flutter_chat_kit_example/style/style_sheet.dart';
 
 class RoomPage extends StatefulWidget {
@@ -34,26 +37,27 @@ class _RoomPageState extends State<RoomPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t.app;
     return ChatRoomView(
       controller: _room,
-      strings: exampleStrings,
+      strings: chatStringsOf(context),
       header: OfflineBanner(kit: widget.backend.kit),
       builders: _builders,
       extraAttachmentOptions: customOptions(context, _room),
       appBar: ChatAppBarOptions(
         actions: [
           IconButton(
-            tooltip: 'Make an offer',
+            tooltip: t.makeOffer,
             icon: const Icon(Icons.local_offer_outlined),
             onPressed: () => unawaited(showOfferDialog(context, _room)),
           ),
+          const LanguageButton(),
           const StyleButton(),
           ConnectionButton(backend: widget.backend),
         ],
-        onTitleTap: () => _toast('Open the room details here'),
+        onTitleTap: () => _toast(t.roomDetails),
       ),
-      onForward: (messages) =>
-          _toast('Forward ${messages.length} message(s): pick a room here'),
+      onForward: (messages) => _toast(t.forward(n: messages.length)),
     );
   }
 }

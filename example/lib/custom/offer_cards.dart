@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/flutter_chat_kit.dart';
 import 'package:flutter_chat_kit_example/custom/custom_messages.dart';
+import 'package:flutter_chat_kit_example/i18n/strings.g.dart';
 
 /// A standalone card that follows the chat theme: the bubble radius, the
 /// scale (`theme.size`) and the text scale (`theme.fontSize`).
@@ -78,10 +79,11 @@ class ProductOfferCard extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final data = (message.message as CustomMessage).data;
     final onRespond = this.onRespond;
+    final t = context.t.custom;
     return _OfferFrame(
       message: message,
       icon: Icons.local_offer,
-      label: 'Offer',
+      label: t.offer,
       children: [
         Text(
           '${data['title'] ?? ''}',
@@ -102,14 +104,14 @@ class ProductOfferCard extends StatelessWidget {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => onRespond(false),
-                  child: const Text('Decline'),
+                  child: Text(t.decline),
                 ),
               ),
               SizedBox(width: theme.size(8)),
               Expanded(
                 child: FilledButton(
                   onPressed: () => onRespond(true),
-                  child: const Text('Accept'),
+                  child: Text(t.accept),
                 ),
               ),
             ],
@@ -139,10 +141,11 @@ class QuoteCard extends StatelessWidget {
     ];
     final line = text.bodyMedium?.copyWith(fontSize: theme.fontSize(14));
     final onAccept = this.onAccept;
+    final t = context.t.custom;
     return _OfferFrame(
       message: message,
       icon: Icons.request_quote,
-      label: 'Quote',
+      label: t.quote,
       children: [
         Text(
           '${data['title'] ?? ''}',
@@ -164,7 +167,7 @@ class QuoteCard extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                'Total',
+                t.total,
                 style: line?.copyWith(fontWeight: FontWeight.w700),
               ),
             ),
@@ -177,7 +180,7 @@ class QuoteCard extends StatelessWidget {
         if (data['validDays'] case final int days) ...[
           SizedBox(height: theme.size(4)),
           Text(
-            'Valid for $days days',
+            t.validFor(n: days),
             style: text.bodySmall?.copyWith(
               color: scheme.onSurfaceVariant,
               fontSize: theme.fontSize(12),
@@ -190,7 +193,7 @@ class QuoteCard extends StatelessWidget {
             width: double.infinity,
             child: FilledButton.tonal(
               onPressed: onAccept,
-              child: const Text('Accept quote'),
+              child: Text(t.acceptQuote),
             ),
           ),
         ],

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/flutter_chat_kit.dart';
 import 'package:flutter_chat_kit_example/backend.dart';
+import 'package:flutter_chat_kit_example/i18n/chat_strings.dart';
+import 'package:flutter_chat_kit_example/i18n/language_button.dart';
+import 'package:flutter_chat_kit_example/i18n/strings.g.dart';
 import 'package:flutter_chat_kit_example/pages/room_page.dart';
 import 'package:flutter_chat_kit_example/style/style_settings.dart';
 import 'package:flutter_chat_kit_example/style/style_sheet.dart';
@@ -26,18 +29,23 @@ class _InboxPageState extends State<InboxPage> {
   @override
   Widget build(BuildContext context) {
     final source = widget.backend.source;
+    final t = context.t;
+    final strings = chatStringsOf(context);
     return Scaffold(
       appBar: AppBar(
         title: ListenableBuilder(
           listenable: _inbox,
           builder: (context, _) {
             final unread = _inbox.totalUnread;
-            return Text(unread == 0 ? 'Chats' : 'Chats ($unread)');
+            return Text(
+              unread == 0 ? t.app.chats : t.app.chatsWithUnread(n: unread),
+            );
           },
         ),
         actions: [
+          const LanguageButton(),
           const StyleButton(),
-          const ChatProfileMenuButton(strings: exampleStrings),
+          ChatProfileMenuButton(strings: strings),
           ConnectionButton(backend: widget.backend),
           StatefulBuilder(
             builder: (context, setMenuState) => PopupMenuButton<String>(
@@ -48,7 +56,7 @@ class _InboxPageState extends State<InboxPage> {
                 CheckedPopupMenuItem(
                   value: 'failures',
                   checked: source.randomFailures,
-                  child: const Text('Random send failures'),
+                  child: Text(t.app.randomFailures),
                 ),
               ],
             ),
@@ -65,7 +73,7 @@ class _InboxPageState extends State<InboxPage> {
             child: StyleScope.of(context).chatStyle(
               child: InboxView(
                 controller: _inbox,
-                strings: exampleStrings,
+                strings: strings,
                 roomBuilder: (context, room) =>
                     RoomPage(backend: widget.backend, roomId: room.id),
               ),
@@ -84,16 +92,16 @@ class _FilterChips extends StatelessWidget {
 
   final InboxController inbox;
 
-  static const Map<String, RoomFilter> _filters = {
-    'All': RoomFilter.all,
-    'Chats': RoomFilter.direct,
-    'Groups': RoomFilter.groups,
-    'Unread': RoomFilter(unreadOnly: true),
-    'Friends': RoomFilter(labels: {'friends'}),
-  };
-
   @override
   Widget build(BuildContext context) {
+    final t = context.t.app.filters;
+    final filters = {
+      t.all: RoomFilter.all,
+      t.chats: RoomFilter.direct,
+      t.groups: RoomFilter.groups,
+      t.unread: const RoomFilter(unreadOnly: true),
+      t.friends: const RoomFilter(labels: {'friends'}),
+    };
     return ListenableBuilder(
       listenable: inbox,
       builder: (context, _) => SingleChildScrollView(
@@ -102,7 +110,7 @@ class _FilterChips extends StatelessWidget {
         child: Row(
           spacing: 8,
           children: [
-            for (final MapEntry(key: label, value: filter) in _filters.entries)
+            for (final MapEntry(key: label, value: filter) in filters.entries)
               ChoiceChip(
                 label: Text(label),
                 selected: inbox.filter == filter,

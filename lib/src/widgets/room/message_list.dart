@@ -474,6 +474,7 @@ class ChatMessageListState extends State<ChatMessageList> {
           item.message.createdAt,
           widget.strings,
           now: _controller.kit.clock(),
+          locale: Localizations.maybeLocaleOf(context)?.toString(),
         );
       }
     }
@@ -728,6 +729,7 @@ class ChatMessageListState extends State<ChatMessageList> {
             day,
             widget.strings,
             now: _controller.kit.clock(),
+            locale: Localizations.maybeLocaleOf(context)?.toString(),
           ),
         );
         child =

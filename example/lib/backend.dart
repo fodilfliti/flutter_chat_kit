@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/flutter_chat_kit.dart';
-import 'package:flutter_chat_kit_example/custom/custom_messages.dart';
 import 'package:flutter_chat_kit_example/fake/fake_chat_source.dart';
 import 'package:flutter_chat_kit_example/fake/fake_uploader.dart';
-
-/// Texts shared by the inbox and the rooms. A real app passes its own
-/// translations here (for example from slang or intl).
-const exampleStrings = ChatStrings(customPreview: customPreview);
+import 'package:flutter_chat_kit_example/i18n/strings.g.dart';
 
 /// The fake backend of one signed-in account, which chats as two profiles:
 /// its personal profile and "Lemsa Shop", a business it answers for along
@@ -92,7 +88,7 @@ class ConnectionButton extends StatelessWidget {
       builder: (context, _) {
         final online = backend.online;
         return IconButton(
-          tooltip: online ? 'Go offline' : 'Go online',
+          tooltip: online ? context.t.app.goOffline : context.t.app.goOnline,
           icon: Icon(online ? Icons.wifi : Icons.wifi_off),
           onPressed: () => backend.setOnline(online: !online),
         );
@@ -124,7 +120,7 @@ class OfflineBanner extends StatelessWidget {
                   vertical: 8,
                 ),
                 child: Text(
-                  'Offline: messages are queued and sent when you reconnect.',
+                  context.t.app.offlineBanner,
                   style: TextStyle(color: scheme.onErrorContainer),
                 ),
               ),

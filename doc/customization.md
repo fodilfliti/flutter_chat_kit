@@ -466,27 +466,54 @@ controller: `kit.inbox(filter: RoomFilter.groups)` or
 
 `ChatStrings` holds every visible text, in English by default. Plural and
 parameterized texts are functions. Map them from your own localization
-(slang, intl, easy_localization, ...):
+(slang, intl, easy_localization, ...).
+
+The example app does this with [slang](https://pub.dev/packages/slang) in
+English, French and Arabic, with a language button in the app bar. Copy
+these files:
+
+- `example/lib/i18n/en.i18n.json` (and `fr`, `ar`): a `chat` section with a
+  key for every `ChatStrings` field, plurals as `one` / `other` (Arabic
+  also `zero`, `two`, `few`, `many`).
+- `example/lib/i18n/chat_strings.dart`: builds the whole `ChatStrings` from
+  slang, once per language.
+- `example/slang.yaml`, then `dart run slang` to generate the code.
 
 ```dart
-ChatStrings chatStrings(Translations t) => ChatStrings(
-  typeMessage: t.chat.typeMessage,
-  today: t.chat.today,
-  yesterday: t.chat.yesterday,
-  send: t.chat.send,
-  typing: (names) => t.chat.typing(n: names.length, name: names.first),
-  members: (count) => t.chat.members(n: count),
-  lastSeen: (when) => t.chat.lastSeen(when: when),
-  system: (code, args) => switch (code) {
-    'member_joined' => t.chat.joined(name: '${args['name']}'),
-    _ => code,
-  },
-);
+ChatStrings buildChatStrings(Translations t) {
+  final c = t.chat;
+  return ChatStrings(
+    typeMessage: c.typeMessage,
+    today: c.today,
+    // ... every other field ...
+    typing: (names) => switch (names) {
+      [] => '',
+      [final name] => c.typingOne(name: name),
+      [final a, final b] => c.typingTwo(a: a, b: b),
+      _ => c.typingMany(n: names.length),
+    },
+    members: (count) => c.members(n: count),
+    system: (code, args) => switch ((code, args['name'], args['title'])) {
+      ('room_created', final String name, final String title) =>
+        c.system.roomCreated(name: name, title: title),
+      _ => ChatStrings.defaultSystem(code, args),
+    },
+  );
+}
+
+// In build(): reading context.t rebuilds the page when the language changes.
+ChatRoomView(controller: room, strings: buildChatStrings(context.t));
 ```
 
-Pass the result to `ChatRoomView(strings: ...)` and `InboxView(strings: ...)`.
-System messages carry a `code` and `args` only, so each reader sees them in
-their own language.
+Pass the result to `ChatRoomView(strings: ...)`, `InboxView(strings: ...)`
+and `ChatProfileMenuButton(strings: ...)`. System messages carry a `code`
+and `args` only, so each reader sees them in their own language.
+
+Give `MaterialApp` the same locale (`locale:`, `supportedLocales:` and
+`localizationsDelegates: GlobalMaterialLocalizations.delegates` from
+`flutter_localizations`). The chat then formats dates, weekdays and times
+in that language, and Arabic, Hebrew or Persian turn the whole chat right
+to left.
 
 ## Dates and numbers
 
@@ -497,9 +524,9 @@ ChatFormatters(
 )
 ```
 
-`ChatFormatters` uses `intl` with the given locale. Call
-`initializeDateFormatting()` (or add `flutter_localizations`) for locales
-other than English.
+`ChatFormatters` uses `intl` with the app's locale
+(`Localizations.localeOf(context)`). Add `flutter_localizations` (or call
+`initializeDateFormatting()`) for locales other than English.
 
 ## Behavior
 
