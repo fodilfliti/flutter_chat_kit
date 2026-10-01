@@ -102,6 +102,27 @@ void main() {
     expect(inbox.peerOf(inbox.rooms.single)?.name, 'User peer-d1');
   });
 
+  test('names from the backend show and follow their changes', () async {
+    h.source
+      ..people['peer-d1'] = const ChatUser(id: 'peer-d1', name: 'Sara')
+      ..seedRoom(room('d1', updated: 1, type: RoomType.direct));
+    final inbox = h.kit.inbox();
+    addTearDown(inbox.dispose);
+    await until(() => inbox.rooms.isNotEmpty);
+    await until(() => inbox.peerOf(inbox.rooms.single)?.name == 'Sara');
+
+    h.source.emit(
+      const UsersChanged([
+        ChatUser(id: 'peer-d1', name: 'Sara B', avatarUrl: 'new.png'),
+      ]),
+    );
+    await until(() => inbox.peerOf(inbox.rooms.single)?.name == 'Sara B');
+    expect(inbox.peerOf(inbox.rooms.single)?.avatarUrl, 'new.png');
+
+    await h.kit.updateUsers([const ChatUser(id: 'peer-d1', name: 'Sara C')]);
+    await until(() => inbox.peerOf(inbox.rooms.single)?.name == 'Sara C');
+  });
+
   group('filters', () {
     void seedMixed() {
       h.source

@@ -34,6 +34,7 @@ String _describe(ChatEvent event) => switch (event) {
   RoomChanged(change: Created(:final item)) => '+${item.id}',
   RoomChanged(change: Updated(:final item)) => '~${item.id}',
   RoomChanged(change: Deleted(:final id)) => '-$id',
+  UsersChanged(:final users) => '@${[for (final u in users) u.name]}',
   _ => event.runtimeType.toString(),
 };
 
@@ -139,6 +140,27 @@ void main() {
       data.seedRoom(ChatRoom(id: 'a', updatedAt: at(3), unreadCount: 1));
       await until(() => seen.length == 3);
       expect(seen.last, '~a');
+      await Future<void>.delayed(_tick * 3);
+      expect(seen, hasLength(3));
+    });
+
+    test('users sent with polled pages are emitted when they change', () async {
+      data
+        ..people['u2'] = const ChatUser(id: 'u2', name: 'Sara')
+        ..seedMessages('r1', [msg(1)]);
+      final polling = PollingRealtime(data, roomInterval: _tick);
+      final seen = <String>[];
+      final sub = polling
+          .events(roomId: 'r1')
+          .listen((e) => seen.add(_describe(e)));
+      addTearDown(sub.cancel);
+
+      await until(() => seen.length == 2);
+      expect(seen, ['@[Sara]', '+r1-m001']);
+
+      data.people['u2'] = const ChatUser(id: 'u2', name: 'Sara B');
+      await until(() => seen.length == 3);
+      expect(seen.last, '@[Sara B]');
       await Future<void>.delayed(_tick * 3);
       expect(seen, hasLength(3));
     });

@@ -46,6 +46,20 @@ void main() {
     expect(room.isSyncing, isFalse);
   });
 
+  test('author names from the backend follow their changes', () async {
+    h.source
+      ..people['u2'] = const ChatUser(id: 'u2', name: 'Sara')
+      ..seedRoom(group())
+      ..seedMessages('r1', [msg(1)]);
+    final room = h.kit.room('r1');
+    addTearDown(room.dispose);
+    await room.ready;
+    await until(() => room.users['u2']?.name == 'Sara');
+
+    await h.kit.updateUsers([const ChatUser(id: 'u2', name: 'Sara B')]);
+    await until(() => room.users['u2']?.name == 'Sara B');
+  });
+
   test('loadOlder pages back through history', () async {
     h.source.seedMessages('r1', [for (var i = 0; i < 25; i++) msg(i)]);
     final room = h.kit.room('r1');

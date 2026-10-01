@@ -44,7 +44,7 @@ Use this package for:
 | --- | --- | --- |
 | `ChatSource` | app | fetch pages, realtime `events`, send / edit / delete / markRead; or `ComposedChatSource(data:, realtime:)` |
 | `ChatUploader` | app | uploads a file, streams `UploadRunning` then one `UploadDone` |
-| `ChatUserResolver` | app | `resolve(Set<String> ids)` → names and avatars; kit batches and caches |
+| `ChatUserResolver` | app | optional: `resolve(Set<String> ids)` → names and avatars the pages did not carry; kit batches and caches |
 | `ChatKit` | kit | one per signed-in user: cache, sync, outbox, media store |
 | `InboxController` / `ChatRoomController` | kit | created by `kit.inbox(filter:)` / `kit.room(id)`; **the page disposes them** |
 | `InboxView` / `ChatRoomView` | kit | complete screens; `InboxView(roomBuilder:)` pushes the room, or `onRoomTap` for app navigation |
@@ -59,7 +59,7 @@ final kit = ChatKit(
   currentUserId: uid,
   source: MyChatSource(),
   uploader: MyUploader(),      // null disables media and voice
-  users: MyUserResolver(),
+  users: MyUserResolver(),     // optional when pages carry ChatPage.users
   config: const ChatConfig(),
 );
 await kit.open();              // opens this user's cache, resumes pending sends
@@ -183,6 +183,16 @@ Rules:
 - **`fetchRooms(filter:)`**: apply what the query supports (types, labels,
   unread; REST: `...filter.toQuery()`), ignore the rest. Never drop rooms
   from a page after the query; the kit filters its cache itself.
+- **Names and avatars**: when the API returns them (REST `"users": [...]`,
+  Supabase `select('*, author:profiles!author_id(id, name, avatar_url)')`),
+  pass them as `ChatPage(items:, hasMore:, users: [...])` from
+  `fetchRooms`, `fetchMessages` and `fetchAround`. The kit stores them,
+  shows them, and replaces them when a page brings a different value.
+  Live changes: emit `UsersChanged([user])` from `events()` (either
+  stream), or call `kit.updateUsers([...])` (after the user edits their
+  profile). `ChatUserResolver` is only the fallback for ids without a name;
+  it is re-asked after `ChatConfig.userCacheTtl` (12 h). `PollingRealtime`
+  emits `UsersChanged` from polled pages by itself.
 
 Full guides with schema, realtime mapping and uploads ship in the package:
 `doc/adapters/firestore.md`, `doc/adapters/supabase.md`,
@@ -354,7 +364,13 @@ ChatRoomView(
   theme: myChatTheme, // one screen only; still scaled by ChatStyle above
   builders: ChatBuilders(
     bubbleBuilder: (context, m, defaultChild) => defaultChild,
-    customBuilders: {'offer': (context, m) => OfferCard(message: m)},
+    // One entry per custom type, as many as needed; send with
+    // room.sendCustom('<type>', data).
+    customBuilders: {
+      'offer': (context, m) => OfferCard(message: m),
+      'booking': (context, m) => BookingCard(message: m),
+      'location': (context, m) => LocationCard(message: m),
+    },
     // Variants of one type, picked from the data; null = unsupported.
     customBuilder: (context, m) => switch ((m.message as CustomMessage).data['variant']) {
       'quote' => QuoteCard(message: m),
@@ -387,6 +403,8 @@ ChatRoomView(
 - Custom types: `customBuilders[type]` first, then the `customBuilder`
   resolver, then "unsupported". `bubbledCustomTypes` keeps the bubble;
   inside it use `theme.bubble(isMine: m.isMine).textStyle` for colors.
+  Give every type an inbox / reply preview with
+  `ChatStrings(customPreview: (type, data) => switch (type) {...})`.
 - Every builder gets the default widget: wrap it instead of rebuilding it.
 - `MessageContext`: `message`, `author`, `sender` (staff in `sentBy`),
   `isMine`, `isSentByMe`, `isSentByColleague`, `groupPosition`, `status`,
@@ -461,7 +479,7 @@ or at sign-in), and still provide it to widgets with `ChatKitScope`.
 | --- | --- |
 | Firebase / Supabase / REST calls | app `ChatSource` implementation |
 | File storage upload | app `ChatUploader` implementation |
-| User names and avatars | app `ChatUserResolver` |
+| User names and avatars | `ChatPage.users` / `UsersChanged` from the source; app `ChatUserResolver` for the rest |
 | Account's chat profiles and their unread counts | app / backend, fed to `ChatProfileSwitcher` |
 | Riverpod providers | app (wrap `ChatKit` / controllers) |
 | Translated strings | app, via `ChatStrings` |

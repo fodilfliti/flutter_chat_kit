@@ -481,6 +481,35 @@ class FirestoreUserResolver implements ChatUserResolver {
 
 (`slices` comes from `package:collection`.)
 
+Firestore has no joins, so the resolver is the usual way to get names. The
+kit asks it again after `ChatConfig.userCacheTtl` (12 hours by default).
+To show a rename or a new avatar sooner:
+
+- **Your own profile:** after the user saves it, call
+  `kit.updateUsers([ChatUser(id: uid, name: name, avatarUrl: url)])`.
+- **Other people, live:** in the inbox stream, listen to the `users`
+  documents of your direct peers and emit `UsersChanged`:
+
+  ```dart
+  _db
+      .collection('users')
+      .where(FieldPath.documentId, whereIn: peerIds.take(30).toList())
+      .snapshots()
+      .map((snap) => UsersChanged([
+            for (final d in snap.docChanges)
+              ChatUser(
+                id: d.doc.id,
+                name: d.doc.data()?['name'] as String? ?? '',
+                avatarUrl: d.doc.data()?['avatar_url'] as String?,
+              ),
+          ]));
+  ```
+
+- **Names stored on the documents:** if your rooms or messages already
+  hold `author_name` / `author_avatar`, build `ChatUser`s from them and pass
+  them as `ChatPage(users: ...)`. The kit saves them and replaces them when
+  they change.
+
 ## Wiring
 
 ```dart

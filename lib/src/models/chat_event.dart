@@ -1,4 +1,5 @@
 import 'package:flutter_chat_kit/src/models/chat_room.dart';
+import 'package:flutter_chat_kit/src/models/chat_user.dart';
 import 'package:flutter_chat_kit/src/models/message.dart';
 import 'package:flutter_chat_kit/src/models/presence.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
@@ -56,4 +57,13 @@ final class PresenceChanged extends ChatEvent {
   const PresenceChanged(this.presence);
 
   final Presence presence;
+}
+
+/// Names or avatars changed, or arrived with a realtime payload. The kit
+/// stores them and updates every open screen. Emit it from the inbox or a
+/// room stream.
+final class UsersChanged extends ChatEvent {
+  const UsersChanged(this.users);
+
+  final List<ChatUser> users;
 }

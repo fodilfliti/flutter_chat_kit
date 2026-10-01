@@ -48,6 +48,10 @@ writing mappers.
 Server rules:
 
 - **Pages are newest first**, with `has_more`: `{"items": [...], "has_more": true}`.
+- **Pages can carry their people**: `"users": [{"id", "name", "avatar_url"}]`
+  for the message authors and room members of the page. The kit saves them,
+  shows them, and replaces them when a name or avatar changes, so you need
+  no `ChatUserResolver` for them.
 - **Cursors are exclusive keyset bounds** on `(created_at, id)` for messages
   and `(updated_at, id)` for rooms:
   `WHERE (created_at, id) < (:before_created_at, :before_id)
@@ -148,6 +152,10 @@ class RestChatSource implements ChatSource {
         for (final i in map['items']! as List) item(i as Map<String, Object?>),
       ],
       hasMore: map['has_more'] == true,
+      users: [
+        for (final u in map['users'] as List? ?? const [])
+          ChatUser.fromJson(u as Map<String, Object?>),
+      ],
     );
   }
 
@@ -267,10 +275,11 @@ class RestChatSource implements ChatSource {
 | `typing` | `room_id`, `user_id`, `typing` | `TypingChanged(...)` |
 | `receipt` | `room_id`, `user_id`, `read_at`, `delivered_at` | `ReceiptChanged(...)` |
 | `presence` | `user_id`, `online`, `last_seen_at` | `PresenceChanged(Presence(...))` |
+| `user.updated` | `user` (`id`, `name`, `avatar_url`) | `UsersChanged([user])` |
 
 Room streams (`events(roomId: id)`) get the message, typing and receipt
 frames for that room. The inbox stream (`events()`) gets the room and
-presence frames. Tell the server what to send by subscribing:
+presence frames. `user.updated` (a rename or a new avatar) works on both. Tell the server what to send by subscribing:
 `{"type": "subscribe", "room_id": "..."}`.
 
 ```dart
@@ -324,7 +333,10 @@ class ChatSocket {
     unawaited(_connect());
     try {
       await for (final f in _frames.stream) {
-        if (roomId != null && f['room_id'] != roomId) continue;
+        final frameRoom = f['room_id'];
+        if (roomId != null && frameRoom != null && frameRoom != roomId) {
+          continue;
+        }
         if (_toEvent(f, inbox: roomId == null) case final e?) yield e;
       }
     } finally {
@@ -367,6 +379,9 @@ class ChatSocket {
           lastSeenAt: DateTime.tryParse('${f['last_seen_at']}'),
         ),
       ),
+      'user.updated' => UsersChanged([
+        ChatUser.fromJson(f['user']! as Map<String, Object?>),
+      ]),
       _ => null,
     };
   }

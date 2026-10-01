@@ -80,6 +80,7 @@ class ChatRepository {
   final Set<String> _userBatch = {};
   Completer<void>? _userBatchCompleter;
   final Map<String, Future<void>> _usersInFlight = {};
+  final _usersController = StreamController<List<ChatUser>>.broadcast();
 
   int get _pageSize => _config.pageSize;
 
@@ -111,6 +112,7 @@ class ChatRepository {
       search: search,
       filter: filter,
     );
+    await putUsers(page.users);
     await _cache.upsertRooms(page.items);
     if (page.items.isEmpty) return (hasMore: false, next: after);
     return (hasMore: page.hasMore, next: page.items.last.cursor);
@@ -355,6 +357,24 @@ class ChatRepository {
     return await _cache.users(ids);
   }
 
+  /// Stores users the backend sent (with a page, an event or from the app)
+  /// as fresh, and emits the ones that are new or changed on
+  /// [userChanges].
+  Future<void> putUsers(List<ChatUser> users) async {
+    if (users.isEmpty || _disposed) return;
+    final byId = {for (final user in users) user.id: user};
+    final before = await _cache.users(byId.keys.toSet());
+    await _cache.upsertUsers(byId.values.toList());
+    final changed = [
+      for (final user in byId.values)
+        if (before[user.id] != user) user,
+    ];
+    if (changed.isNotEmpty && !_disposed) _usersController.add(changed);
+  }
+
+  /// Users stored with a new name, avatar or metadata, for open screens.
+  Stream<List<ChatUser>> get userChanges => _usersController.stream;
+
   Future<void> dispose() async {
     _disposed = true;
     for (final room in _rooms.values) {
@@ -370,6 +390,7 @@ class ChatRepository {
     _typingTimers.clear();
     await _typingController.close();
     await _presenceController.close();
+    await _usersController.close();
   }
 
   // ------------------------------------------------------------- internal
@@ -381,6 +402,22 @@ class ChatRepository {
     return result;
   }
 
+  Future<ChatPage<Message>> _fetchMessages(
+    String roomId, {
+    MessageCursor? before,
+    MessageCursor? after,
+    int limit = 30,
+  }) async {
+    final page = await _source.fetchMessages(
+      roomId,
+      before: before,
+      after: after,
+      limit: limit,
+    );
+    await putUsers(page.users);
+    return page;
+  }
+
   Future<void> _sync(String roomId) async {
     final state = await _cache.syncState(roomId);
     final newest = state?.newest;
@@ -390,7 +427,7 @@ class ChatRepository {
       var cursor = newest;
       var current = state;
       for (var pages = 1; ; pages++) {
-        final page = await _source.fetchMessages(
+        final page = await _fetchMessages(
           roomId,
           after: cursor,
           limit: _pageSize,
@@ -414,7 +451,7 @@ class ChatRepository {
   /// Fetches the latest page and makes it the synced range. Older cached
   /// messages stay but are only shown again once paging reconnects them.
   Future<void> _restartFromLatest(String roomId) async {
-    final page = await _source.fetchMessages(roomId, limit: _pageSize);
+    final page = await _fetchMessages(roomId, limit: _pageSize);
     await _cache.upsertMessages(page.items);
     await _cache.saveSyncState(
       RoomSyncState(
@@ -436,7 +473,7 @@ class ChatRepository {
     var older = await _olderContiguous(roomId, state, from, _pageSize);
     final oldest = state.oldest;
     if (older.length < _pageSize && state.hasMoreOlder && oldest != null) {
-      final page = await _source.fetchMessages(
+      final page = await _fetchMessages(
         roomId,
         before: oldest,
         limit: _pageSize,
@@ -461,7 +498,7 @@ class ChatRepository {
 
   Future<RoomWindow> _loadOlderDetached(String roomId, DetachedWindow w) async {
     if (!w.hasMoreOlder) return w;
-    final page = await _source.fetchMessages(
+    final page = await _fetchMessages(
       roomId,
       before: w.oldest,
       limit: _pageSize,
@@ -476,7 +513,7 @@ class ChatRepository {
   }
 
   Future<RoomWindow> _loadNewerDetached(String roomId, DetachedWindow w) async {
-    final page = await _source.fetchMessages(
+    final page = await _fetchMessages(
       roomId,
       after: w.newest,
       limit: _pageSize,
@@ -529,6 +566,7 @@ class ChatRepository {
       limit: _pageSize,
     );
     if (around != null) {
+      await putUsers(around.users);
       return await _placeAround(roomId, messageId, around, current);
     }
 
@@ -536,7 +574,7 @@ class ChatRepository {
     for (var pages = 0; pages < maxJumpPages; pages++) {
       final oldest = synced?.oldest;
       if (synced == null || oldest == null || !synced.hasMoreOlder) break;
-      final page = await _source.fetchMessages(
+      final page = await _fetchMessages(
         roomId,
         before: oldest,
         limit: _pageSize,
@@ -715,6 +753,8 @@ class ChatRepository {
       case PresenceChanged(:final presence):
         _presence[presence.userId] = presence;
         _presenceController.add(presence);
+      case UsersChanged(:final users):
+        await putUsers(users);
     }
   }
 
@@ -783,7 +823,7 @@ class ChatRepository {
     _userBatchCompleter = null;
     try {
       final resolved = await _resolver!.resolve(ids);
-      await _cache.upsertUsers(resolved);
+      await putUsers(resolved);
       completer.complete();
     } on Object catch (error, stack) {
       completer.completeError(error, stack);

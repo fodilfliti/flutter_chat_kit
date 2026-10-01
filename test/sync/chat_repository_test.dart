@@ -470,6 +470,67 @@ void main() {
       expect(resolver.calls, hasLength(2));
     });
 
+    test(
+      'users sent with pages are stored; the resolver is not asked',
+      () async {
+        source.people['u2'] = const ChatUser(id: 'u2', name: 'Sara');
+        source.people['u3'] = const ChatUser(id: 'u3', name: 'Omar');
+        source
+          ..seedMessages('r1', _range(0, 3))
+          ..seedRoom(
+            ChatRoom(
+              id: 'd1',
+              updatedAt: _t0,
+              members: const [
+                RoomMember(userId: 'me'),
+                RoomMember(userId: 'u3'),
+              ],
+            ),
+          );
+
+        await repo.openRoom('r1');
+        await repo.fetchRooms();
+        final users = await repo.users({'u2', 'u3'});
+        expect(users['u2']?.name, 'Sara');
+        expect(users['u3']?.name, 'Omar');
+        expect(resolver.calls, isEmpty);
+      },
+    );
+
+    test('changed users replace the stored ones and are announced', () async {
+      final announced = <List<String>>[];
+      final sub = repo.userChanges.listen(
+        (users) => announced.add([for (final u in users) u.name]),
+      );
+      addTearDown(sub.cancel);
+
+      const sara = ChatUser(id: 'u2', name: 'Sara', avatarUrl: 'a.png');
+      await repo.putUsers([sara]);
+      await repo.putUsers([sara]);
+      await repo.putUsers([sara.copyWith(avatarUrl: 'b.png')]);
+      await repo.putUsers([sara.copyWith(name: 'Sara B', avatarUrl: 'b.png')]);
+      await _settle();
+
+      expect(announced, [
+        ['Sara'],
+        ['Sara'],
+        ['Sara B'],
+      ]);
+      expect((await repo.users({'u2'}))['u2']?.avatarUrl, 'b.png');
+      expect(resolver.calls, isEmpty);
+    });
+
+    test('UsersChanged events update the stored users', () async {
+      await repo.putUsers([const ChatUser(id: 'u2', name: 'Sara')]);
+      repo.openInbox();
+      source.emit(
+        const UsersChanged([ChatUser(id: 'u2', name: 'Sara (shop)')]),
+      );
+      await _settle();
+      expect((await repo.users({'u2'}))['u2']?.name, 'Sara (shop)');
+      await repo.closeInbox();
+    });
+
     test('resolver failures fall back to the cache', () async {
       await repo.users({'a'});
       now = now.add(const Duration(hours: 13));

@@ -8,11 +8,15 @@
 - `ChatScale` and `ChatStyle.scale`: one size factor and one text factor, recomputed on every resize and rotation. Works with any scale package (`ChatScale(1.w, text: 1.sp)` for flutter_scale_kit or flutter_screenutil), or `ChatScale.byScreen()` and `ChatScale.fixed()` without one. Scales multiply for a zoom setting. The example tests it against the real flutter_scale_kit on phones, landscape and tablets.
 - `InboxView.roomBuilder` opens a room that keeps the inbox's style; `onRoomTap` is now optional. `ChatStyle.push` and `ChatStyle.carry` keep the style on other pages and follow later changes. `ChatStyle.scaleOf` returns the current scale.
 - `context.chatTheme`, a shortcut for `ChatTheme.of(context)`.
+- Names and avatars from the backend: `ChatPage.users` carries the people of a page (from `fetchRooms`, `fetchMessages` and `fetchAround`), the `UsersChanged` event pushes live changes from either `events()` stream, and `ChatKit.updateUsers` sets them from app code. The kit saves them in the cache, replaces them when they change, and updates open inboxes and rooms at once. Users that arrive this way count as fresh, so `ChatUserResolver` is only asked for the rest. `ChatRepository.putUsers` and `ChatRepository.userChanges` expose the same flow.
+- `PollingRealtime` compares the users of each polled page and emits `UsersChanged` for new or changed ones.
 
 ### Changed
 
 - A `theme:` passed to `InboxView` or `ChatRoomView` is scaled by the `ChatStyle` above it.
 - The README is rewritten for app developers: a 3-step quick start, styling, and a section on screen-size and theme kits. The agent skill covers `ChatStyle` and scaling.
+- The README starts with "Before you start": the packages to add, platform setup and the classes you write. New sections show names and avatars from REST and Supabase, and several custom message types at once. The Supabase, REST + WebSocket and Firestore guides show how to send names with pages and push their changes.
+- Resolver results are saved through the same path as backend users, so a refresh after `userCacheTtl` also updates open screens.
 
 ## [0.1.0] - 2026-09-30
 

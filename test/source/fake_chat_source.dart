@@ -45,7 +45,25 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
   final List<(String, String)> deleteCalls = [];
   final List<(String, String, String, bool)> reactCalls = [];
 
+  /// Sent with every page that mentions them (members, authors), like a
+  /// backend that joins its profiles table.
+  final Map<String, ChatUser> people = {};
+
   void seedRoom(ChatRoom room) => rooms[room.id] = room;
+
+  List<ChatUser> _peopleIn(Iterable<String> ids) => [
+    for (final id in ids.toSet()) ?people[id],
+  ];
+
+  List<ChatUser> _peopleOfRooms(List<ChatRoom> rooms) => _peopleIn([
+    for (final room in rooms) ...[
+      for (final member in room.members) member.userId,
+      ?room.lastMessage?.authorId,
+    ],
+  ]);
+
+  List<ChatUser> _peopleOfMessages(List<Message> messages) =>
+      _peopleIn([for (final m in messages) m.authorId]);
 
   void seedMessages(String roomId, Iterable<Message> messages) {
     _messages.putIfAbsent(roomId, () => []).addAll(messages);
@@ -94,9 +112,11 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
             .where((r) => after == null || r.cursor.compareTo(after) < 0)
             .toList()
           ..sort((a, b) => b.cursor.compareTo(a.cursor));
+    final items = sorted.take(limit).toList();
     return ChatPage(
-      items: sorted.take(limit).toList(),
+      items: items,
       hasMore: sorted.length > limit,
+      users: _peopleOfRooms(items),
     );
   }
 
@@ -116,14 +136,17 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
       return ChatPage(
         items: oldestFirst.reversed.toList(),
         hasMore: newer.length > limit,
+        users: _peopleOfMessages(oldestFirst),
       );
     }
     final older = before == null
         ? all
         : all.where((m) => m.cursor.isBefore(before)).toList();
+    final items = older.take(limit).toList();
     return ChatPage(
-      items: older.take(limit).toList(),
+      items: items,
       hasMore: older.length > limit,
+      users: _peopleOfMessages(items),
     );
   }
 
@@ -148,7 +171,7 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
   Stream<ChatEvent> events({String? roomId}) {
     if (roomId == null) {
       return _events.stream.where(
-        (e) => e is RoomChanged || e is PresenceChanged,
+        (e) => e is RoomChanged || e is PresenceChanged || e is UsersChanged,
       );
     }
     return _events.stream.where(
@@ -156,7 +179,7 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
         MessageChanged(roomId: final id) => id == roomId,
         TypingChanged(roomId: final id) => id == roomId,
         ReceiptChanged(roomId: final id) => id == roomId,
-        RoomChanged() || PresenceChanged() => false,
+        RoomChanged() || PresenceChanged() || UsersChanged() => false,
       },
     );
   }

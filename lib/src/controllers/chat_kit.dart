@@ -8,6 +8,7 @@ import 'package:flutter_chat_kit/src/controllers/audio_player_hub.dart';
 import 'package:flutter_chat_kit/src/controllers/chat_room_controller.dart';
 import 'package:flutter_chat_kit/src/controllers/inbox_controller.dart';
 import 'package:flutter_chat_kit/src/media/chat_media_store.dart';
+import 'package:flutter_chat_kit/src/models/chat_user.dart';
 import 'package:flutter_chat_kit/src/models/room_filter.dart';
 import 'package:flutter_chat_kit/src/source/chat_source.dart';
 import 'package:flutter_chat_kit/src/source/chat_uploader.dart';
@@ -69,6 +70,9 @@ class ChatKit extends ChangeNotifier {
 
   /// Null disables media and voice sending.
   final ChatUploader? uploader;
+
+  /// Looks up names and avatars the backend did not send with its pages
+  /// (`ChatPage.users`) or events (`UsersChanged`).
   final ChatUserResolver? users;
   final ChatConfig config;
 
@@ -195,6 +199,13 @@ class ChatKit extends ChangeNotifier {
       }
     }
     notifyListeners();
+  }
+
+  /// Stores names and avatars the app got elsewhere (a profile screen, a
+  /// push, its own user cache). Open chat screens update at once; ignored
+  /// while closed.
+  Future<void> updateUsers(List<ChatUser> users) async {
+    await _repository?.putUsers(users);
   }
 
   /// Retries every pending or failed send now.

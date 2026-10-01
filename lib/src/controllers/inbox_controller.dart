@@ -24,6 +24,7 @@ class InboxController extends ChangeNotifier {
     _repository.openInbox(onResync: _resync);
     _presenceSub = _repository.presenceChanges.listen(_onPresence);
     _typingSub = _repository.typingChanges.listen(_onTyping);
+    _usersSub = _repository.userChanges.listen(_onUsers);
     _watch();
     unawaited(refresh());
   }
@@ -34,6 +35,7 @@ class InboxController extends ChangeNotifier {
   StreamSubscription<List<ChatRoom>>? _roomsSub;
   StreamSubscription<Presence>? _presenceSub;
   StreamSubscription<TypingState>? _typingSub;
+  StreamSubscription<List<ChatUser>>? _usersSub;
   Timer? _searchTimer;
   bool _disposed = false;
   int _refreshSeq = 0;
@@ -86,8 +88,8 @@ class InboxController extends ChangeNotifier {
     unawaited(refresh());
   }
 
-  /// Peers of direct rooms and authors (and staff senders) of last messages,
-  /// resolved lazily.
+  /// Peers of direct rooms and authors (and staff senders) of last messages:
+  /// sent by the backend or resolved lazily, and updated when they change.
   Map<String, ChatUser> get users => _users;
 
   Presence? presenceOf(String userId) => _repository.presence(userId);
@@ -244,6 +246,19 @@ class InboxController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Keeps names and avatars of this list current when the backend sends
+  /// new ones.
+  void _onUsers(List<ChatUser> users) {
+    var changed = false;
+    for (final user in users) {
+      if (_requestedUsers.contains(user.id) || _users.containsKey(user.id)) {
+        _users[user.id] = user;
+        changed = true;
+      }
+    }
+    if (changed) _notify();
+  }
+
   void _onPresence(Presence presence) {
     final isPeer = _rooms.any(
       (room) => room.otherUserId(currentUserId) == presence.userId,
@@ -275,6 +290,7 @@ class InboxController extends ChangeNotifier {
     unawaited(_roomsSub?.cancel());
     unawaited(_presenceSub?.cancel());
     unawaited(_typingSub?.cancel());
+    unawaited(_usersSub?.cancel());
     if (kit.isOpen) unawaited(_repository.closeInbox(onResync: _resync));
     super.dispose();
   }

@@ -160,7 +160,10 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
           controller.add(PresenceChanged(presence));
         }
         final sub = _events.stream
-            .where((e) => e is RoomChanged || e is PresenceChanged)
+            .where(
+              (e) =>
+                  e is RoomChanged || e is PresenceChanged || e is UsersChanged,
+            )
             .listen(controller.add);
         controller.onCancel = sub.cancel;
       });
@@ -170,7 +173,7 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
         MessageChanged(roomId: final id) => id == roomId,
         TypingChanged(roomId: final id) => id == roomId,
         ReceiptChanged(roomId: final id) => id == roomId,
-        RoomChanged() || PresenceChanged() => false,
+        RoomChanged() || PresenceChanged() || UsersChanged() => false,
       },
     );
   }

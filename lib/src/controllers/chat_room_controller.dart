@@ -30,6 +30,7 @@ class ChatRoomController extends ChangeNotifier {
       _outbox = kit.outbox {
     _roomSub = _repository.watchRoom(roomId).listen(_onRoom);
     _typingSub = _repository.watchTyping(roomId).listen(_onTyping);
+    _usersSub = _repository.userChanges.listen(_onUsers);
     _errorSub = _outbox.errors
         .where((e) => e.entry.roomId == roomId)
         .listen(_onOutboxError);
@@ -51,6 +52,7 @@ class ChatRoomController extends ChangeNotifier {
   StreamSubscription<ChatRoom?>? _roomSub;
   StreamSubscription<List<Message>>? _messagesSub;
   StreamSubscription<TypingState>? _typingSub;
+  StreamSubscription<List<ChatUser>>? _usersSub;
   StreamSubscription<OutboxError>? _errorSub;
   Timer? _highlightTimer;
   bool _disposed = false;
@@ -94,7 +96,8 @@ class ChatRoomController extends ChangeNotifier {
   /// False until the cache answered once; show a skeleton meanwhile.
   bool get hasLoadedCache => _hasMessages;
 
-  /// Authors and members, resolved lazily through `ChatUserResolver`.
+  /// Authors and members: sent by the backend with pages and events, or
+  /// resolved lazily through `ChatUserResolver`. Updated when they change.
   Map<String, ChatUser> get users => _users;
 
   bool get isSyncing => _isSyncing;
@@ -585,6 +588,19 @@ class ChatRoomController extends ChangeNotifier {
     _notify();
   }
 
+  /// Keeps authors' and members' names and avatars current when the
+  /// backend sends new ones.
+  void _onUsers(List<ChatUser> users) {
+    var changed = false;
+    for (final user in users) {
+      if (_requestedUsers.contains(user.id) || _users.containsKey(user.id)) {
+        _users[user.id] = user;
+        changed = true;
+      }
+    }
+    if (changed) _notify();
+  }
+
   List<String> _typingOf(TypingState state) => [
     for (final id in state.userIds)
       if (id != currentUserId) id,
@@ -694,6 +710,7 @@ class ChatRoomController extends ChangeNotifier {
     unawaited(_roomSub?.cancel());
     unawaited(_messagesSub?.cancel());
     unawaited(_typingSub?.cancel());
+    unawaited(_usersSub?.cancel());
     unawaited(_errorSub?.cancel());
     if (_opened) unawaited(_repository.closeRoom(roomId));
     _highlighted.dispose();

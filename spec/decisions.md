@@ -87,3 +87,11 @@
 **Why:** Owner requirement. The kit ships one language and never fights the app's i18n system.
 
 **Do not:** Bundle ARB files or depend on a localization package in `lib/`.
+
+## D13 — Names and avatars come with the data; the resolver is a fallback
+
+**Choice:** `ChatPage.users` and the `UsersChanged` event carry the people the backend already returns; `ChatKit.updateUsers` sets them from app code. `ChatRepository.putUsers` compares them with the cache, saves them, and announces only real changes on `userChanges`, which open controllers apply at once. Saved users count as fresh, so `ChatUserResolver` is asked only for ids still unknown or older than `userCacheTtl`, and its results take the same path.
+
+**Why:** Owner requirement. REST APIs and Supabase queries (embedded `profiles`) return names and avatars with rooms and messages, and those change over time (renames, new photos, business logos). A second lookup per id wasted requests, and a 12 h TTL left old names on screen.
+
+**Do not:** Put author names on `Message`, or cache users per controller only.

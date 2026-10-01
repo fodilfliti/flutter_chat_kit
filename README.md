@@ -17,13 +17,17 @@ cache, a send queue, media, voice messages, read receipts, and styling.
 ## Contents
 
 - [Features](#features)
-- [Install](#install)
+- [Before you start: what to install and write](#before-you-start-what-to-install-and-write)
+  - [1. Add the packages](#1-add-the-packages)
+  - [2. Platform setup](#2-platform-setup)
+  - [3. The classes you write](#3-the-classes-you-write)
 - [Quick start: a working chat in 3 steps](#quick-start-a-working-chat-in-3-steps)
 - [How the pieces fit](#how-the-pieces-fit)
 - [Connect your backend](#connect-your-backend)
+  - [Names and avatars](#names-and-avatars)
 - [Style the chat](#style-the-chat)
 - [Builders, text and custom messages](#builders-text-and-custom-messages)
-- [Platform setup](#platform-setup)
+  - [Several custom message types](#several-custom-message-types)
 - [Example app](#example-app)
 - [Screen size and theme kits](#screen-size-and-theme-kits)
 - [Let your AI agent build it](#let-your-ai-agent-build-it)
@@ -51,16 +55,108 @@ cache, a send queue, media, voice messages, read receipts, and styling.
   Telegram, ...), simple options and screen scaling that works with any
   scale package.
 
-## Install
+## Before you start: what to install and write
+
+Do these three things once. Everything after this section builds on them.
+
+**Requirements:** Flutter `>=3.44.0` (Dart `^3.12.0`).
+
+### 1. Add the packages
 
 ```yaml
 dependencies:
   flutter_chat_kit: ^0.1.0
+  lemsa_core_kit: ^1.1.0 # the AppFailure errors your ChatSource throws
 ```
 
 ```dart
 import 'package:flutter_chat_kit/flutter_chat_kit.dart';
+import 'package:lemsa_core_kit/lemsa_core_kit.dart'; // in your ChatSource file
 ```
+
+The kit brings its own SQLite cache, media cache, pickers, voice recorder
+and players. You do **not** add a backend SDK to the kit: your app already
+has Firebase, Supabase or an HTTP client, and only your `ChatSource` uses it.
+
+### 2. Platform setup
+
+Only the platforms you ship need it.
+
+**Android** (`android/app/src/main/AndroidManifest.xml`):
+
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.RECORD_AUDIO" />
+```
+
+**iOS** (`ios/Runner/Info.plist`):
+
+```xml
+<key>NSMicrophoneUsageDescription</key>
+<string>Record voice messages.</string>
+<key>NSCameraUsageDescription</key>
+<string>Take photos and videos to send.</string>
+<key>NSPhotoLibraryUsageDescription</key>
+<string>Send photos and videos from your library.</string>
+```
+
+**macOS**: the same microphone and camera keys in `Info.plist`, and these
+entitlements in both `DebugProfile.entitlements` and
+`Release.entitlements`: `com.apple.security.network.client`,
+`com.apple.security.device.audio-input`,
+`com.apple.security.device.camera`,
+`com.apple.security.files.user-selected.read-write`.
+
+**Web.** The SQLite cache runs in a web worker. Copy two files into your
+app's `web/` folder:
+
+- `sqlite3.wasm` from the
+  [sqlite3.dart releases](https://github.com/simolus3/sqlite3.dart/releases)
+  (the version matching `sqlite3` in your `pubspec.lock`);
+- `drift_worker.js` from the
+  [drift releases](https://github.com/simolus3/drift/releases) (matching
+  `drift`).
+
+**Linux**: voice playback uses GStreamer
+(`libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev`).
+
+**Windows and Linux**: `video_player` has no official desktop
+implementation; add one (for example `video_player_win` or `fvp`) for
+in-app video there.
+
+### 3. The classes you write
+
+| Class | Needed? | What it does |
+| --- | --- | --- |
+| `ChatSource` | **Always** | Reads and writes rooms and messages on your backend, and sends live events. See [Connect your backend](#connect-your-backend). |
+| `ChatUploader` | For photos, video, files and voice | Uploads one file to your storage and returns its URL. Without it the attach and mic buttons are hidden. |
+| `ChatUserResolver` | Optional | Looks up names and avatars your backend did not send. Not needed when your API returns them with rooms and messages, see [Names and avatars](#names-and-avatars). |
+
+```dart
+class MyUploader implements ChatUploader {
+  @override
+  Stream<UploadProgress> upload(Attachment attachment,
+      {required String roomId, required String localId}) async* {
+    // Upload attachment.localPath to Firebase Storage, Supabase Storage, S3...
+    yield const UploadRunning(0.5);           // optional progress, 0..1
+    yield UploadDone(remoteUrl: downloadUrl); // always end with this
+  }
+}
+
+class MyUserResolver implements ChatUserResolver {
+  @override
+  Future<List<ChatUser>> resolve(Set<String> ids) async {
+    // One request for many ids; missing ids are simply left out.
+    final rows = await api.getUsers(ids);
+    return [for (final row in rows) ChatUser.fromJson(row)];
+  }
+}
+```
+
+[Firestore](doc/adapters/firestore.md),
+[Supabase](doc/adapters/supabase.md) and
+[REST + WebSocket](doc/adapters/rest_websocket.md) guides contain a full
+`ChatSource` and `ChatUploader` for each backend, ready to copy.
 
 ## Quick start: a working chat in 3 steps
 
@@ -74,7 +170,7 @@ final kit = ChatKit(
   currentUserId: user.id,
   source: MyChatSource(),     // your backend, see "Connect your backend"
   uploader: MyUploader(),     // optional: enables photos, files and voice
-  users: MyUserResolver(),    // optional: names and avatars
+  users: MyUserResolver(),    // optional: names your API did not send
 );
 await kit.open();
 
@@ -221,6 +317,81 @@ Step-by-step guides with schema, realtime and uploads:
 [REST + WebSocket](doc/adapters/rest_websocket.md) ·
 [Several lists and mixed backends](doc/adapters/mixing.md) ·
 [Profiles and business accounts](doc/adapters/profiles.md)
+
+### Names and avatars
+
+Most REST APIs and Supabase queries already return the author's name and
+avatar with the rooms and messages. Give them to the kit: it saves them in
+its cache, shows them in the inbox and rooms, and **replaces them when they
+change** (a user renames, uploads a new photo, a business changes its logo).
+
+**1. Send them with each page** (the usual way). Put the people of the page
+in `ChatPage.users`, in `fetchRooms`, `fetchMessages` and `fetchAround`:
+
+```dart
+// REST: { "messages": [...], "users": [{"id", "name", "avatar_url"}], "has_more": true }
+final json = await api.get('/rooms/$roomId/messages', query: {...});
+return ChatPage(
+  items: [for (final m in json['messages']) Message.fromJson(m)],
+  hasMore: json['has_more'] as bool,
+  users: [for (final u in json['users']) ChatUser.fromJson(u)],
+);
+```
+
+```dart
+// Supabase: embed the author's profile in the same query.
+final rows = await supabase
+    .from('messages')
+    .select('*, author:profiles!author_id(id, name, avatar_url)')
+    .eq('room_id', roomId)
+    .order('created_at', ascending: false)
+    .limit(limit + 1);
+return ChatPage(
+  items: [for (final r in rows.take(limit)) Message.fromJson(r)],
+  hasMore: rows.length > limit,
+  users: [
+    for (final r in rows)
+      if (r['author'] case final Map<String, dynamic> author)
+        ChatUser.fromJson(author),
+  ],
+);
+```
+
+Every time a page loads, the kit compares the users with the saved ones and
+updates the screen if a name or avatar is different. Duplicates in the list
+are fine.
+
+**2. Push changes as they happen** (optional). When your realtime service
+says a profile changed, emit `UsersChanged` from `events()`:
+
+```dart
+// in events(): a "user.updated" WebSocket message, a Supabase change on profiles, ...
+out.add(UsersChanged([ChatUser.fromJson(payload)]));
+```
+
+or call the kit from anywhere in your app, for example right after the user
+edits their own profile:
+
+```dart
+await kit.updateUsers([ChatUser(id: me.id, name: newName, avatarUrl: newUrl)]);
+```
+
+**3. A resolver for the rest** (optional). If some ids still have no name
+(for example the peer of a room whose API returns only ids), the kit asks
+your `ChatUserResolver` for them, many ids in one call. It asks again after
+`ChatConfig.userCacheTtl` (12 hours by default) to pick up changes. Users
+that came with pages or events count as fresh, so the resolver is not asked
+for them.
+
+How it behaves:
+
+- The newest value wins, wherever it came from.
+- Open inboxes and rooms update at once; nothing to refresh by hand.
+- Names are saved in SQLite, so they show offline and right after a restart.
+- `PollingRealtime` (REST without realtime) compares the users of each
+  poll and emits `UsersChanged` for you.
+- `ChatUser.metadata` keeps extra fields (role, verified badge, ...) and is
+  compared too.
 
 ### Several chat lists (tabs)
 
@@ -442,56 +613,94 @@ ChatRoomView(
 
 - **Builders**: `ChatBuilders` (room) and `InboxBuilders` (inbox). Each
   builder receives the default widget, so wrapping is one line.
-- **Custom messages**: one builder per type, and `bubbledCustomTypes` to
-  draw them inside the normal bubble.
+- **Custom messages**: one builder per type (as many as you want, see
+  below), and `bubbledCustomTypes` to draw them inside the normal bubble.
 - **Text**: every string is in `ChatStrings`, English by default. Fill it
   from slang, intl or any localization tool.
 - **Formats**: `ChatFormatters` for times, dates, durations and sizes.
 - **Behavior**: `ChatConfig` for page sizes, grouping, reactions,
   auto-download and limits.
 
-## Platform setup
+### Several custom message types
 
-**Web.** The SQLite cache runs in a web worker. Copy two files into your
-app's `web/` folder:
+`customBuilders` is a map: **add one entry per type**, as many as you
+need. The key is the `customType` you send, the value draws it:
 
-- `sqlite3.wasm` from the
-  [sqlite3.dart releases](https://github.com/simolus3/sqlite3.dart/releases)
-  (the version matching `sqlite3` in your `pubspec.lock`);
-- `drift_worker.js` from the
-  [drift releases](https://github.com/simolus3/drift/releases) (matching
-  `drift`).
-
-**Android** (`android/app/src/main/AndroidManifest.xml`):
-
-```xml
-<uses-permission android:name="android.permission.INTERNET" />
-<uses-permission android:name="android.permission.RECORD_AUDIO" />
+```dart
+ChatRoomView(
+  controller: room,
+  builders: ChatBuilders(
+    customBuilders: {
+      'offer': (context, m) => OfferCard(message: m),
+      'location': (context, m) => LocationCard(message: m),
+      'order': (context, m) => OrderCard(message: m),
+    },
+    // These are drawn inside the normal bubble; the others stand alone.
+    bubbledCustomTypes: const {'location', 'order'},
+  ),
+  // Buttons in the attach sheet that send them.
+  extraAttachmentOptions: [
+    AttachmentOption(
+      icon: Icons.local_offer_outlined,
+      label: 'Offer',
+      onSelected: () => room.sendCustom('offer', {'price': 120, 'item': 'Sofa'}),
+    ),
+    AttachmentOption(
+      icon: Icons.place_outlined,
+      label: 'Location',
+      onSelected: () => room.sendCustom('location', {'lat': 36.75, 'lng': 3.06}),
+    ),
+  ],
+)
 ```
 
-**iOS** (`ios/Runner/Info.plist`):
+Inside a builder, `m.message` is a `CustomMessage`; read what you sent from
+its `data`:
 
-```xml
-<key>NSMicrophoneUsageDescription</key>
-<string>Record voice messages.</string>
-<key>NSCameraUsageDescription</key>
-<string>Take photos and videos to send.</string>
-<key>NSPhotoLibraryUsageDescription</key>
-<string>Send photos and videos from your library.</string>
+```dart
+class LocationCard extends StatelessWidget {
+  const LocationCard({required this.message, super.key});
+
+  final MessageContext message;
+
+  @override
+  Widget build(BuildContext context) {
+    final data = (message.message as CustomMessage).data;
+    return ListTile(
+      leading: const Icon(Icons.place),
+      title: Text('${data['lat']}, ${data['lng']}'),
+      subtitle: Text(message.isMine ? 'You shared a location' : 'Location'),
+    );
+  }
+}
 ```
 
-**macOS**: the same microphone and camera keys in `Info.plist`, and these
-entitlements in both `DebugProfile.entitlements` and
-`Release.entitlements`: `com.apple.security.network.client`,
-`com.apple.security.device.audio-input`,
-`com.apple.security.device.camera`,
-`com.apple.security.files.user-selected.read-write`.
+Give each type a one-line text for the inbox and reply previews:
 
-**Linux**: voice playback uses GStreamer
-(`libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev`).
-**Windows and Linux**: `video_player` has no official desktop
-implementation; add one (for example `video_player_win` or `fvp`) for
-in-app video there.
+```dart
+ChatStrings(
+  customPreview: (type, data) => switch (type) {
+    'offer' => 'Offer: ${data['item']}',
+    'location' => 'Location',
+    'order' => 'Order #${data['id']}',
+    _ => null, // falls back to strings.unsupportedMessage
+  },
+)
+```
+
+Many types, or types decided at runtime? Use `customBuilder` as a catch-all
+for every type that is not in the map (return `null` for the "unsupported"
+view):
+
+```dart
+ChatBuilders(
+  customBuilders: {'offer': (context, m) => OfferCard(message: m)},
+  customBuilder: (context, m) {
+    final data = (m.message as CustomMessage).data;
+    return data['card'] is Map ? GenericCard(data['card']! as Map) : null;
+  },
+)
+```
 
 ## Example app
 

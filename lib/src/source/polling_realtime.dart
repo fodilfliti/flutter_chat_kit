@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_chat_kit/src/models/chat_event.dart';
 import 'package:flutter_chat_kit/src/models/chat_room.dart';
+import 'package:flutter_chat_kit/src/models/chat_user.dart';
 import 'package:flutter_chat_kit/src/models/message.dart';
 import 'package:flutter_chat_kit/src/models/message_cursor.dart';
 import 'package:flutter_chat_kit/src/source/chat_source.dart';
@@ -18,6 +19,8 @@ import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 /// - The inbox fetches the first page of rooms every [inboxInterval] and
 ///   emits the rooms that changed; room members carry the read pointers,
 ///   so read receipts follow.
+/// - Names and avatars sent with the pages (`ChatPage.users`) that are new
+///   or changed are emitted as `UsersChanged`.
 /// - No typing and no presence. Failed polls are skipped; the next one
 ///   retries.
 ///
@@ -102,23 +105,27 @@ class PollingRealtime implements ChatRealtime {
 
   Future<List<ChatEvent>> Function() _roomPoller(String roomId) {
     final known = <String, Message>{};
+    final knownUsers = <String, ChatUser>{};
     MessageCursor? newest;
 
     return () async {
       final page = await data.fetchMessages(roomId, limit: pageSize);
       final fetched = [...page.items];
+      final users = [...page.users];
       final since = newest;
       if (since != null &&
           page.hasMore &&
           page.items.isNotEmpty &&
           page.items.last.cursor.isAfter(since)) {
-        fetched.addAll(await _catchUp(roomId, since));
+        final forward = await _catchUp(roomId, since);
+        fetched.addAll(forward.messages);
+        users.addAll(forward.users);
       }
 
       final byId = {for (final m in fetched) m.id: m};
       final ordered = byId.values.toList()
         ..sort((a, b) => a.cursor.compareTo(b.cursor));
-      final events = <ChatEvent>[];
+      final events = <ChatEvent>[?_changedUsers(users, knownUsers)];
       for (final m in ordered) {
         final previous = known[m.id];
         if (previous == m) continue;
@@ -137,9 +144,14 @@ class PollingRealtime implements ChatRealtime {
     };
   }
 
-  /// Messages newer than [since], oldest first, up to [maxCatchUpPages].
-  Future<List<Message>> _catchUp(String roomId, MessageCursor since) async {
+  /// Messages newer than [since], oldest first, up to [maxCatchUpPages],
+  /// with the users those pages carried.
+  Future<({List<Message> messages, List<ChatUser> users})> _catchUp(
+    String roomId,
+    MessageCursor since,
+  ) async {
     final forward = <Message>[];
+    final users = <ChatUser>[];
     var cursor = since;
     for (var i = 0; i < maxCatchUpPages; i++) {
       final page = await data.fetchMessages(
@@ -149,10 +161,26 @@ class PollingRealtime implements ChatRealtime {
       );
       final oldestFirst = page.items.reversed.toList();
       forward.addAll(oldestFirst);
+      users.addAll(page.users);
       if (!page.hasMore || oldestFirst.isEmpty) break;
       cursor = oldestFirst.last.cursor;
     }
-    return forward;
+    return (messages: forward, users: users);
+  }
+
+  /// A [UsersChanged] with the users not seen yet or changed since the last
+  /// poll, or null.
+  UsersChanged? _changedUsers(
+    List<ChatUser> users,
+    Map<String, ChatUser> known,
+  ) {
+    final changed = <ChatUser>[];
+    for (final user in users) {
+      if (known[user.id] == user) continue;
+      known[user.id] = user;
+      changed.add(user);
+    }
+    return changed.isEmpty ? null : UsersChanged(changed);
   }
 
   /// Keeps memory bounded: only recent messages can change on screen.
@@ -168,9 +196,10 @@ class PollingRealtime implements ChatRealtime {
 
   Future<List<ChatEvent>> Function() _inboxPoller() {
     final known = <String, ChatRoom>{};
+    final knownUsers = <String, ChatUser>{};
     return () async {
       final page = await data.fetchRooms(limit: roomsPageSize);
-      final events = <ChatEvent>[];
+      final events = <ChatEvent>[?_changedUsers(page.users, knownUsers)];
       for (final room in page.items.reversed) {
         if (known[room.id] == room) continue;
         known[room.id] = room;

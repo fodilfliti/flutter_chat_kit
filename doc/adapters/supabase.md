@@ -502,6 +502,76 @@ extension on SupabaseChatSource {
 }
 ```
 
+## Names and avatars
+
+Keep names in a `profiles` table and point `messages.author_id` (and
+`room_members.user_id`) at it, so one query returns messages **with** their
+authors:
+
+```sql
+create table profiles (
+  id uuid primary key references auth.users on delete cascade,
+  name text not null default '',
+  avatar_url text
+);
+alter table profiles enable row level security;
+create policy "profiles are readable" on profiles for select using (true);
+
+-- instead of `references auth.users` above:
+--   messages.author_id    uuid not null references profiles
+--   room_members.user_id  uuid references profiles on delete cascade
+```
+
+Embed the profile and hand it to the kit with `ChatPage.users`. In
+`fetchMessages`:
+
+```dart
+var q = _db
+    .from('messages')
+    .select('*, author:profiles!author_id(id, name, avatar_url)')
+    .eq('room_id', roomId);
+// ... cursors and order as above ...
+return ChatPage(
+  items: newer ? items.reversed.toList() : items,
+  hasMore: rows.length > limit,
+  users: [
+    for (final r in rows)
+      if (r['author'] case final Map<String, dynamic> author)
+        ChatUser.fromJson(author),
+  ],
+);
+```
+
+and in `fetchRooms`, with `select('*, room_members(*, profile:profiles(id, name, avatar_url)), me:room_members!inner(labels, unread_count)')`:
+
+```dart
+users: [
+  for (final r in rows)
+    for (final m in r['room_members'] as List)
+      if (m['profile'] case final Map<String, dynamic> p) ChatUser.fromJson(p),
+],
+```
+
+The kit saves these users, shows them, and replaces them whenever a page
+brings a different name or avatar. With every page carrying its people you
+can drop `SupabaseUserResolver`.
+
+To show a rename at once, add the `profiles` table to the
+`supabase_realtime` publication and, on the inbox channel, turn its updates
+into `UsersChanged`:
+
+```dart
+.onPostgresChanges(
+  event: PostgresChangeEvent.update,
+  schema: 'public',
+  table: 'profiles',
+  callback: (p) => out.add(UsersChanged([ChatUser.fromJson(p.newRecord)])),
+)
+```
+
+After the signed-in user edits their own profile, you can also call
+`kit.updateUsers([ChatUser(id: uid, name: name, avatarUrl: url)])`.
+
 ## Uploads with Supabase Storage
 
 ```dart
@@ -546,6 +616,7 @@ final kit = ChatKit(
   currentUserId: supabase.auth.currentUser!.id,
   source: SupabaseChatSource(supabase),
   uploader: SupabaseUploader(supabase),
+  // Optional when pages carry their profiles (see "Names and avatars").
   users: SupabaseUserResolver(supabase), // select id, name, avatar_url in ids
 );
 await kit.open();
