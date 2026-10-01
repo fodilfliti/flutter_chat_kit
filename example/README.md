@@ -39,11 +39,16 @@ matching `drift`) into `web/`, then run `flutter run -d chrome`.
   button to record (slide to cancel, slide up to lock). Tap an image to open
   the viewer and save it.
 - **Chat style**: tap the palette button (inbox or room) to open a live
-  style sheet. Pick a preset (Classic, WhatsApp-like, Telegram-like,
-  Minimal grey, Cards), a color and dark mode, then drag the scale, text
-  size, message font size and bubble radius sliders, toggle grey text,
-  shadows, borders and square avatars, and switch inbox rows between plain,
-  lines and cards. The screen behind the sheet updates as you go.
+  style sheet. Pick a preset (Classic, WhatsApp, WhatsApp new, Telegram,
+  iMessage, Messenger, Minimal, Cards, Glass), a color and dark mode, then
+  drag the scale, text size, message font size and bubble radius sliders,
+  toggle grey text, shadows, borders and square avatars, and switch inbox
+  rows between plain, lines and cards. The screen behind the sheet updates
+  as you go. "Random style" picks a new look in one tap.
+- **Style shuffle**: tap the shuffle button (inbox or room) and the chat
+  changes look every 4 seconds: the next preset, a new color, sometimes
+  dark mode, and random bubble and row shapes. Made for recording a demo
+  that shows every look; tap again to stop. Reset demo stops it too.
 - **Custom messages**: in "Weekend trip", tap the offer button (app bar or
   attachment sheet) to send a product offer; the other side can accept or
   decline. In "Lemsa Shop", the same `offer` type shows as a quote with line

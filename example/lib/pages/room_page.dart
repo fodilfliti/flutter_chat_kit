@@ -7,6 +7,7 @@ import 'package:flutter_chat_kit_example/custom/custom_messages.dart';
 import 'package:flutter_chat_kit_example/i18n/chat_strings.dart';
 import 'package:flutter_chat_kit_example/i18n/language_button.dart';
 import 'package:flutter_chat_kit_example/i18n/strings.g.dart';
+import 'package:flutter_chat_kit_example/pages/app_bar_actions.dart';
 import 'package:flutter_chat_kit_example/style/style_sheet.dart';
 
 class RoomPage extends StatefulWidget {
@@ -46,15 +47,20 @@ class _RoomPageState extends State<RoomPage> {
       extraAttachmentOptions: customOptions(context, _room),
       appBar: ChatAppBarOptions(
         actions: [
-          IconButton(
-            tooltip: t.makeOffer,
-            icon: const Icon(Icons.local_offer_outlined),
-            onPressed: () => unawaited(showOfferDialog(context, _room)),
+          AppBarActions(
+            children: [
+              IconButton(
+                tooltip: t.makeOffer,
+                icon: const Icon(Icons.local_offer_outlined),
+                onPressed: () => unawaited(showOfferDialog(context, _room)),
+              ),
+              const LanguageButton(),
+              const StyleButton(),
+              const StyleShuffleButton(),
+              LiveMessagesButton(backend: widget.backend),
+              ConnectionButton(backend: widget.backend),
+            ],
           ),
-          const LanguageButton(),
-          const StyleButton(),
-          LiveMessagesButton(backend: widget.backend),
-          ConnectionButton(backend: widget.backend),
         ],
         onTitleTap: () => _toast(t.roomDetails),
       ),

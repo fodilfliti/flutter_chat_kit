@@ -353,5 +353,63 @@ void main() {
         }
       }
     });
+
+    test('the app-inspired presets keep their signature look', () {
+      ChatTheme build(ChatPreset preset, Brightness brightness) =>
+          preset.build(
+            ColorScheme.fromSeed(
+              seedColor: preset.seedColor!,
+              brightness: brightness,
+            ),
+            Typography.material2021().englishLike,
+          );
+
+      for (final brightness in Brightness.values) {
+        final whatsApp = build(ChatPreset.whatsAppNew, brightness);
+        // Pill bubbles without tails, and photos without a frame.
+        expect(whatsApp.outgoingBubble.tailRadius, 20);
+        expect(whatsApp.media.inset, 0);
+        expect(
+          whatsApp.composer.backgroundColor,
+          (whatsApp.messageList.background! as BoxDecoration).color,
+        );
+
+        final iMessage = build(ChatPreset.iMessage, brightness);
+        expect(iMessage.outgoingBubble.color.b, greaterThan(0.9));
+        expect(iMessage.composer.inputBorder, isNot(BorderSide.none));
+
+        final messenger = build(ChatPreset.messenger, brightness);
+        expect(messenger.outgoingBubble.gradient, isA<LinearGradient>());
+
+        final glass = build(ChatPreset.glass, brightness);
+        expect(glass.incomingBubble.color.a, lessThan(1));
+        expect(glass.incomingBubble.border, isNot(BorderSide.none));
+        expect(
+          (glass.messageList.background! as BoxDecoration).gradient,
+          isNotNull,
+        );
+      }
+    });
+
+    testWidgets('ChatStyle keeps the new WhatsApp bubbles tailless', (
+      tester,
+    ) async {
+      late ChatTheme theme;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChatStyle(
+            preset: ChatPreset.whatsAppNew,
+            child: Builder(
+              builder: (context) {
+                theme = ChatTheme.of(context);
+                return const SizedBox();
+              },
+            ),
+          ),
+        ),
+      );
+      expect(theme.outgoingBubble.radius, 20);
+      expect(theme.outgoingBubble.tailRadius, 20);
+    });
   });
 }

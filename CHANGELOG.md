@@ -13,8 +13,12 @@
 - The example app is translated with slang into English, French and Arabic, with a language button. Every `ChatStrings` field, the example screens, the custom cards, plurals and dates follow the language, and Arabic is right to left. A test checks that no chat text is left in English.
 - The example inbox menu has "Reset demo": it clears every profile's cached data with `ChatProfileSwitcher.clearAllUserData`, restarts the fake backend with its sample chats, comes back online on the personal profile and resets the style, so demos can be recorded again and again.
 - The example has an incoming messages button (inbox and room app bars): while on, the fake backend has people type and then send texts or photos every few seconds in random chats, on both profiles.
+- Four presets inspired by today's chat apps: `ChatPreset.whatsAppNew` (pill bubbles without tails, frameless photos, a composer floating on the wallpaper, as in the 2026 WhatsApp redesign), `ChatPreset.iMessage` (blue and grey bubbles, outlined input), `ChatPreset.messenger` (blue to pink gradient bubbles) and `ChatPreset.glass` (frosted see-through bubbles and input over an aurora gradient). `ChatPreset.values` lists all nine.
+- The example has a style shuffle for demos: a shuffle button in the app bars switches automatically to the next preset every 4 seconds, with a new color, sometimes dark mode and random bubble and row shapes. The style sheet also has "Random style" for a single change. The app bar buttons are smaller so they all fit.
 
 ### Fixed
+
+- The example's style sheet shows the preset names in the app language (they stayed in English), and the zoom value shows "×" again.
 
 - Date separators, the floating date header, inbox times and "last seen" now use the app locale (they were always English).
 - "last seen" no longer shows its prefix twice in the room app bar.

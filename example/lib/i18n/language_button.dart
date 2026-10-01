@@ -10,6 +10,7 @@ class LanguageButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<AppLocale>(
       tooltip: context.t.app.language,
+      padding: const EdgeInsets.all(6),
       icon: const Icon(Icons.translate),
       initialValue: TranslationProvider.of(context).locale,
       onSelected: LocaleSettings.setLocaleSync,

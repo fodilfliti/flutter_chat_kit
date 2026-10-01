@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/flutter_chat_kit.dart';
@@ -36,17 +36,41 @@ Future<void> showStyleSheet(BuildContext context) {
   );
 }
 
-const List<Color> _seeds = [
-  Colors.teal,
-  Color(0xFF25D366),
-  Color(0xFF2AABEE),
-  Colors.indigo,
-  Colors.deepPurple,
-  Colors.pink,
-  Colors.deepOrange,
-  Colors.brown,
-  Colors.blueGrey,
-];
+/// App bar button that turns [StyleSettings.autoShuffle] on and off;
+/// highlighted while on.
+class StyleShuffleButton extends StatelessWidget {
+  const StyleShuffleButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = StyleScope.of(context);
+    final t = context.t.style;
+    return IconButton(
+      isSelected: s.autoShuffle,
+      tooltip: s.autoShuffle ? t.stopShuffle : t.startShuffle,
+      icon: const Icon(Icons.shuffle),
+      selectedIcon: const Icon(Icons.shuffle_on_outlined),
+      onPressed: () => s.autoShuffle = !s.autoShuffle,
+    );
+  }
+}
+
+/// The preset's name in the app's language.
+String presetLabel(Translations t, ChatPreset preset) {
+  final names = t.style.presets;
+  return {
+        ChatPreset.classic: names.classic,
+        ChatPreset.whatsApp: names.whatsApp,
+        ChatPreset.whatsAppNew: names.whatsAppNew,
+        ChatPreset.telegram: names.telegram,
+        ChatPreset.iMessage: names.iMessage,
+        ChatPreset.messenger: names.messenger,
+        ChatPreset.minimal: names.minimal,
+        ChatPreset.cards: names.cards,
+        ChatPreset.glass: names.glass,
+      }[preset] ??
+      preset.name;
+}
 
 class _StyleSheet extends StatelessWidget {
   const _StyleSheet({required this.scroll});
@@ -60,14 +84,7 @@ class _StyleSheet extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final label = Theme.of(context).textTheme.titleSmall;
 
-    String presetName(ChatPreset preset) => switch (preset.name) {
-      'classic' => t.presets.classic,
-      'whatsApp' => t.presets.whatsApp,
-      'telegram' => t.presets.telegram,
-      'minimal' => t.presets.minimal,
-      'cards' => t.presets.cards,
-      final name => name,
-    };
+    String presetName(ChatPreset preset) => presetLabel(context.t, preset);
 
     Widget section(String title) => Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
@@ -111,12 +128,25 @@ class _StyleSheet extends StatelessWidget {
       onChanged: onChanged,
     );
 
-    String times(double v) => 'Ã—${v.toStringAsFixed(2)}';
+    String times(double v) => '×${v.toStringAsFixed(2)}';
 
     return ListView(
       controller: scroll,
       padding: const EdgeInsets.only(bottom: 24),
       children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: FilledButton.tonalIcon(
+            onPressed: s.shuffle,
+            icon: const Icon(Icons.shuffle),
+            label: Text(t.shuffle),
+          ),
+        ),
+        toggle(
+          t.autoShuffle,
+          value: s.autoShuffle,
+          onChanged: (v) => s.autoShuffle = v,
+        ),
         section(t.preset),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -140,7 +170,7 @@ class _StyleSheet extends StatelessWidget {
             spacing: 10,
             runSpacing: 10,
             children: [
-              for (final color in _seeds)
+              for (final color in StyleSettings.seeds)
                 _Swatch(
                   color: color,
                   selected: s.seed.toARGB32() == color.toARGB32(),

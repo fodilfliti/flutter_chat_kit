@@ -505,9 +505,21 @@ your design); scaling is done for you (see
 | `customize` | Anything else (see below) | `(theme) => ...` |
 | `scale` | Size for the current screen | `(context) => ChatScale(1.w, text: 1.sp)` |
 
-**Presets:** `ChatPreset.classic`, `whatsApp`, `telegram`, `minimal`,
-`cards` (all in `ChatPreset.values`, handy for a settings screen). A preset
-only gives defaults: any option you pass wins.
+**Presets:** `ChatPreset.classic`, `whatsApp`, `whatsAppNew`, `telegram`,
+`iMessage`, `messenger`, `minimal`, `cards` and `glass` (all in
+`ChatPreset.values`, handy for a settings screen). A preset only gives
+defaults: any option you pass wins.
+
+| Preset | Look |
+| --- | --- |
+| `whatsApp` | Classic WhatsApp: green and white bubbles with tails, beige wallpaper, lined rows |
+| `whatsAppNew` | Today's WhatsApp: pill bubbles without tails, frameless photos, a composer floating on the wallpaper |
+| `telegram` | Gradient outgoing bubbles over a gradient background |
+| `iMessage` | Blue and grey bubbles, plain background, outlined input |
+| `messenger` | Blue to pink gradient bubbles, light grey incoming ones |
+| `minimal` | Flat bordered bubbles, grey text, square avatars |
+| `cards` | Round bubbles with shadows, card rows |
+| `glass` | Frosted see-through bubbles and input over an aurora gradient |
 
 ### Step 2: change anything with `customize`
 

@@ -79,12 +79,20 @@
     "cardRadius": "Card radius",
     "squareAvatars": "Square avatars",
     "reset": "Reset \"$name\"",
+    "shuffle": "Random style",
+    "autoShuffle": "Shuffle every few seconds",
+    "startShuffle": "Start style shuffle",
+    "stopShuffle": "Stop style shuffle",
     "presets": {
       "classic": "Classic",
       "whatsApp": "WhatsApp",
+      "whatsAppNew": "WhatsApp (new)",
       "telegram": "Telegram",
+      "iMessage": "iMessage",
+      "messenger": "Messenger",
       "minimal": "Minimal",
-      "cards": "Cards"
+      "cards": "Cards",
+      "glass": "Glass"
     }
   },
   "chat": {

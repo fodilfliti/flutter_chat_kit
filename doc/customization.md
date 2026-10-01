@@ -53,7 +53,11 @@ multiplies everything once.
   before pushing, and build `keepStyle(page)`. The page follows later
   style changes.
 - **Sheets and dialogs** opened from inside keep the style on their own.
-- **Presets**: `ChatPreset.values` lists them all. Make your own once, as
+- **Presets**: `ChatPreset.values` lists them all: `classic`, `whatsApp`
+  (classic WhatsApp with tails), `whatsAppNew` (today's pill bubbles,
+  frameless photos, floating composer), `telegram`, `iMessage`,
+  `messenger` (gradient bubbles), `minimal`, `cards` and `glass` (frosted
+  bubbles over an aurora gradient). Make your own once, as
   a top-level value:
 
   ```dart

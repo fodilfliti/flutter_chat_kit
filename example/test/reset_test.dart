@@ -75,6 +75,10 @@ void main() {
     bool offline() => find.textContaining('Offline:').evaluate().isNotEmpty;
     await settle(tester, offline);
 
+    await tester.tap(find.byTooltip('Start style shuffle'));
+    await tester.pump();
+    expect(style.autoShuffle, isTrue);
+
     await tester.tap(find.byTooltip('Show menu'));
     await settle(tester, () => shows('Reset demo'));
     await tester.pump(const Duration(seconds: 1));
@@ -95,6 +99,7 @@ void main() {
     expect(backend.liveMessages.value, isFalse);
     expect(backend.source.liveMessages, isFalse);
     expect(find.byTooltip('Turn on incoming messages'), findsOneWidget);
+    expect(style.autoShuffle, isFalse);
     expect(style.preset, ChatPreset.classic);
     expect(style.seed, Colors.teal);
     expect(style.dark, isFalse);

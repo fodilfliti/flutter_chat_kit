@@ -87,12 +87,20 @@
     "cardRadius": "استدارة البطاقات",
     "squareAvatars": "صور شخصية مربعة",
     "reset": "إعادة ضبط «$name»",
+    "shuffle": "مظهر عشوائي",
+    "autoShuffle": "التبديل كل بضع ثوانٍ",
+    "startShuffle": "بدء تبديل المظاهر",
+    "stopShuffle": "إيقاف تبديل المظاهر",
     "presets": {
       "classic": "كلاسيكي",
       "whatsApp": "واتساب",
+      "whatsAppNew": "واتساب (الجديد)",
       "telegram": "تيليجرام",
+      "iMessage": "آي مسج",
+      "messenger": "ماسنجر",
       "minimal": "بسيط",
-      "cards": "بطاقات"
+      "cards": "بطاقات",
+      "glass": "زجاجي"
     }
   },
   "chat": {

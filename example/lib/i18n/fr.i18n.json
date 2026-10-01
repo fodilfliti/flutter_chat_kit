@@ -79,12 +79,20 @@
     "cardRadius": "Arrondi des cartes",
     "squareAvatars": "Avatars carrés",
     "reset": "Réinitialiser « $name »",
+    "shuffle": "Style aléatoire",
+    "autoShuffle": "Changer toutes les quelques secondes",
+    "startShuffle": "Lancer le défilé de styles",
+    "stopShuffle": "Arrêter le défilé de styles",
     "presets": {
       "classic": "Classique",
       "whatsApp": "WhatsApp",
+      "whatsAppNew": "WhatsApp (nouveau)",
       "telegram": "Telegram",
+      "iMessage": "iMessage",
+      "messenger": "Messenger",
       "minimal": "Minimal",
-      "cards": "Cartes"
+      "cards": "Cartes",
+      "glass": "Verre"
     }
   },
   "chat": {

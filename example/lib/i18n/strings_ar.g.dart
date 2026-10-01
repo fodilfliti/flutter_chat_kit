@@ -147,6 +147,10 @@ class _Translations$style$ar extends Translations$style$en {
 	@override String get cardRadius => 'استدارة البطاقات';
 	@override String get squareAvatars => 'صور شخصية مربعة';
 	@override String reset({required Object name}) => 'إعادة ضبط «${name}»';
+	@override String get shuffle => 'مظهر عشوائي';
+	@override String get autoShuffle => 'التبديل كل بضع ثوانٍ';
+	@override String get startShuffle => 'بدء تبديل المظاهر';
+	@override String get stopShuffle => 'إيقاف تبديل المظاهر';
 	@override late final _Translations$style$presets$ar presets = _Translations$style$presets$ar._(_root);
 }
 
@@ -299,9 +303,13 @@ class _Translations$style$presets$ar extends Translations$style$presets$en {
 	// Translations
 	@override String get classic => 'كلاسيكي';
 	@override String get whatsApp => 'واتساب';
+	@override String get whatsAppNew => 'واتساب (الجديد)';
 	@override String get telegram => 'تيليجرام';
+	@override String get iMessage => 'آي مسج';
+	@override String get messenger => 'ماسنجر';
 	@override String get minimal => 'بسيط';
 	@override String get cards => 'بطاقات';
+	@override String get glass => 'زجاجي';
 }
 
 // Path: chat.system
@@ -389,11 +397,19 @@ extension on TranslationsAr {
 			'style.cardRadius' => 'استدارة البطاقات',
 			'style.squareAvatars' => 'صور شخصية مربعة',
 			'style.reset' => ({required Object name}) => 'إعادة ضبط «${name}»',
+			'style.shuffle' => 'مظهر عشوائي',
+			'style.autoShuffle' => 'التبديل كل بضع ثوانٍ',
+			'style.startShuffle' => 'بدء تبديل المظاهر',
+			'style.stopShuffle' => 'إيقاف تبديل المظاهر',
 			'style.presets.classic' => 'كلاسيكي',
 			'style.presets.whatsApp' => 'واتساب',
+			'style.presets.whatsAppNew' => 'واتساب (الجديد)',
 			'style.presets.telegram' => 'تيليجرام',
+			'style.presets.iMessage' => 'آي مسج',
+			'style.presets.messenger' => 'ماسنجر',
 			'style.presets.minimal' => 'بسيط',
 			'style.presets.cards' => 'بطاقات',
+			'style.presets.glass' => 'زجاجي',
 			'chat.typeMessage' => 'رسالة',
 			'chat.today' => 'اليوم',
 			'chat.yesterday' => 'أمس',

@@ -268,6 +268,18 @@ class Translations$style$en {
 	/// en: 'Reset "$name"'
 	String reset({required Object name}) => 'Reset "${name}"';
 
+	/// en: 'Random style'
+	String get shuffle => 'Random style';
+
+	/// en: 'Shuffle every few seconds'
+	String get autoShuffle => 'Shuffle every few seconds';
+
+	/// en: 'Start style shuffle'
+	String get startShuffle => 'Start style shuffle';
+
+	/// en: 'Stop style shuffle'
+	String get stopShuffle => 'Stop style shuffle';
+
 	late final Translations$style$presets$en presets = Translations$style$presets$en.internal(_root);
 }
 
@@ -578,14 +590,26 @@ class Translations$style$presets$en {
 	/// en: 'WhatsApp'
 	String get whatsApp => 'WhatsApp';
 
+	/// en: 'WhatsApp (new)'
+	String get whatsAppNew => 'WhatsApp (new)';
+
 	/// en: 'Telegram'
 	String get telegram => 'Telegram';
+
+	/// en: 'iMessage'
+	String get iMessage => 'iMessage';
+
+	/// en: 'Messenger'
+	String get messenger => 'Messenger';
 
 	/// en: 'Minimal'
 	String get minimal => 'Minimal';
 
 	/// en: 'Cards'
 	String get cards => 'Cards';
+
+	/// en: 'Glass'
+	String get glass => 'Glass';
 }
 
 // Path: chat.system
@@ -675,11 +699,19 @@ extension on Translations {
 			'style.cardRadius' => 'Card radius',
 			'style.squareAvatars' => 'Square avatars',
 			'style.reset' => ({required Object name}) => 'Reset "${name}"',
+			'style.shuffle' => 'Random style',
+			'style.autoShuffle' => 'Shuffle every few seconds',
+			'style.startShuffle' => 'Start style shuffle',
+			'style.stopShuffle' => 'Stop style shuffle',
 			'style.presets.classic' => 'Classic',
 			'style.presets.whatsApp' => 'WhatsApp',
+			'style.presets.whatsAppNew' => 'WhatsApp (new)',
 			'style.presets.telegram' => 'Telegram',
+			'style.presets.iMessage' => 'iMessage',
+			'style.presets.messenger' => 'Messenger',
 			'style.presets.minimal' => 'Minimal',
 			'style.presets.cards' => 'Cards',
+			'style.presets.glass' => 'Glass',
 			'chat.typeMessage' => 'Message',
 			'chat.today' => 'Today',
 			'chat.yesterday' => 'Yesterday',

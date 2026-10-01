@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/flutter_chat_kit.dart';
 import 'package:flutter_scale_kit/flutter_scale_kit.dart';
@@ -17,11 +20,30 @@ enum ScreenScale {
 /// Live style of the example app: a [preset] plus the sheet's overrides,
 /// turned into a [ChatStyle] by [chatStyle].
 class StyleSettings extends ChangeNotifier {
-  StyleSettings() {
+  StyleSettings({Random? random}) : _random = random ?? Random() {
     _load(ChatPreset.classic);
   }
 
   static final ChatScaler _byScreen = ChatScale.byScreen();
+
+  /// The colors of the sheet, also picked by [shuffle].
+  static const List<Color> seeds = [
+    Colors.teal,
+    Color(0xFF25D366),
+    Color(0xFF2AABEE),
+    Colors.indigo,
+    Colors.deepPurple,
+    Colors.pink,
+    Colors.deepOrange,
+    Colors.brown,
+    Colors.blueGrey,
+  ];
+
+  /// How long each look stays while [autoShuffle] is on.
+  static const shuffleEvery = Duration(seconds: 4);
+
+  final Random _random;
+  Timer? _shuffler;
 
   late ChatPreset _preset;
   Color _seed = Colors.teal;
@@ -80,9 +102,56 @@ class StyleSettings extends ChangeNotifier {
     _textScale = 1;
   });
 
+  /// Shows off the looks: the next preset, a new color when the preset has
+  /// none of its own, sometimes dark mode, and every other time random
+  /// bubble and row shapes. Scale and text size are kept.
+  void shuffle() => _set(() {
+    const presets = ChatPreset.values;
+    final next = presets[(presets.indexOf(_preset) + 1) % presets.length];
+    if (next.seedColor == null) {
+      final others = [
+        for (final color in seeds)
+          if (color.toARGB32() != _seed.toARGB32()) color,
+      ];
+      _seed = others[_random.nextInt(others.length)];
+    }
+    _load(next);
+    _dark = _random.nextInt(3) == 0;
+    if (_random.nextBool()) {
+      _bubbleRadius = const [4.0, 10.0, 16.0, 22.0, 28.0][_random.nextInt(5)];
+      _bubbleShadows = _random.nextBool();
+      _bubbleBorder = _random.nextInt(3) == 0;
+      _tiles = ChatTiles.values[_random.nextInt(ChatTiles.values.length)];
+      _tileRadius = const [8.0, 16.0, 24.0][_random.nextInt(3)];
+      _squareAvatars = _random.nextInt(3) == 0;
+    }
+  });
+
+  /// While on, [shuffle] runs every [shuffleEvery], for recording a demo
+  /// that walks through every look.
+  bool get autoShuffle => _shuffler != null;
+  set autoShuffle(bool value) {
+    if (value == autoShuffle) return;
+    _shuffler?.cancel();
+    _shuffler = value ? Timer.periodic(shuffleEvery, (_) => shuffle()) : null;
+    if (value) {
+      shuffle();
+    } else {
+      notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    _shuffler?.cancel();
+    super.dispose();
+  }
+
   /// Everything as on first launch, including the preset, color, dark mode
-  /// and screen scale.
+  /// and screen scale. Stops [autoShuffle].
   void resetAll() => _set(() {
+    _shuffler?.cancel();
+    _shuffler = null;
     _seed = Colors.teal;
     _dark = false;
     _screen = ScreenScale.off;

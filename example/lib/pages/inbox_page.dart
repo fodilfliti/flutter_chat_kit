@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/flutter_chat_kit.dart';
 import 'package:flutter_chat_kit_example/backend.dart';
+import 'package:flutter_chat_kit_example/fake/fake_chat_source.dart';
 import 'package:flutter_chat_kit_example/i18n/chat_strings.dart';
 import 'package:flutter_chat_kit_example/i18n/language_button.dart';
 import 'package:flutter_chat_kit_example/i18n/strings.g.dart';
+import 'package:flutter_chat_kit_example/pages/app_bar_actions.dart';
 import 'package:flutter_chat_kit_example/pages/room_page.dart';
 import 'package:flutter_chat_kit_example/style/style_settings.dart';
 import 'package:flutter_chat_kit_example/style/style_sheet.dart';
@@ -52,59 +54,75 @@ class _InboxPageState extends State<InboxPage> {
             );
           },
         ),
+        actionsPadding: const EdgeInsetsDirectional.only(end: 4),
         actions: [
-          const LanguageButton(),
-          const StyleButton(),
-          ChatProfileMenuButton(strings: strings),
-          LiveMessagesButton(backend: widget.backend),
-          ConnectionButton(backend: widget.backend),
-          StatefulBuilder(
-            builder: (context, setMenuState) => PopupMenuButton<String>(
-              onSelected: (value) => switch (value) {
-                'failures' => setMenuState(
-                  () => source.randomFailures = !source.randomFailures,
-                ),
-                _ => unawaited(_resetDemo()),
-              },
-              itemBuilder: (_) => [
-                CheckedPopupMenuItem(
-                  value: 'failures',
-                  checked: source.randomFailures,
-                  child: Text(t.app.randomFailures),
-                ),
-                const PopupMenuDivider(),
-                PopupMenuItem(
-                  value: 'reset',
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.restart_alt),
-                    title: Text(t.app.resetDemo),
-                    subtitle: Text(t.app.resetDemoHint),
-                  ),
-                ),
-              ],
+          AppBarActions(
+            children: [
+              const LanguageButton(),
+              const StyleButton(),
+              const StyleShuffleButton(),
+              ChatProfileMenuButton(strings: strings, avatarSize: 26),
+              LiveMessagesButton(backend: widget.backend),
+              ConnectionButton(backend: widget.backend),
+              _moreMenu(source, t),
+            ],
+          ),
+        ],
+      ),
+      body: _body(),
+    );
+  }
+
+  Widget _moreMenu(FakeChatSource source, Translations t) {
+    return StatefulBuilder(
+      builder: (context, setMenuState) => PopupMenuButton<String>(
+        padding: const EdgeInsets.all(6),
+        onSelected: (value) => switch (value) {
+          'failures' => setMenuState(
+            () => source.randomFailures = !source.randomFailures,
+          ),
+          _ => unawaited(_resetDemo()),
+        },
+        itemBuilder: (_) => [
+          CheckedPopupMenuItem(
+            value: 'failures',
+            checked: source.randomFailures,
+            child: Text(t.app.randomFailures),
+          ),
+          const PopupMenuDivider(),
+          PopupMenuItem(
+            value: 'reset',
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.restart_alt),
+              title: Text(t.app.resetDemo),
+              subtitle: Text(t.app.resetDemoHint),
             ),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          OfflineBanner(kit: widget.backend.kit),
-          _FilterChips(inbox: _inbox),
-          // Only the chat is styled; rooms opened from the list keep the
-          // style and follow the sheet live.
-          Expanded(
-            child: StyleScope.of(context).chatStyle(
-              child: InboxView(
-                controller: _inbox,
-                strings: strings,
-                roomBuilder: (context, room) =>
-                    RoomPage(backend: widget.backend, roomId: room.id),
-              ),
+    );
+  }
+
+  Widget _body() {
+    final strings = chatStringsOf(context);
+    return Column(
+      children: [
+        OfflineBanner(kit: widget.backend.kit),
+        _FilterChips(inbox: _inbox),
+        // Only the chat is styled; rooms opened from the list keep the
+        // style and follow the sheet live.
+        Expanded(
+          child: StyleScope.of(context).chatStyle(
+            child: InboxView(
+              controller: _inbox,
+              strings: strings,
+              roomBuilder: (context, room) =>
+                  RoomPage(backend: widget.backend, roomId: room.id),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

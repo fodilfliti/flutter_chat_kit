@@ -293,7 +293,9 @@ fonts and dark mode. To change it, wrap the chat part in `ChatStyle`:
 
 ```dart
 ChatStyle(
-  preset: ChatPreset.whatsApp,   // classic, whatsApp, telegram, minimal, cards
+  // classic, whatsApp, whatsAppNew, telegram, iMessage, messenger,
+  // minimal, cards, glass
+  preset: ChatPreset.whatsApp,
   seedColor: Colors.teal,        // chat colors from one color, light and dark
   bubbleRadius: 12,              // design numbers, never 12.w
   bubbleShadows: true,

@@ -139,6 +139,10 @@ class _Translations$style$fr extends Translations$style$en {
 	@override String get cardRadius => 'Arrondi des cartes';
 	@override String get squareAvatars => 'Avatars carrés';
 	@override String reset({required Object name}) => 'Réinitialiser « ${name} »';
+	@override String get shuffle => 'Style aléatoire';
+	@override String get autoShuffle => 'Changer toutes les quelques secondes';
+	@override String get startShuffle => 'Lancer le défilé de styles';
+	@override String get stopShuffle => 'Arrêter le défilé de styles';
 	@override late final _Translations$style$presets$fr presets = _Translations$style$presets$fr._(_root);
 }
 
@@ -271,9 +275,13 @@ class _Translations$style$presets$fr extends Translations$style$presets$en {
 	// Translations
 	@override String get classic => 'Classique';
 	@override String get whatsApp => 'WhatsApp';
+	@override String get whatsAppNew => 'WhatsApp (nouveau)';
 	@override String get telegram => 'Telegram';
+	@override String get iMessage => 'iMessage';
+	@override String get messenger => 'Messenger';
 	@override String get minimal => 'Minimal';
 	@override String get cards => 'Cartes';
+	@override String get glass => 'Verre';
 }
 
 // Path: chat.system
@@ -361,11 +369,19 @@ extension on TranslationsFr {
 			'style.cardRadius' => 'Arrondi des cartes',
 			'style.squareAvatars' => 'Avatars carrés',
 			'style.reset' => ({required Object name}) => 'Réinitialiser « ${name} »',
+			'style.shuffle' => 'Style aléatoire',
+			'style.autoShuffle' => 'Changer toutes les quelques secondes',
+			'style.startShuffle' => 'Lancer le défilé de styles',
+			'style.stopShuffle' => 'Arrêter le défilé de styles',
 			'style.presets.classic' => 'Classique',
 			'style.presets.whatsApp' => 'WhatsApp',
+			'style.presets.whatsAppNew' => 'WhatsApp (nouveau)',
 			'style.presets.telegram' => 'Telegram',
+			'style.presets.iMessage' => 'iMessage',
+			'style.presets.messenger' => 'Messenger',
 			'style.presets.minimal' => 'Minimal',
 			'style.presets.cards' => 'Cartes',
+			'style.presets.glass' => 'Verre',
 			'chat.typeMessage' => 'Message',
 			'chat.today' => 'Aujourd\'hui',
 			'chat.yesterday' => 'Hier',
