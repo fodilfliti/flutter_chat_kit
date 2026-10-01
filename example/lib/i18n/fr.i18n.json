@@ -6,6 +6,8 @@
     "chatsWithUnread": "Discussions ($n)",
     "language": "Langue",
     "randomFailures": "Échecs d'envoi aléatoires",
+    "resetDemo": "Réinitialiser la démo",
+    "resetDemoHint": "Discussions d'exemple et style par défaut",
     "goOffline": "Passer hors ligne",
     "goOnline": "Passer en ligne",
     "offlineBanner": "Hors ligne : les messages sont mis en file d'attente et envoyés à la reconnexion.",

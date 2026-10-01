@@ -11,6 +11,7 @@
 - Names and avatars from the backend: `ChatPage.users` carries the people of a page (from `fetchRooms`, `fetchMessages` and `fetchAround`), the `UsersChanged` event pushes live changes from either `events()` stream, and `ChatKit.updateUsers` sets them from app code. The kit saves them in the cache, replaces them when they change, and updates open inboxes and rooms at once. Users that arrive this way count as fresh, so `ChatUserResolver` is only asked for the rest. `ChatRepository.putUsers` and `ChatRepository.userChanges` expose the same flow.
 - `PollingRealtime` compares the users of each polled page and emits `UsersChanged` for new or changed ones.
 - The example app is translated with slang into English, French and Arabic, with a language button. Every `ChatStrings` field, the example screens, the custom cards, plurals and dates follow the language, and Arabic is right to left. A test checks that no chat text is left in English.
+- The example inbox menu has "Reset demo": it clears every profile's cached data with `ChatProfileSwitcher.clearAllUserData`, restarts the fake backend with its sample chats, comes back online on the personal profile and resets the style, so demos can be recorded again and again.
 
 ### Fixed
 

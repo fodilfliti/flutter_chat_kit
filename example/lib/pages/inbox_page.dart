@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_kit/flutter_chat_kit.dart';
 import 'package:flutter_chat_kit_example/backend.dart';
@@ -26,6 +28,14 @@ class _InboxPageState extends State<InboxPage> {
     super.dispose();
   }
 
+  /// For recording the demo again and again: chats, cache, connection,
+  /// failures and style go back to their first-launch state. The language
+  /// stays as picked. This page is rebuilt with the fresh kit.
+  Future<void> _resetDemo() async {
+    context.getInheritedWidgetOfExactType<StyleScope>()!.notifier!.resetAll();
+    await widget.backend.reset();
+  }
+
   @override
   Widget build(BuildContext context) {
     final source = widget.backend.source;
@@ -49,14 +59,27 @@ class _InboxPageState extends State<InboxPage> {
           ConnectionButton(backend: widget.backend),
           StatefulBuilder(
             builder: (context, setMenuState) => PopupMenuButton<String>(
-              onSelected: (_) => setMenuState(
-                () => source.randomFailures = !source.randomFailures,
-              ),
+              onSelected: (value) => switch (value) {
+                'failures' => setMenuState(
+                  () => source.randomFailures = !source.randomFailures,
+                ),
+                _ => unawaited(_resetDemo()),
+              },
               itemBuilder: (_) => [
                 CheckedPopupMenuItem(
                   value: 'failures',
                   checked: source.randomFailures,
                   child: Text(t.app.randomFailures),
+                ),
+                const PopupMenuDivider(),
+                PopupMenuItem(
+                  value: 'reset',
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.restart_alt),
+                    title: Text(t.app.resetDemo),
+                    subtitle: Text(t.app.resetDemoHint),
+                  ),
                 ),
               ],
             ),

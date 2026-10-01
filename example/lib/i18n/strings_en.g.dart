@@ -74,6 +74,12 @@ class Translations$app$en {
 	/// en: 'Random send failures'
 	String get randomFailures => 'Random send failures';
 
+	/// en: 'Reset demo'
+	String get resetDemo => 'Reset demo';
+
+	/// en: 'Sample chats and default style'
+	String get resetDemoHint => 'Sample chats and default style';
+
 	/// en: 'Go offline'
 	String get goOffline => 'Go offline';
 
@@ -602,6 +608,8 @@ extension on Translations {
 			'app.chatsWithUnread' => ({required Object n}) => 'Chats (${n})',
 			'app.language' => 'Language',
 			'app.randomFailures' => 'Random send failures',
+			'app.resetDemo' => 'Reset demo',
+			'app.resetDemoHint' => 'Sample chats and default style',
 			'app.goOffline' => 'Go offline',
 			'app.goOnline' => 'Go online',
 			'app.offlineBanner' => 'Offline: messages are queued and sent when you reconnect.',

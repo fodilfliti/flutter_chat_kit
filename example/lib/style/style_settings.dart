@@ -80,6 +80,17 @@ class StyleSettings extends ChangeNotifier {
     _textScale = 1;
   });
 
+  /// Everything as on first launch, including the preset, color, dark mode
+  /// and screen scale.
+  void resetAll() => _set(() {
+    _seed = Colors.teal;
+    _dark = false;
+    _screen = ScreenScale.off;
+    _zoom = 1;
+    _textScale = 1;
+    _load(ChatPreset.classic);
+  });
+
   set seed(Color value) => _set(() => _seed = value);
   set dark(bool value) => _set(() => _dark = value);
   set screen(ScreenScale value) => _set(() => _screen = value);

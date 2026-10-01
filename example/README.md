@@ -54,6 +54,13 @@ matching `drift`) into `web/`, then run `flutter run -d chrome`.
   and Arabic turns the whole app right to left. Messages from the fake
   backend stay as they were written; system messages are translated from
   their code.
+- **Reset demo**: in the inbox menu (three dots), "Reset demo" puts
+  everything back as on first launch, so a demo can be recorded again and
+  again. Every profile's cache, drafts, queued messages and media are
+  deleted, the fake backend starts over with its sample chats, the
+  connection comes back, random failures turn off, the personal profile is
+  active and the style returns to Classic with the default color, light
+  mode and scale. The language stays as picked.
 
 ## Translations (slang)
 

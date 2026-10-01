@@ -66,6 +66,20 @@ class ExampleBackend {
     switcher.setOnline(online: online);
   }
 
+  /// Back to a fresh install: every profile's cache, drafts, queued sends
+  /// and media are deleted, the fake servers start over with their sample
+  /// chats, the connection is back and the personal profile is active.
+  Future<void> reset() async {
+    await switcher.clearAllUserData();
+    for (final source in _sources.values) {
+      await source.dispose();
+    }
+    _sources.clear();
+    setOnline(online: true);
+    await switcher.switchTo(FakeChatSource.personalId);
+    await switcher.open();
+  }
+
   Future<void> close() async {
     await switcher.close();
     switcher.dispose();

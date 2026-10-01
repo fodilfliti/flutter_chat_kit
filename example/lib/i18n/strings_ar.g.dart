@@ -58,6 +58,8 @@ class _Translations$app$ar extends Translations$app$en {
 	@override String chatsWithUnread({required Object n}) => 'المحادثات (${n})';
 	@override String get language => 'اللغة';
 	@override String get randomFailures => 'فشل إرسال عشوائي';
+	@override String get resetDemo => 'إعادة ضبط العرض';
+	@override String get resetDemoHint => 'المحادثات التجريبية والمظهر الافتراضي';
 	@override String get goOffline => 'قطع الاتصال';
 	@override String get goOnline => 'الاتصال';
 	@override String get offlineBanner => 'غير متصل: تُحفظ الرسائل وتُرسل عند عودة الاتصال.';
@@ -324,6 +326,8 @@ extension on TranslationsAr {
 			'app.chatsWithUnread' => ({required Object n}) => 'المحادثات (${n})',
 			'app.language' => 'اللغة',
 			'app.randomFailures' => 'فشل إرسال عشوائي',
+			'app.resetDemo' => 'إعادة ضبط العرض',
+			'app.resetDemoHint' => 'المحادثات التجريبية والمظهر الافتراضي',
 			'app.goOffline' => 'قطع الاتصال',
 			'app.goOnline' => 'الاتصال',
 			'app.offlineBanner' => 'غير متصل: تُحفظ الرسائل وتُرسل عند عودة الاتصال.',

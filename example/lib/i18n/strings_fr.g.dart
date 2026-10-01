@@ -58,6 +58,8 @@ class _Translations$app$fr extends Translations$app$en {
 	@override String chatsWithUnread({required Object n}) => 'Discussions (${n})';
 	@override String get language => 'Langue';
 	@override String get randomFailures => 'Échecs d\'envoi aléatoires';
+	@override String get resetDemo => 'Réinitialiser la démo';
+	@override String get resetDemoHint => 'Discussions d\'exemple et style par défaut';
 	@override String get goOffline => 'Passer hors ligne';
 	@override String get goOnline => 'Passer en ligne';
 	@override String get offlineBanner => 'Hors ligne : les messages sont mis en file d\'attente et envoyés à la reconnexion.';
@@ -296,6 +298,8 @@ extension on TranslationsFr {
 			'app.chatsWithUnread' => ({required Object n}) => 'Discussions (${n})',
 			'app.language' => 'Langue',
 			'app.randomFailures' => 'Échecs d\'envoi aléatoires',
+			'app.resetDemo' => 'Réinitialiser la démo',
+			'app.resetDemoHint' => 'Discussions d\'exemple et style par défaut',
 			'app.goOffline' => 'Passer hors ligne',
 			'app.goOnline' => 'Passer en ligne',
 			'app.offlineBanner' => 'Hors ligne : les messages sont mis en file d\'attente et envoyés à la reconnexion.',

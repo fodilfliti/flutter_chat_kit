@@ -6,6 +6,8 @@
     "chatsWithUnread": "Chats ($n)",
     "language": "Language",
     "randomFailures": "Random send failures",
+    "resetDemo": "Reset demo",
+    "resetDemoHint": "Sample chats and default style",
     "goOffline": "Go offline",
     "goOnline": "Go online",
     "offlineBanner": "Offline: messages are queued and sent when you reconnect.",

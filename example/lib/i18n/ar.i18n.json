@@ -6,6 +6,8 @@
     "chatsWithUnread": "المحادثات ($n)",
     "language": "اللغة",
     "randomFailures": "فشل إرسال عشوائي",
+    "resetDemo": "إعادة ضبط العرض",
+    "resetDemoHint": "المحادثات التجريبية والمظهر الافتراضي",
     "goOffline": "قطع الاتصال",
     "goOnline": "الاتصال",
     "offlineBanner": "غير متصل: تُحفظ الرسائل وتُرسل عند عودة الاتصال.",
