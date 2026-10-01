@@ -3,6 +3,8 @@
 A complete chat app on an in-memory fake backend. No accounts, keys or
 server are needed; replies, receipts, typing and presence are simulated.
 
+**[Try it live in your browser](https://fodilfliti.github.io/flutter_chat_kit/)**
+
 ## Run
 
 ```bash
@@ -10,11 +12,22 @@ flutter pub get
 flutter run            # any device: Android, iOS, macOS, Windows, Linux
 ```
 
-For the web, first copy `sqlite3.wasm` (from the
-[sqlite3.dart releases](https://github.com/simolus3/sqlite3.dart/releases),
-matching the `sqlite3` version in `pubspec.lock`) and `drift_worker.js`
-(from the [drift releases](https://github.com/simolus3/drift/releases),
-matching `drift`) into `web/`, then run `flutter run -d chrome`.
+For the web, first download drift's `sqlite3.wasm` and `drift_worker.js`
+into `web/` (the versions come from `pubspec.lock`), then run it:
+
+```bash
+dart run tool/web_assets.dart
+flutter run -d chrome
+```
+
+In a browser and on Windows, macOS and Linux the app opens inside a phone
+frame ([device_preview](https://pub.dev/packages/device_preview)): pick
+another phone or a tablet, rotate it, switch dark mode or the text size
+from the side panel, or turn the frame off there.
+
+The [live demo](https://fodilfliti.github.io/flutter_chat_kit/) is deployed
+by `.github/workflows/deploy_web.yml` on every push to `main` that touches
+the package or the example, or by hand from the Actions tab.
 
 ## What to try
 
@@ -46,7 +59,7 @@ matching `drift`) into `web/`, then run `flutter run -d chrome`.
   rows between plain, lines and cards. The screen behind the sheet updates
   as you go. "Random style" picks a new look in one tap.
 - **Style shuffle**: tap the shuffle button (inbox or room) and the chat
-  changes look every 4 seconds: the next preset, a new color, sometimes
+  changes look every 3 seconds: the next preset, a new color, sometimes
   dark mode, and random bubble and row shapes. Made for recording a demo
   that shows every look; tap again to stop. Reset demo stops it too.
 - **Custom messages**: in "Weekend trip", tap the offer button (app bar or

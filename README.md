@@ -10,6 +10,11 @@ cache, a send queue, media, voice messages, read receipts, and styling.
 **Platforms:** Android, iOS, Linux, macOS, Web, Windows
 **Requires:** Flutter `>=3.44.0`
 
+### 🎯 [Try the live demo in your browser →](https://fodilfliti.github.io/flutter_chat_kit/)
+
+The [example app](example/) on a fake backend, inside a phone frame: pick a
+device, switch presets and languages, go offline, turn on incoming messages.
+
 > **Using an AI agent?** Run `npx skills add fodilfliti/flutter_chat_kit`,
 > then ask: *"Add a chat to this app with flutter_chat_kit."* See
 > [Let your AI agent build it](#let-your-ai-agent-build-it).

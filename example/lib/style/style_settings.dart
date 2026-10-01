@@ -40,7 +40,7 @@ class StyleSettings extends ChangeNotifier {
   ];
 
   /// How long each look stays while [autoShuffle] is on.
-  static const shuffleEvery = Duration(seconds: 4);
+  static const shuffleEvery = Duration(seconds: 3);
 
   final Random _random;
   Timer? _shuffler;

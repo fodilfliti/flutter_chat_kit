@@ -26,6 +26,10 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
 
   final String me;
 
+  // A host that sends CORS headers, so the faces also load on the web.
+  static const _faces = 'https://images.unsplash.com';
+  static const _crop = '?w=150&h=150&fit=crop&crop=faces';
+
   static const users = <String, ChatUser>{
     personalId: ChatUser(id: personalId, name: 'You'),
     shopId: ChatUser(
@@ -38,23 +42,23 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
     'omar': ChatUser(
       id: 'omar',
       name: 'Omar Khelifi',
-      avatarUrl: 'https://i.pravatar.cc/150?u=omar',
+      avatarUrl: '$_faces/photo-1507003211169-0a1dd7228f2d$_crop',
     ),
     'nadia': ChatUser(id: 'nadia', name: 'Nadia Saidi'),
     'amina': ChatUser(
       id: 'amina',
       name: 'Amina Haddad',
-      avatarUrl: 'https://i.pravatar.cc/150?u=amina',
+      avatarUrl: '$_faces/photo-1494790108377-be9c29b29330$_crop',
     ),
     'karim': ChatUser(
       id: 'karim',
       name: 'Karim Benali',
-      avatarUrl: 'https://i.pravatar.cc/150?u=karim',
+      avatarUrl: '$_faces/photo-1506794778202-cad84cf45f1d$_crop',
     ),
     'lina': ChatUser(
       id: 'lina',
       name: 'Lina Mansouri',
-      avatarUrl: 'https://i.pravatar.cc/150?u=lina',
+      avatarUrl: '$_faces/photo-1534528741775-53994a69daeb$_crop',
     ),
     'sam': ChatUser(id: 'sam', name: 'Sam Carter'),
   };

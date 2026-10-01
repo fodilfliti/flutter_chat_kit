@@ -46,3 +46,7 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# drift's web files; `dart run tool/web_assets.dart` downloads them
+/web/sqlite3.wasm
+/web/drift_worker.js
