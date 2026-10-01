@@ -6,6 +6,8 @@
     "chatsWithUnread": "Discussions ($n)",
     "language": "Langue",
     "randomFailures": "Échecs d'envoi aléatoires",
+    "startLiveMessages": "Activer les messages entrants",
+    "stopLiveMessages": "Désactiver les messages entrants",
     "resetDemo": "Réinitialiser la démo",
     "resetDemoHint": "Discussions d'exemple et style par défaut",
     "goOffline": "Passer hors ligne",

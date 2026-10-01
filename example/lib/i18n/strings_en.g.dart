@@ -74,6 +74,12 @@ class Translations$app$en {
 	/// en: 'Random send failures'
 	String get randomFailures => 'Random send failures';
 
+	/// en: 'Turn on incoming messages'
+	String get startLiveMessages => 'Turn on incoming messages';
+
+	/// en: 'Turn off incoming messages'
+	String get stopLiveMessages => 'Turn off incoming messages';
+
 	/// en: 'Reset demo'
 	String get resetDemo => 'Reset demo';
 
@@ -608,6 +614,8 @@ extension on Translations {
 			'app.chatsWithUnread' => ({required Object n}) => 'Chats (${n})',
 			'app.language' => 'Language',
 			'app.randomFailures' => 'Random send failures',
+			'app.startLiveMessages' => 'Turn on incoming messages',
+			'app.stopLiveMessages' => 'Turn off incoming messages',
 			'app.resetDemo' => 'Reset demo',
 			'app.resetDemoHint' => 'Sample chats and default style',
 			'app.goOffline' => 'Go offline',

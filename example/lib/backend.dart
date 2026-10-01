@@ -11,6 +11,11 @@ class ExampleBackend {
   /// `cache` builds the local store of each kit; tests pass in-memory ones.
   ExampleBackend({this._cache}) {
     switcher = ChatProfileSwitcher(profiles: profiles, createKit: _createKit);
+    liveMessages.addListener(() {
+      for (final source in _sources.values) {
+        source.liveMessages = liveMessages.value;
+      }
+    });
   }
 
   static const profiles = [
@@ -33,6 +38,10 @@ class ExampleBackend {
   final Map<String, FakeChatSource> _sources = {};
   bool _online = true;
 
+  /// When on, people write to every profile on their own, as in a busy
+  /// real app. See [FakeChatSource.liveMessages].
+  final ValueNotifier<bool> liveMessages = ValueNotifier(false);
+
   ChatKit get kit => switcher.kit!;
 
   FakeChatSource get source => _sources[switcher.active.id]!;
@@ -40,10 +49,10 @@ class ExampleBackend {
   bool get online => _online;
 
   ChatKit _createKit(ChatProfile profile) {
-    final source = _sources.putIfAbsent(
-      profile.id,
-      () => FakeChatSource(me: profile.id),
-    )..online = _online;
+    final source =
+        _sources.putIfAbsent(profile.id, () => FakeChatSource(me: profile.id))
+          ..online = _online
+          ..liveMessages = liveMessages.value;
     return ChatKit(
       currentUserId: profile.id,
       agentId: profile.agentId,
@@ -68,8 +77,10 @@ class ExampleBackend {
 
   /// Back to a fresh install: every profile's cache, drafts, queued sends
   /// and media are deleted, the fake servers start over with their sample
-  /// chats, the connection is back and the personal profile is active.
+  /// chats, live messages stop, the connection is back and the personal
+  /// profile is active.
   Future<void> reset() async {
+    liveMessages.value = false;
     await switcher.clearAllUserData();
     for (final source in _sources.values) {
       await source.dispose();
@@ -83,9 +94,33 @@ class ExampleBackend {
   Future<void> close() async {
     await switcher.close();
     switcher.dispose();
+    liveMessages.dispose();
     for (final source in _sources.values) {
       await source.dispose();
     }
+  }
+}
+
+/// Turns live incoming messages on and off; highlighted while on.
+class LiveMessagesButton extends StatelessWidget {
+  const LiveMessagesButton({required this.backend, super.key});
+
+  final ExampleBackend backend;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder(
+      valueListenable: backend.liveMessages,
+      builder: (context, live, _) => IconButton(
+        isSelected: live,
+        tooltip: live
+            ? context.t.app.stopLiveMessages
+            : context.t.app.startLiveMessages,
+        icon: const Icon(Icons.chat_bubble_outline),
+        selectedIcon: const Icon(Icons.mark_chat_unread),
+        onPressed: () => backend.liveMessages.value = !live,
+      ),
+    );
   }
 }
 

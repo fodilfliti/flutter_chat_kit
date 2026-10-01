@@ -78,9 +78,25 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
   /// Makes about a third of the sends fail, to show retry.
   bool randomFailures = false;
 
+  /// When on, people write to you on their own every few seconds: someone
+  /// in one of the chats types for a moment, then a text or a photo
+  /// arrives. The big history is left alone.
+  bool get liveMessages => _live;
+  set liveMessages(bool value) {
+    if (_live == value) return;
+    _live = value;
+    if (value) _nextLive(++_liveRun);
+  }
+
+  bool _live = false;
+
+  /// Turning live messages off and on again must not leave two loops.
+  int _liveRun = 0;
+
   DateTime _now() => DateTime.now().toUtc();
 
   Future<void> dispose() async {
+    _live = false;
     for (final timer in _timers) {
       timer.cancel();
     }
@@ -426,6 +442,93 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
     'Perfect, see you then',
     '😂😂',
     'I was thinking the same thing',
+  ];
+
+  void _nextLive(int run) {
+    _later(Duration(milliseconds: 3000 + _random.nextInt(4000)), () {
+      if (!_live || run != _liveRun) return;
+      if (online) _liveMessage();
+      _nextLive(run);
+    });
+  }
+
+  void _liveMessage() {
+    final rooms = [
+      for (final room in _rooms.values)
+        if (room.id != 'history') room,
+    ];
+    if (rooms.isEmpty) return;
+    final room = rooms[_random.nextInt(rooms.length)];
+    final others = [
+      for (final m in room.members)
+        if (m.userId != me) m.userId,
+    ];
+    if (others.isEmpty) return;
+    final peer = others[_random.nextInt(others.length)];
+    final roomId = room.id;
+    _events.add(TypingChanged(roomId: roomId, userId: peer, typing: true));
+    _later(Duration(milliseconds: 1200 + _random.nextInt(1800)), () {
+      _events.add(TypingChanged(roomId: roomId, userId: peer, typing: false));
+      if (!online || !_live) return;
+      final id = 'srv-${++_seq}';
+      final sentBy = peer == shopId ? 'sara' : null;
+      final lines = me == shopId ? _customerLines : _friendLines;
+      _insert(
+        _random.nextInt(6) == 0
+            ? ImageMessage(
+                id: id,
+                localId: id,
+                roomId: roomId,
+                authorId: peer,
+                sentBy: sentBy,
+                createdAt: _now(),
+                caption: _random.nextBool() ? 'Look at this 📸' : null,
+                images: [
+                  Attachment(
+                    mimeType: 'image/jpeg',
+                    remoteUrl: 'https://picsum.photos/seed/lemsa-$id/1200/800',
+                    width: 1200,
+                    height: 800,
+                  ),
+                ],
+              )
+            : TextMessage(
+                id: id,
+                localId: id,
+                roomId: roomId,
+                authorId: peer,
+                sentBy: sentBy,
+                createdAt: _now(),
+                text: lines[_random.nextInt(lines.length)],
+              ),
+      );
+    });
+  }
+
+  static const _friendLines = [
+    'Are you free tonight?',
+    'Just landed ✈️',
+    'Did you see the match yesterday? ⚽',
+    'Sending you the photos in a minute',
+    'Call me when you can 📞',
+    'Running 10 minutes late, sorry!',
+    'Good morning ☀️',
+    'Can you send me the address?',
+    'Haha that was so funny 😂',
+    'Do not forget the meeting at 5',
+    'Thanks again for yesterday 🙏',
+    'Who is bringing the snacks?',
+  ];
+
+  static const _customerLines = [
+    'Do you have this in black?',
+    'How much is delivery to Algiers?',
+    'Is the shop open on Friday?',
+    'I just placed an order 🙌',
+    'Can I pay on delivery?',
+    'Thank you, it arrived today!',
+    'Can I change the size of my order?',
+    'Do you have a gift box option? 🎁',
   ];
 
   // ----------------------------------------------------------------- seed

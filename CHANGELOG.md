@@ -12,6 +12,7 @@
 - `PollingRealtime` compares the users of each polled page and emits `UsersChanged` for new or changed ones.
 - The example app is translated with slang into English, French and Arabic, with a language button. Every `ChatStrings` field, the example screens, the custom cards, plurals and dates follow the language, and Arabic is right to left. A test checks that no chat text is left in English.
 - The example inbox menu has "Reset demo": it clears every profile's cached data with `ChatProfileSwitcher.clearAllUserData`, restarts the fake backend with its sample chats, comes back online on the personal profile and resets the style, so demos can be recorded again and again.
+- The example has an incoming messages button (inbox and room app bars): while on, the fake backend has people type and then send texts or photos every few seconds in random chats, on both profiles.
 
 ### Fixed
 

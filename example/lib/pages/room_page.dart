@@ -53,6 +53,7 @@ class _RoomPageState extends State<RoomPage> {
           ),
           const LanguageButton(),
           const StyleButton(),
+          LiveMessagesButton(backend: widget.backend),
           ConnectionButton(backend: widget.backend),
         ],
         onTitleTap: () => _toast(t.roomDetails),

@@ -63,6 +63,10 @@ void main() {
       ..dark = true
       ..zoom = 1.3
       ..textScale = 1.2;
+    await tester.tap(find.byTooltip('Turn on incoming messages'));
+    await tester.pump();
+    expect(backend.source.liveMessages, isTrue);
+    expect(find.byTooltip('Turn off incoming messages'), findsOneWidget);
     final firstSource = backend.source..randomFailures = true;
     backend.switcher.switchTo(FakeChatSource.shopId).ignore();
     await settle(tester, () => shows('Omar Khelifi'));
@@ -88,6 +92,9 @@ void main() {
     expect(offline(), isFalse);
     expect(backend.source, isNot(same(firstSource)));
     expect(backend.source.randomFailures, isFalse);
+    expect(backend.liveMessages.value, isFalse);
+    expect(backend.source.liveMessages, isFalse);
+    expect(find.byTooltip('Turn on incoming messages'), findsOneWidget);
     expect(style.preset, ChatPreset.classic);
     expect(style.seed, Colors.teal);
     expect(style.dark, isFalse);

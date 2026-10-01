@@ -6,6 +6,8 @@
     "chatsWithUnread": "المحادثات ($n)",
     "language": "اللغة",
     "randomFailures": "فشل إرسال عشوائي",
+    "startLiveMessages": "تشغيل الرسائل الواردة",
+    "stopLiveMessages": "إيقاف الرسائل الواردة",
     "resetDemo": "إعادة ضبط العرض",
     "resetDemoHint": "المحادثات التجريبية والمظهر الافتراضي",
     "goOffline": "قطع الاتصال",

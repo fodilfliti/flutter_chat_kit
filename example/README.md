@@ -29,6 +29,12 @@ matching `drift`) into `web/`, then run `flutter run -d chrome`.
   order. The history stays available offline from the SQLite cache.
 - **Random send failures**: enable it in the inbox menu; failed messages
   show a retry action in their bubble and long-press menu.
+- **Incoming messages**: tap the chat bubble button (inbox or room) and
+  people start writing to you on their own, like in a busy real app: every
+  few seconds someone in one of the chats types for a moment, then a text
+  or a photo arrives. Unread badges, the inbox order, typing and the open
+  room all update live. On the shop profile it is customers asking
+  questions. Tap again to stop.
 - **Media and voice**: attach photos, videos or files, or hold the mic
   button to record (slide to cancel, slide up to lock). Tap an image to open
   the viewer and save it.
@@ -58,9 +64,9 @@ matching `drift`) into `web/`, then run `flutter run -d chrome`.
   everything back as on first launch, so a demo can be recorded again and
   again. Every profile's cache, drafts, queued messages and media are
   deleted, the fake backend starts over with its sample chats, the
-  connection comes back, random failures turn off, the personal profile is
-  active and the style returns to Classic with the default color, light
-  mode and scale. The language stays as picked.
+  connection comes back, incoming messages and random failures turn off,
+  the personal profile is active and the style returns to Classic with the
+  default color, light mode and scale. The language stays as picked.
 
 ## Translations (slang)
 
