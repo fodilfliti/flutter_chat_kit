@@ -67,12 +67,15 @@ abstract interface class ChatDataSource {
   /// - No cursor: the latest [limit] messages.
   /// - [before]: the [limit] messages just older than the cursor.
   /// - [after]: the [limit] messages just newer than the cursor (the oldest
-  ///   of the newer ones, used for gap filling), still ordered newest first.
+  ///   of the newer ones), still ordered newest first. Only used to scroll
+  ///   down from a message the user jumped to.
   ///
   /// Cursors are exclusive and ordered by `(createdAt, id)`; see
   /// [MessageCursor]. `hasMore` tells whether more messages exist further
   /// in that direction. The kit calls it when a room opens, when the user
-  /// scrolls up, and after reconnecting to fill the gap.
+  /// scrolls up, and after reconnecting. Catching up always starts from the
+  /// latest page and walks back with [before] until it meets the cache, at
+  /// most `maxGapPages` (5) requests however much was missed.
   ///
   /// ```dart
   /// final res = await api.get('/rooms/$roomId/messages', query: {
@@ -188,10 +191,11 @@ abstract interface class ChatRealtime {
   /// the subscription when the screen closes, so open the connection in
   /// `onListen` and close it in `onCancel`.
   ///
-  /// The kit does not resubscribe, so keep the stream open across
-  /// reconnects. An error on a room stream marks the room for a refetch;
-  /// call `ChatKit.setOnline` when connectivity changes so the kit fetches
-  /// what it missed.
+  /// When the stream errors or ends, the kit calls [events] again with
+  /// backoff (`ChatRepository.reconnectPolicy`) and refetches what was
+  /// missed, so a stream may simply close when its connection drops. It
+  /// also catches up when the app returns to the foreground and on
+  /// `ChatKit.setOnline(online: true)`.
   Stream<ChatEvent> events({String? roomId});
 
   /// Tells the other members that the current user started or stopped

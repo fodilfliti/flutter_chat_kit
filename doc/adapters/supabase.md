@@ -592,9 +592,10 @@ class SupabaseUploader implements ChatUploader {
       // Supabase uploads report no progress; emit a start value so the
       // bubble shows a spinner. Use TUS (resumable) for large files.
       yield const UploadRunning(0);
-      await bucket.upload(
+      // readAsBytes works on web too, where localPath is a blob: URL.
+      await bucket.uploadBinary(
         path,
-        File(attachment.localPath!),
+        await attachment.readAsBytes(),
         fileOptions: FileOptions(contentType: attachment.mimeType),
       );
       final url = await bucket.createSignedUrl(path, 60 * 60 * 24 * 365);
@@ -606,7 +607,9 @@ class SupabaseUploader implements ChatUploader {
 }
 ```
 
-On web, local paths are blob URLs: read the bytes and use `uploadBinary`.
+`attachment.readAsBytes()` loads the file in memory, which is fine for
+photos and voice notes. For long videos, use Supabase's resumable (TUS)
+upload with `attachment.openRead()` so the file is streamed.
 
 ## Wiring
 

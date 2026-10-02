@@ -54,8 +54,8 @@ become no-ops you can fill in later.
 | `ChatSource` method | Typical endpoint | If your API doesn't have it |
 | --- | --- | --- |
 | `fetchRooms(after, limit, search, filter)` | `GET /conversations` | Return every room in one page with `hasMore: false` (fine up to a few hundred). Avoid page numbers: a new message moves rooms between pages. |
-| `fetchMessages(roomId, before)` | `GET /conversations/{id}/messages?before=...` | Needed for scrolling back. A `before` timestamp is enough; page numbers are not. |
-| `fetchMessages(roomId, after)` | same, with `?after=...` | Used each time a room opens, to fetch what arrived since the newest cached message. Without it, return the newest page filtered to items newer than `after`, with `hasMore: false`; if more than a page arrived meanwhile, the ones in between are skipped. Add `after` when you can. |
+| `fetchMessages(roomId, before)` | `GET /conversations/{id}/messages?before=...` | Needed to open a room and scroll back. Only `?page=` or `?offset=`? Use `PagedMessages` (below). |
+| `fetchMessages(roomId, after)` | same, with `?after=...` | Only used by `PollingRealtime` and to scroll down after jumping to an old message. `PagedMessages` covers it too. |
 | `send(pending)` | `POST /conversations/{id}/messages` | Required. Make it idempotent (below). |
 | `edit(message)` | `PATCH /messages/{id}` | Throw a `ValidationFailure`; the edit fails visibly. |
 | `delete(roomId, messageId)` | `DELETE /messages/{id}` | Same as edit. |
@@ -71,6 +71,12 @@ accept a rare duplicate.
 
 **Return the saved message** with your id and time, and with the
 `localId` you received, so the pending bubble turns into it.
+
+**Throw the right failure.** `NetworkFailure` or `TimeoutFailure` are
+retried with backoff. On a 401 throw `AuthFailure(AuthReason.expired)`:
+the kit pauses the queue instead of failing every message, and calls
+`ChatKit.onAuthExpired`. Refresh the token there, then call
+`kit.retryPending()`. Anything else marks the message failed.
 
 The skeleton:
 
@@ -141,6 +147,38 @@ class MyApiSource with ChatSourceDefaults {
   Stream<ChatEvent> events({String? roomId}) => const Stream.empty(); // step 5
 }
 ```
+
+**Messages paged by number or offset.** The kit asks for "the 30 messages
+before this one", not "page 3". `PagedMessages` translates: it walks your
+pages, keeps the messages on the right side of the cursor, drops the
+duplicates that appear when new messages push others to the next page,
+and resumes scrolling from the page it stopped at.
+
+```dart
+final paged = PagedMessages(
+  fetchPage: (roomId, {required page, required size}) async {
+    final res = await api.getMessagesPage(roomId, page: page, size: size);
+    return res.items; // raw JSON, newest first
+    // offset APIs: offset: (page - 1) * size
+  },
+  decode: toMessage, // your mapper from step 3
+  userOf: senderOf, // optional: names without a resolver
+  pageSize: 30, // keep it fixed
+);
+
+@override
+Future<ChatPage<Message>> fetchMessages(
+  String roomId, {
+  MessageCursor? before,
+  MessageCursor? after,
+  int limit = 30,
+}) => paged.fetch(roomId, before: before, after: after, limit: limit);
+```
+
+How many requests: opening a room fetches the newest page and walks back
+until it meets the cache, at most 5 pages however much was missed (a room
+with 1000 new messages shows the newest at once; the rest loads as the
+user scrolls). Each scroll back costs about two requests.
 
 Turn your client's errors into `AppFailure`s (from `lemsa_core_kit`):
 `NetworkFailure` and `TimeoutFailure` make the outbox retry with backoff;
@@ -397,10 +435,10 @@ class MyUploader implements ChatUploader {
     required String localId,
   }) async* {
     yield const UploadRunning(0);
-    final url = await api.uploadFile(
-      attachment.localPath!,
+    final url = await api.uploadStream(
+      attachment.openRead(), // works on web too; never use File(localPath)
+      length: attachment.size,
       mimeType: attachment.mimeType,
-      onProgress: (fraction) {}, // yield UploadRunning(fraction) from a stream
     );
     yield UploadDone(remoteUrl: url);
   }
@@ -408,6 +446,12 @@ class MyUploader implements ChatUploader {
 
 final kit = ChatKit(currentUserId: me, source: source, uploader: MyUploader(client));
 ```
+
+Read the file with `attachment.openRead()` (a stream, best for videos) or
+`attachment.readAsBytes()`. Both work on every platform; on the web
+`localPath` is a `blob:` URL that `dart:io`'s `File` can't open. A file
+queued on the web before the page reloads can't be read anymore: the send
+fails and the retry shows `ChatStrings.fileUnavailable`.
 
 The kit uploads before calling `send`, retries failed uploads with the
 message, and puts the URL into the attachment's `remoteUrl`. Pre-signed

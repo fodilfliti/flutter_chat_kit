@@ -432,8 +432,10 @@ class StorageUploader implements ChatUploader {
   }) async* {
     final ref = _storage.ref('chats/$roomId/$localId/${attachment.name ?? 'file'}');
     final meta = SettableMetadata(contentType: attachment.mimeType);
-    // On web, local paths are blob URLs: read bytes and use putData.
-    final task = ref.putFile(File(attachment.localPath!), meta);
+    // On web, localPath is a blob: URL that File() can't open.
+    final task = kIsWeb
+        ? ref.putData(await attachment.readAsBytes(), meta)
+        : ref.putFile(File(attachment.localPath!), meta);
     try {
       await for (final s in task.snapshotEvents) {
         if (s.totalBytes > 0) yield UploadRunning(s.bytesTransferred / s.totalBytes);

@@ -56,6 +56,7 @@ void main() {
     int pageSize = 5,
     int maxGapPages = 5,
     Duration typingTimeout = const Duration(seconds: 5),
+    int reconnectAttempts = 3,
   }) {
     return ChatRepository(
       currentUserId: 'me',
@@ -70,7 +71,20 @@ void main() {
       clock: () => now,
       maxGapPages: maxGapPages,
       userBatchWindow: const Duration(milliseconds: 10),
+      reconnectPolicy: RetryPolicy(
+        maxAttempts: reconnectAttempts,
+        base: const Duration(milliseconds: 5),
+        max: const Duration(milliseconds: 5),
+        jitter: 0,
+      ),
     );
+  }
+
+  Future<void> waitFor(Future<bool> Function() test) async {
+    for (var i = 0; i < 200 && !await test(); i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+    }
+    expect(await test(), isTrue);
   }
 
   Future<List<String>> shown(String roomId, RoomWindow window) async {
@@ -121,35 +135,72 @@ void main() {
         ..fetchCalls.clear();
       await repo.openRoom('r1');
 
-      expect(source.fetchCalls.single.after?.id, _id(11));
+      expect(source.fetchCalls.single.before, isNull);
+      expect(source.fetchCalls.single.after, isNull);
       expect((await cache.syncState('r1'))?.newest?.id, _id(14));
       expect(await cache.syncState('r2'), r2Before);
       expect(r2Before?.hasMoreOlder, isFalse);
     });
 
-    test(
-      'a gap too large restarts from the latest page without holes',
-      () async {
-        await repo.dispose();
-        repo = build(maxGapPages: 2);
-        source.seedMessages('r1', _range(0, 10));
-        await repo.openRoom('r1');
-        await repo.closeRoom('r1');
+    for (final (missed, requests) in [(0, 1), (10, 3), (100, 5), (1000, 5)]) {
+      test(
+        'reopening after $missed new messages costs $requests requests',
+        () async {
+          source.seedMessages('r1', _range(0, 10));
+          await repo.openRoom('r1');
+          await repo.closeRoom('r1');
 
-        source.seedMessages('r1', _range(10, 40));
-        final window = await repo.openRoom('r1');
+          source
+            ..seedMessages('r1', _range(10, 10 + missed))
+            ..fetchCalls.clear();
+          final window = await repo.openRoom('r1');
 
-        final state = await cache.syncState('r1');
-        expect(state?.oldest?.id, _id(35));
-        expect(state?.newest?.id, _id(39));
-        expect(await shown('r1', window), hasLength(5));
+          final newest = 9 + missed;
+          expect(source.fetchCalls, hasLength(requests));
+          expect(source.fetchCalls.first.before, isNull);
+          expect(source.fetchCalls.every((c) => c.after == null), isTrue);
+          final state = await cache.syncState('r1');
+          expect(state?.newest?.id, _id(newest));
+          expect(await shown('r1', window), [
+            for (var i = newest; i > newest - 5; i--) _id(i),
+          ]);
 
-        final older = await repo.loadOlder('r1', window);
-        expect(await shown('r1', older), [
-          for (var i = 39; i >= 30; i--) _id(i),
-        ]);
-      },
-    );
+          // Paging back never skips a message, whether the gap was closed or
+          // left to paging.
+          RoomWindow w = window;
+          for (var i = 0; i < 4; i++) {
+            w = await repo.loadOlder('r1', w);
+          }
+          expect(await shown('r1', w), [
+            for (var i = newest; i > newest - 25 && i >= 0; i--) _id(i),
+          ]);
+        },
+      );
+    }
+
+    test('a gap too large keeps the newest pages and pages the rest', () async {
+      await repo.dispose();
+      repo = build(maxGapPages: 2);
+      source.seedMessages('r1', _range(0, 10));
+      await repo.openRoom('r1');
+      await repo.closeRoom('r1');
+
+      source.seedMessages('r1', _range(10, 40));
+      final window = await repo.openRoom('r1');
+
+      final state = await cache.syncState('r1');
+      expect(state?.oldest?.id, _id(30));
+      expect(state?.newest?.id, _id(39));
+      expect(state?.hasMoreOlder, isTrue);
+      expect(await shown('r1', window), hasLength(5));
+
+      final older = await repo.loadOlder('r1', window);
+      expect(await shown('r1', older), [for (var i = 39; i >= 30; i--) _id(i)]);
+      final oldest = await repo.loadOlder('r1', older);
+      expect(await shown('r1', oldest), [
+        for (var i = 39; i >= 25; i--) _id(i),
+      ]);
+    });
 
     test('resync fills what was missed while disconnected', () async {
       source.seedMessages('r1', _range(0, 10));
@@ -206,6 +257,78 @@ void main() {
       final window = await repo.openRoom('r1');
       expect(await shown('r1', window), [_id(9), _id(8), _id(7)]);
       expect((await cache.syncState('r1'))?.oldest?.id, _id(7));
+    });
+  });
+
+  group('reconnect', () {
+    test('a room stream that ends is resubscribed, the gap filled', () async {
+      source.seedMessages('r1', _range(0, 3));
+      await repo.openRoom('r1');
+      final errors = <AppFailure>[];
+      final sub = repo.errors.listen(errors.add);
+      expect(source.eventListens, 1);
+
+      source
+        ..seedMessages('r1', _range(3, 5))
+        ..dropStreams();
+      await waitFor(
+        () async => (await cache.syncState('r1'))?.newest?.id == _id(4),
+      );
+      expect(source.eventListens, 2);
+      expect(errors, isEmpty);
+
+      source.receive(_m(5));
+      await waitFor(
+        () async => (await cache.syncState('r1'))?.newest?.id == _id(5),
+      );
+      await sub.cancel();
+    });
+
+    test('a stream error is reported, then the stream comes back', () async {
+      source.seedMessages('r1', _range(0, 3));
+      await repo.openRoom('r1');
+      repo.openInbox();
+      final errors = <AppFailure>[];
+      final sub = repo.errors.listen(errors.add);
+
+      source.dropStreams(error: const NetworkFailure());
+      await waitFor(() async => source.eventListens == 4);
+      expect(errors, hasLength(2));
+      expect(errors.first, isA<NetworkFailure>());
+      expect(source.roomFetchCalls, isNotEmpty);
+
+      source.dropStreams(error: StateError('socket'));
+      await waitFor(() async => errors.length == 4);
+      expect(errors.last, isA<UnknownFailure>());
+      await sub.cancel();
+      await repo.closeInbox();
+    });
+
+    test('gives up after maxAttempts until reconnect', () async {
+      await repo.dispose();
+      repo = build(reconnectAttempts: 1);
+      source.seedMessages('r1', _range(0, 3));
+      await repo.openRoom('r1');
+
+      source.dropStreams();
+      await waitFor(() async => source.eventListens == 2);
+      source.dropStreams();
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+      expect(source.eventListens, 2);
+
+      repo.reconnect();
+      expect(source.eventListens, 3);
+      repo.reconnect();
+      expect(source.eventListens, 3, reason: 'a live stream is left alone');
+    });
+
+    test('closing the room stops reconnecting', () async {
+      source.seedMessages('r1', _range(0, 3));
+      await repo.openRoom('r1');
+      source.dropStreams();
+      await repo.closeRoom('r1');
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+      expect(source.eventListens, 1);
     });
   });
 

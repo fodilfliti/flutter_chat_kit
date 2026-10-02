@@ -55,6 +55,10 @@ class ChatStrings {
     this.camera = 'Camera',
     this.gallery = 'Gallery',
     this.attachmentTooLarge = 'File is too large',
+    this.fileUnavailable =
+        'This file is no longer available. Delete it '
+        'and send it again.',
+    this.compressing = 'Compressing',
     this.readMore = 'Read more',
     this.readLess = 'Show less',
     this.replyUnavailable = 'Original message unavailable',
@@ -213,6 +217,15 @@ class ChatStrings {
   /// Snack bar when a file exceeds `ChatConfig.maxAttachmentBytes`.
   /// Default: `File is too large`.
   final String attachmentTooLarge;
+
+  /// Snack bar when retrying a send whose file can't be read anymore (on
+  /// the web, a file picked before the page reloaded). Default:
+  /// `This file is no longer available. Delete it and send it again.`
+  final String fileUnavailable;
+
+  /// Label on a video bubble while `ChatConfig.compressVideo` runs.
+  /// Default: `Compressing`.
+  final String compressing;
 
   /// Expands and collapses a long text message.
   final String readMore;

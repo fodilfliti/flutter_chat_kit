@@ -14,6 +14,7 @@ import 'package:flutter_chat_kit/src/models/room_filter.dart';
 import 'package:flutter_chat_kit/src/models/typing.dart';
 import 'package:flutter_chat_kit/src/source/chat_source.dart';
 import 'package:flutter_chat_kit/src/source/chat_user_resolver.dart';
+import 'package:flutter_chat_kit/src/sync/retry_policy.dart';
 import 'package:flutter_chat_kit/src/sync/room_sync_state.dart';
 import 'package:flutter_chat_kit/src/sync/room_window.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
@@ -31,6 +32,10 @@ typedef RoomsPageInfo = ({bool hasMore, RoomCursor? next});
 ///
 /// Source failures (`AppFailure`) are rethrown to the caller; cache writes
 /// are transactional and the sync state only moves after data is stored.
+///
+/// Live streams (`ChatSource.events`) that fail or end are subscribed again
+/// with [reconnectPolicy] backoff, and the room or inbox refetches what it
+/// missed. Their errors go to [errors].
 class ChatRepository {
   ChatRepository({
     required this.currentUserId,
@@ -42,7 +47,17 @@ class ChatRepository {
     this.maxGapPages = 5,
     this.maxJumpPages = 20,
     this.userBatchWindow = const Duration(milliseconds: 20),
+    this.reconnectPolicy = const RetryPolicy(
+      maxAttempts: 8,
+      base: Duration(seconds: 1),
+      max: Duration(minutes: 1),
+    ),
+    this.onActiveRoomChanged,
   }) : _resolver = users;
+
+  /// Called with the most recently opened room that is still open (null
+  /// when none is), each time it changes. Backs `ChatKit.activeRoomId`.
+  final void Function(String? roomId)? onActiveRoomChanged;
 
   final String currentUserId;
   final ChatSource _source;
@@ -51,8 +66,9 @@ class ChatRepository {
   final ChatConfig _config;
   final DateTime Function() _clock;
 
-  /// Pages of newer messages fetched when reopening a room before giving up
-  /// on filling the gap and restarting from the latest page.
+  /// Pages fetched, newest first, when reopening a room before the rest of
+  /// the gap is left to paging. A room that missed 1000 messages costs at
+  /// most this many requests to open.
   final int maxGapPages;
 
   /// Pages of older messages fetched to find a jump target when the source
@@ -62,9 +78,18 @@ class ChatRepository {
   /// User lookups requested within this window share one resolver call.
   final Duration userBatchWindow;
 
+  /// Backoff between attempts to subscribe again to a live stream that
+  /// failed or ended. After `maxAttempts` in a row without an event the
+  /// stream stays down until [reconnect].
+  final RetryPolicy reconnectPolicy;
+
   final Map<String, _OpenRoom> _rooms = {};
+  final List<String> _openOrder = [];
   final Map<String, Future<void>> _locks = {};
+  final _errors = StreamController<AppFailure>.broadcast();
   StreamSubscription<ChatEvent>? _inboxSub;
+  Timer? _inboxRetry;
+  int _inboxAttempts = 0;
   int _inboxRefs = 0;
   final List<Future<void> Function()> _inboxResyncs = [];
   Future<void> _inboxChain = Future.value();
@@ -83,6 +108,10 @@ class ChatRepository {
   final _usersController = StreamController<List<ChatUser>>.broadcast();
 
   int get _pageSize => _config.pageSize;
+
+  /// Failures of live streams and of the background refetches that follow
+  /// a reconnect. Nothing here needs handling; listen to log them.
+  Stream<AppFailure> get errors => _errors.stream;
 
   // ---------------------------------------------------------------- inbox
 
@@ -125,9 +154,7 @@ class ChatRepository {
   void openInbox({Future<void> Function()? onResync}) {
     _inboxRefs++;
     if (onResync != null) _inboxResyncs.add(onResync);
-    _inboxSub ??= _source.events().listen(
-      (event) => _inboxChain = _inboxChain.then((_) => _guard(event)),
-    );
+    if (_inboxSub == null && _inboxRetry == null) _listenInbox();
   }
 
   Future<void> closeInbox({Future<void> Function()? onResync}) async {
@@ -135,9 +162,119 @@ class ChatRepository {
     if (onResync != null) _inboxResyncs.remove(onResync);
     _inboxRefs--;
     if (_inboxRefs > 0) return;
+    _inboxRetry?.cancel();
+    _inboxRetry = null;
+    _inboxAttempts = 0;
     final sub = _inboxSub;
     _inboxSub = null;
     await sub?.cancel();
+  }
+
+  void _listenInbox() {
+    _inboxSub = _source.events().listen(
+      (event) {
+        _inboxAttempts = 0;
+        _inboxChain = _inboxChain.then((_) => _guard(event));
+      },
+      onError: (Object error, StackTrace stack) {
+        _report(error, stack);
+        _inboxLost();
+      },
+      onDone: _inboxLost,
+      cancelOnError: true,
+    );
+  }
+
+  void _inboxLost() {
+    _inboxSub = null;
+    if (_disposed || _inboxRefs == 0) return;
+    if (++_inboxAttempts > reconnectPolicy.maxAttempts) return;
+    _inboxRetry?.cancel();
+    _inboxRetry = Timer(reconnectPolicy.delay(_inboxAttempts), () {
+      _inboxRetry = null;
+      if (_disposed || _inboxRefs == 0 || _inboxSub != null) return;
+      _listenInbox();
+      unawaited(_refreshInboxes());
+    });
+  }
+
+  /// Refetches the first page of every open inbox list; failures go to
+  /// [errors].
+  Future<void> _refreshInboxes() async {
+    for (final refresh in _inboxRefreshes) {
+      try {
+        await refresh();
+      } on Object catch (error, stack) {
+        _report(error, stack);
+      }
+    }
+  }
+
+  List<Future<void> Function()> get _inboxRefreshes => _inboxResyncs.isEmpty
+      ? <Future<void> Function()>[fetchRooms]
+      : [..._inboxResyncs];
+
+  /// Subscribes again to every live stream that is down: one that failed
+  /// or ended and is waiting for its backoff, or gave up. Healthy streams
+  /// are left alone. Follow with [resync] to fetch what was missed.
+  void reconnect() {
+    if (_disposed) return;
+    if (_inboxRefs > 0 && _inboxSub == null) {
+      _inboxRetry?.cancel();
+      _inboxRetry = null;
+      _inboxAttempts = 0;
+      _listenInbox();
+    }
+    for (final MapEntry(key: roomId, value: room) in _rooms.entries) {
+      if (room.sub != null) continue;
+      room
+        ..retry?.cancel()
+        ..retry = null
+        ..attempts = 0
+        ..synced = false;
+      _listenRoom(roomId, room);
+    }
+  }
+
+  void _listenRoom(String roomId, _OpenRoom room) {
+    room.sub = _source
+        .events(roomId: roomId)
+        .listen(
+          (event) {
+            room.attempts = 0;
+            room.chain = room.chain.then((_) => _guard(event));
+          },
+          onError: (Object error, StackTrace stack) {
+            _report(error, stack);
+            _roomLost(roomId, room);
+          },
+          onDone: () => _roomLost(roomId, room),
+          cancelOnError: true,
+        );
+  }
+
+  void _roomLost(String roomId, _OpenRoom room) {
+    room
+      ..sub = null
+      ..synced = false;
+    if (_disposed || _rooms[roomId] != room) return;
+    if (++room.attempts > reconnectPolicy.maxAttempts) return;
+    room.retry?.cancel();
+    room.retry = Timer(reconnectPolicy.delay(room.attempts), () {
+      room.retry = null;
+      if (_disposed || _rooms[roomId] != room || room.sub != null) return;
+      _listenRoom(roomId, room);
+      unawaited(
+        _locked(roomId, () => _sync(roomId)).then((_) {}, onError: _report),
+      );
+    });
+  }
+
+  void _report(Object error, StackTrace stack) {
+    if (_disposed) return;
+    _errors.add(
+      error is AppFailure ? error : UnknownFailure(cause: error, trace: stack),
+    );
   }
 
   // ---------------------------------------------------------------- rooms
@@ -166,13 +303,13 @@ class ChatRepository {
   /// must be matched by [closeRoom]. Returns the window to show.
   Future<LatestWindow> openRoom(String roomId) async {
     final room = _rooms.putIfAbsent(roomId, _OpenRoom.new);
-    room.refs++;
-    room.sub ??= _source
-        .events(roomId: roomId)
-        .listen(
-          (event) => room.chain = room.chain.then((_) => _guard(event)),
-          onError: (Object _) => room.synced = false,
-        );
+    if (room.refs++ == 0) {
+      _openOrder
+        ..remove(roomId)
+        ..add(roomId);
+      onActiveRoomChanged?.call(roomId);
+    }
+    if (room.sub == null && room.retry == null) _listenRoom(roomId, room);
     await _locked(roomId, () => _sync(roomId));
     return await latestWindow(roomId);
   }
@@ -183,6 +320,9 @@ class ChatRepository {
     room.refs--;
     if (room.refs > 0) return;
     _rooms.remove(roomId);
+    final wasActive = _openOrder.lastOrNull == roomId;
+    _openOrder.remove(roomId);
+    if (wasActive) onActiveRoomChanged?.call(_openOrder.lastOrNull);
     await room.cancel();
     _clearTyping(roomId);
   }
@@ -258,10 +398,7 @@ class ChatRepository {
       }
     }
     if (_inboxRefs > 0) {
-      final refreshes = _inboxResyncs.isEmpty
-          ? <Future<void> Function()>[fetchRooms]
-          : [..._inboxResyncs];
-      for (final refresh in refreshes) {
+      for (final refresh in _inboxRefreshes) {
         try {
           await refresh();
         } on AppFailure catch (e, st) {
@@ -381,6 +518,9 @@ class ChatRepository {
       await room.cancel();
     }
     _rooms.clear();
+    _openOrder.clear();
+    _inboxRetry?.cancel();
+    _inboxRetry = null;
     await _inboxSub?.cancel();
     _inboxSub = null;
     _inboxResyncs.clear();
@@ -391,6 +531,7 @@ class ChatRepository {
     await _typingController.close();
     await _presenceController.close();
     await _usersController.close();
+    await _errors.close();
   }
 
   // ------------------------------------------------------------- internal
@@ -424,28 +565,56 @@ class ChatRepository {
     if (state == null || newest == null) {
       await _restartFromLatest(roomId);
     } else {
-      var cursor = newest;
-      var current = state;
-      for (var pages = 1; ; pages++) {
-        final page = await _fetchMessages(
-          roomId,
-          after: cursor,
-          limit: _pageSize,
-        );
-        await _cache.upsertMessages(page.items);
-        if (page.items.isNotEmpty) cursor = page.items.first.cursor;
-        current = current.copyWith(newest: cursor, syncedAt: _clock());
-        await _cache.saveSyncState(current);
-        if (!page.hasMore) break;
-        if (pages >= maxGapPages) {
-          await _restartFromLatest(roomId);
-          break;
-        }
-      }
+      await _fillGap(roomId, state, newest);
     }
     _rooms[roomId]?.synced = true;
     final keep = _config.maxCachedMessagesPerRoom;
     if (keep != null) await _cache.trim(roomId, keep: keep);
+  }
+
+  /// Fetches newest first and pages back with `before` until it reaches the
+  /// cached [newest]: one request when less than a page was missed, and the
+  /// newest messages are on screen first when more was. A gap wider than
+  /// [maxGapPages] pages is not walked to the end: the fetched pages become
+  /// the synced range, and older cached messages come back through paging.
+  Future<void> _fillGap(
+    String roomId,
+    RoomSyncState state,
+    MessageCursor newest,
+  ) async {
+    MessageCursor? top;
+    MessageCursor? before;
+    for (var pages = 1; ; pages++) {
+      final page = await _fetchMessages(
+        roomId,
+        before: before,
+        limit: _pageSize,
+      );
+      await _cache.upsertMessages(page.items);
+      top ??= page.items.firstOrNull?.cursor;
+      final last = page.items.lastOrNull?.cursor;
+      if (last == null || !last.isAfter(newest) || !page.hasMore) {
+        await _cache.saveSyncState(
+          state.copyWith(
+            newest: top != null && top.isAfter(newest) ? top : newest,
+            syncedAt: _clock(),
+          ),
+        );
+        return;
+      }
+      if (pages >= maxGapPages) {
+        await _cache.saveSyncState(
+          RoomSyncState(
+            roomId: roomId,
+            newest: top,
+            oldest: last,
+            syncedAt: _clock(),
+          ),
+        );
+        return;
+      }
+      before = last;
+    }
   }
 
   /// Fetches the latest page and makes it the synced range. Older cached
@@ -835,6 +1004,12 @@ class _OpenRoom {
   int refs = 0;
   StreamSubscription<ChatEvent>? sub;
 
+  /// Pending resubscribe after the stream failed or ended.
+  Timer? retry;
+
+  /// Resubscribes since the last event.
+  int attempts = 0;
+
   /// Events are applied one after another, in arrival order.
   Future<void> chain = Future.value();
 
@@ -842,6 +1017,8 @@ class _OpenRoom {
   bool synced = false;
 
   Future<void> cancel() async {
+    retry?.cancel();
+    retry = null;
     await sub?.cancel();
     sub = null;
   }

@@ -419,13 +419,18 @@ Connectivity().onConnectivityChanged.listen((results) {
 
 ## Uploads
 
-Any storage works. A typical pattern is a pre-signed URL from your API:
+Any storage works. A typical pattern is a pre-signed URL from your API. The
+file is streamed with `attachment.openRead()`, which works on mobile,
+desktop and web (where `localPath` is a `blob:` URL, so `File(localPath)`
+fails), and never loads a large video into memory. Counting the bytes gives
+real progress:
 
 ```dart
 class PresignedUploader implements ChatUploader {
-  PresignedUploader(this._source);
+  PresignedUploader(this._source, this._client);
 
   final RestChatSource _source;
+  final http.Client _client;
 
   @override
   Stream<UploadProgress> upload(
@@ -439,18 +444,30 @@ class PresignedUploader implements ChatUploader {
       'mime_type': attachment.mimeType,
       'name': attachment.name,
     }) as Map<String, Object?>;
-    yield const UploadRunning(0);
-    final bytes = await File(attachment.localPath!).readAsBytes();
-    final res = await http.put(
+
+    final total = attachment.size ?? await attachment.file!.length();
+    final request = http.StreamedRequest(
+      'PUT',
       Uri.parse(slot['upload_url']! as String),
-      headers: {'content-type': attachment.mimeType},
-      body: bytes,
-    );
+    )
+      ..headers['content-type'] = attachment.mimeType
+      ..contentLength = total;
+    final response = _client.send(request);
+
+    var sent = 0;
+    await for (final chunk in attachment.openRead()) {
+      request.sink.add(chunk);
+      sent += chunk.length;
+      yield UploadRunning(total == 0 ? 0 : sent / total);
+    }
+    await request.sink.close();
+
+    final res = await response;
     if (res.statusCode >= 300) throw ServerFailure(status: res.statusCode);
     yield UploadDone(remoteUrl: slot['public_url']! as String);
   }
 }
 ```
 
-For real progress, stream the file through `http.StreamedRequest` and count
-the bytes you add to its sink.
+For small files, `await attachment.readAsBytes()` and one `http.put` is
+enough.

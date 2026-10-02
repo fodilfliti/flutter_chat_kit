@@ -157,7 +157,9 @@ class MyUploader implements ChatUploader {
   @override
   Stream<UploadProgress> upload(Attachment attachment,
       {required String roomId, required String localId}) async* {
-    // Upload attachment.localPath to Firebase Storage, Supabase Storage, S3...
+    // Read the file with attachment.openRead() (a stream, best for videos)
+    // or attachment.readAsBytes(). Both work on web, where File(localPath)
+    // fails. Upload it to Firebase Storage, Supabase Storage, S3...
     yield const UploadRunning(0.5);           // optional progress, 0..1
     yield UploadDone(remoteUrl: downloadUrl); // always end with this
   }
@@ -1132,6 +1134,27 @@ needs a CORS config on the bucket), or through your own domain.
 `ChatKit` has no `uploader`. Pass a `ChatUploader`
 ([The classes you write](#3-the-classes-you-write)).
 
+**After the login token expires, every queued message turns red.**
+Your source throws something other than `AuthFailure` on a 401. Throw
+`AuthFailure(AuthReason.expired)`: the kit then pauses sending (messages
+stay "sending") and calls `onAuthExpired`. Refresh the session there and
+resume:
+
+```dart
+final kit = ChatKit(
+  currentUserId: uid,
+  source: source,
+  onAuthExpired: () async {
+    await auth.refreshSession();
+    await kit.retryPending();
+  },
+);
+```
+
+**Retrying a photo on the web says the file is no longer available.**
+It was picked before the page reloaded; browsers forget picked files on
+reload. Delete the message and pick the file again.
+
 ## Let your AI agent build it
 
 This package ships an [Agent Skill](https://agentskills.io) that teaches
@@ -1164,6 +1187,7 @@ Then ask your agent, for example:
 - [Backend JSON](doc/backend_json.md)
 - [Plug in an existing API](doc/adapters/your_api.md)
 - [Customization cookbook](doc/customization.md)
+- [Push notifications](doc/push.md)
 - [GitHub](https://github.com/fodilfliti/flutter_chat_kit)
 - [Issues](https://github.com/fodilfliti/flutter_chat_kit/issues)
 - [Lemsa skills](https://github.com/fodilfliti/lemsa-skills)

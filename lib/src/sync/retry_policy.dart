@@ -26,9 +26,12 @@ class RetryPolicy {
   final double jitter;
 
   /// Whether [failure] is worth retrying automatically: connectivity
-  /// problems are, rejections are not.
+  /// problems and rate limits are, rejections are not. (Other
+  /// `AuthFailure`s pause the outbox instead; see `Outbox.onAuthExpired`.)
   bool isRetryable(AppFailure failure) =>
-      failure is NetworkFailure || failure is TimeoutFailure;
+      failure is NetworkFailure ||
+      failure is TimeoutFailure ||
+      (failure is AuthFailure && failure.reason == AuthReason.rateLimited);
 
   /// Delay before the next try after [attempt] failed tries.
   Duration delay(int attempt, {math.Random? random}) {

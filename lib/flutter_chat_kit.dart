@@ -6,6 +6,8 @@
 /// `ChatRoomView`.
 library;
 
+export 'package:cross_file/cross_file.dart' show XFile;
+
 export 'src/builders/chat_builders.dart';
 export 'src/builders/inbox_builders.dart';
 export 'src/builders/message_context.dart';
@@ -31,6 +33,7 @@ export 'src/media/default_pickers.dart';
 export 'src/media/media_entry.dart';
 export 'src/media/waveform.dart';
 export 'src/models/attachment.dart';
+export 'src/models/attachment_file.dart';
 export 'src/models/chat_event.dart';
 export 'src/models/chat_json_check.dart';
 export 'src/models/chat_json_keys.dart';
@@ -51,6 +54,7 @@ export 'src/source/chat_uploader.dart';
 export 'src/source/chat_user_resolver.dart';
 export 'src/source/composed_chat_source.dart';
 export 'src/source/in_memory_chat_source.dart';
+export 'src/source/paged_messages.dart';
 export 'src/source/polling_realtime.dart';
 export 'src/sync/chat_repository.dart';
 export 'src/sync/outbox.dart';

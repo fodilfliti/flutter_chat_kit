@@ -33,6 +33,7 @@ import 'package:flutter_chat_kit/src/widgets/room/scroll_to_bottom_button.dart';
 import 'package:flutter_chat_kit/src/widgets/room/swipe_to_reply.dart';
 import 'package:flutter_chat_kit/src/widgets/room/typing_indicator.dart';
 import 'package:flutter_chat_kit/src/widgets/room/unread_divider.dart';
+import 'package:lemsa_core_kit/lemsa_core_kit.dart' show ValidationFailure;
 import 'package:super_sliver_list/super_sliver_list.dart';
 
 typedef MessageCallback = void Function(MessageContext message);
@@ -790,7 +791,7 @@ class ChatMessageListState extends State<ChatMessageList> {
       onReactionTap: reactionsOn && !message.status.isLocal
           ? (emoji) => unawaited(c.react(message.id, emoji))
           : null,
-      onRetry: () => unawaited(c.retry(message.localId)),
+      onRetry: () => unawaited(_retry(message.localId)),
       onLinkTap: widget.onLinkTap,
       onAttachmentTap: selecting
           ? null
@@ -915,6 +916,16 @@ class ChatMessageListState extends State<ChatMessageList> {
     unawaited(_save(attachment));
   }
 
+  Future<void> _retry(String localId) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final strings = widget.strings;
+    try {
+      await _controller.retry(localId);
+    } on ValidationFailure {
+      messenger?.showSnackBar(SnackBar(content: Text(strings.fileUnavailable)));
+    }
+  }
+
   Future<void> _save(Attachment attachment) async {
     final url = attachment.remoteUrl;
     final store = _controller.kit.media;
@@ -948,7 +959,7 @@ class ChatMessageListState extends State<ChatMessageList> {
       onReply: onReply == null ? null : () => onReply(message),
       onCopy: text == null ? null : () => _copy(text),
       onEdit: onEdit == null ? null : () => onEdit(message),
-      onRetry: () => c.retry(m.localId),
+      onRetry: () => unawaited(_retry(m.localId)),
       onDelete: () => m.status.isLocal
           ? unawaited(c.discard(m.localId))
           : unawaited(c.delete(m.id)),

@@ -167,21 +167,44 @@ class FakeChatSource with ChatSourceDefaults implements ChatSource {
     return ChatPage(items: all.sublist(start, end), hasMore: end < all.length);
   }
 
+  /// Calls of `listen` on streams returned by [events].
+  int eventListens = 0;
+  final List<StreamController<ChatEvent>> _live = [];
+
+  /// Ends every open event stream, after [error] when given, like a
+  /// dropped connection.
+  void dropStreams({Object? error}) {
+    for (final controller in [..._live]) {
+      if (error != null) controller.addError(error);
+      unawaited(controller.close());
+    }
+    _live.clear();
+  }
+
   @override
   Stream<ChatEvent> events({String? roomId}) {
-    if (roomId == null) {
-      return _events.stream.where(
-        (e) => e is RoomChanged || e is PresenceChanged || e is UsersChanged,
-      );
-    }
-    return _events.stream.where(
-      (e) => switch (e) {
-        MessageChanged(roomId: final id) => id == roomId,
-        TypingChanged(roomId: final id) => id == roomId,
-        ReceiptChanged(roomId: final id) => id == roomId,
-        RoomChanged() || PresenceChanged() || UsersChanged() => false,
+    bool matches(ChatEvent e) => roomId == null
+        ? e is RoomChanged || e is PresenceChanged || e is UsersChanged
+        : switch (e) {
+            MessageChanged(roomId: final id) => id == roomId,
+            TypingChanged(roomId: final id) => id == roomId,
+            ReceiptChanged(roomId: final id) => id == roomId,
+            RoomChanged() || PresenceChanged() || UsersChanged() => false,
+          };
+    late final StreamController<ChatEvent> controller;
+    StreamSubscription<ChatEvent>? upstream;
+    controller = StreamController<ChatEvent>(
+      onListen: () {
+        eventListens++;
+        _live.add(controller);
+        upstream = _events.stream.where(matches).listen(controller.add);
+      },
+      onCancel: () {
+        _live.remove(controller);
+        return upstream?.cancel();
       },
     );
+    return controller.stream;
   }
 
   @override

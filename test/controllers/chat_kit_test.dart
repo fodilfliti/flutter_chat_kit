@@ -5,6 +5,7 @@ import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 
 import '../cache/memory_cache.dart';
 import '../source/fake_chat_source.dart';
+import 'harness.dart' show until;
 
 final _t0 = DateTime.utc(2026, 9, 30, 12);
 
@@ -45,6 +46,84 @@ void main() {
       await kit.close();
       expect(kit.isOpen, isFalse);
       expect(kit.cache.isOpen, isFalse);
+      kit.dispose();
+    });
+
+    testWidgets('catches up when the app returns from the background', (
+      tester,
+    ) async {
+      var now = _t0;
+      final source = FakeChatSource()..seedMessages('r1', [_msg('m0', 0)]);
+      final kit = ChatKit(
+        currentUserId: 'me',
+        source: source,
+        cache: memoryCache(),
+        clock: () => now,
+      );
+      final binding = tester.binding;
+      void away(Duration time) {
+        binding
+          ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+          ..handleAppLifecycleStateChanged(AppLifecycleState.hidden)
+          ..handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        now = now.add(time);
+        binding
+          ..handleAppLifecycleStateChanged(AppLifecycleState.hidden)
+          ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+          ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      }
+
+      await tester.runAsync(() async {
+        await kit.open();
+        await kit.repository.openRoom('r1');
+        source
+          ..seedMessages('r1', [_msg('m1', 1)])
+          ..fetchCalls.clear();
+
+        away(const Duration(seconds: 2));
+        await pumpEventQueue();
+        expect(source.fetchCalls, isEmpty, reason: 'a short trip is ignored');
+
+        away(const Duration(minutes: 3));
+        await until(() => source.fetchCalls.isNotEmpty);
+        await until(() => source.eventListens == 1);
+        for (var i = 0; i < 50; i++) {
+          if (await kit.cache.messageByAnyId('m1') != null) break;
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+        }
+        expect(await kit.cache.messageByAnyId('m1'), isNotNull);
+
+        await kit.repository.closeRoom('r1');
+        await kit.close();
+      });
+      kit.dispose();
+    });
+
+    test('activeRoomId follows the newest open room', () async {
+      final kit = ChatKit(
+        currentUserId: 'me',
+        source: FakeChatSource(),
+        cache: memoryCache(),
+      );
+      await kit.open();
+      final seen = <String?>[];
+      kit.activeRoomId.addListener(() => seen.add(kit.activeRoomId.value));
+
+      final r1 = kit.room('r1');
+      await r1.ready;
+      final r2 = kit.room('r2');
+      await r2.ready;
+      expect(kit.activeRoomId.value, 'r2');
+
+      r2.dispose();
+      await pumpEventQueue();
+      expect(kit.activeRoomId.value, 'r1');
+      r1.dispose();
+      await pumpEventQueue();
+      expect(kit.activeRoomId.value, isNull);
+      expect(seen, ['r1', 'r2', 'r1', null]);
+
+      await kit.close();
       kit.dispose();
     });
 

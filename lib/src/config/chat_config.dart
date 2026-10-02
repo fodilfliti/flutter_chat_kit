@@ -1,5 +1,23 @@
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_chat_kit/src/models/attachment.dart';
+
+/// Makes a smaller copy of a picked [video] before it uploads; set as
+/// `ChatConfig.compressVideo`. Return the original to skip a file. A
+/// throw also falls back to the original.
+///
+/// ```dart
+/// // app pubspec: video_compress
+/// Future<XFile> compress(XFile video) async {
+///   final info = await VideoCompress.compressVideo(
+///     video.path,
+///     quality: VideoQuality.MediumQuality,
+///   );
+///   final path = info?.path;
+///   return path == null ? video : XFile(path);
+/// }
+/// ```
+typedef VideoCompressor = Future<XFile> Function(XFile video);
 
 /// When the message list scrolls to a newly arrived message.
 enum AutoScrollPolicy {
@@ -53,6 +71,11 @@ class ChatConfig {
     this.minVoiceDuration = const Duration(seconds: 1),
     this.maxMediaCacheBytes = 500 * 1024 * 1024,
     this.autoDownload = const {AttachmentKind.image, AttachmentKind.audio},
+    this.resyncOnResume = true,
+    this.resumeResyncAfter = const Duration(seconds: 5),
+    this.imageMaxDimension = 1920,
+    this.imageQuality = 80,
+    this.compressVideo,
   });
 
   /// Messages per fetch (the `limit` of `ChatSource.fetchMessages`).
@@ -141,9 +164,35 @@ class ChatConfig {
   /// default) download when tapped.
   final Set<AttachmentKind> autoDownload;
 
+  /// When the app comes back to the foreground, reconnect dropped live
+  /// streams, fetch what open rooms and inbox lists missed, and send what
+  /// is queued. Defaults to true.
+  final bool resyncOnResume;
+
+  /// Shorter trips to the background (a permission dialog, the
+  /// notification shade) don't trigger the [resyncOnResume] catch-up.
+  /// Defaults to 5 seconds.
+  final Duration resumeResyncAfter;
+
+  /// Photos picked by `DefaultAttachmentPicker` are scaled down so their
+  /// longest side is at most this many pixels. Null sends the original.
+  /// Defaults to 1920.
+  final int? imageMaxDimension;
+
+  /// JPEG quality (0-100) of photos picked by `DefaultAttachmentPicker`;
+  /// setting it also turns iPhone HEIC photos into JPEG. Null keeps the
+  /// original encoding. Defaults to 80.
+  final int? imageQuality;
+
+  /// Optional step that shrinks a video before it uploads. The bubble
+  /// shows "Compressing" meanwhile; a throw sends the original. Null (the
+  /// default) uploads videos as picked. See [VideoCompressor].
+  final VideoCompressor? compressVideo;
+
   /// A copy with the given fields replaced. Nullable fields
   /// ([maxCachedMessagesPerRoom], [maxAttachmentBytes],
-  /// [maxMediaCacheBytes]) cannot be set back to null this way.
+  /// [maxMediaCacheBytes], [imageMaxDimension], [imageQuality],
+  /// [compressVideo]) cannot be set back to null this way.
   ChatConfig copyWith({
     int? pageSize,
     int? roomsPageSize,
@@ -167,6 +216,11 @@ class ChatConfig {
     Duration? minVoiceDuration,
     int? maxMediaCacheBytes,
     Set<AttachmentKind>? autoDownload,
+    bool? resyncOnResume,
+    Duration? resumeResyncAfter,
+    int? imageMaxDimension,
+    int? imageQuality,
+    VideoCompressor? compressVideo,
   }) {
     return ChatConfig(
       pageSize: pageSize ?? this.pageSize,
@@ -193,6 +247,11 @@ class ChatConfig {
       minVoiceDuration: minVoiceDuration ?? this.minVoiceDuration,
       maxMediaCacheBytes: maxMediaCacheBytes ?? this.maxMediaCacheBytes,
       autoDownload: autoDownload ?? this.autoDownload,
+      resyncOnResume: resyncOnResume ?? this.resyncOnResume,
+      resumeResyncAfter: resumeResyncAfter ?? this.resumeResyncAfter,
+      imageMaxDimension: imageMaxDimension ?? this.imageMaxDimension,
+      imageQuality: imageQuality ?? this.imageQuality,
+      compressVideo: compressVideo ?? this.compressVideo,
     );
   }
 }

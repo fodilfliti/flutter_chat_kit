@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_chat_kit/src/cache/chat_cache.dart';
 import 'package:flutter_chat_kit/src/models/attachment.dart';
@@ -38,6 +39,8 @@ class OutboxError {
 /// - Connectivity failures (`NetworkFailure`, `TimeoutFailure`) retry with
 ///   the [retryPolicy] backoff. Other failures, or running out of attempts,
 ///   mark a send `failed` and revert an edit, delete or reaction.
+/// - An `AuthFailure` (expired token) pauses the whole queue without
+///   failing anything, and calls [onAuthExpired]; [retryAll] resumes.
 /// - Uploaded attachment URLs are written back to the cache one by one, so
 ///   a retry never uploads a finished file again.
 class Outbox {
@@ -50,12 +53,29 @@ class Outbox {
     this._clock = _utcNow,
     this._random,
     this.onUploaded,
-  });
+    this.onAuthExpired,
+    Future<bool> Function(Attachment attachment)? fileAvailable,
+  }) : _fileAvailable = fileAvailable ?? _defaultFileAvailable;
+
+  /// Called once when a write fails with an `AuthFailure` (an expired or
+  /// revoked token) and the queue pauses. Refresh the session, then call
+  /// [retryAll] (`ChatKit.retryPending`) to resume.
+  final void Function()? onAuthExpired;
+
+  /// Error code of a send whose local file can no longer be read: on the
+  /// web, a `blob:` URL dies with the page, so media queued before a
+  /// reload can't upload. Thrown by [retry] as
+  /// `ValidationFailure({'attachments': fileUnavailable})`.
+  static const fileUnavailable = 'file_unavailable';
 
   /// Called after each attachment upload with the local file and its new
   /// URL; `ChatKit` copies the file into the media store. Errors are
   /// ignored.
   final Future<void> Function(Attachment local, String remoteUrl)? onUploaded;
+
+  /// Checked before each upload; false fails the send with
+  /// [fileUnavailable]. By default only `blob:` paths (web) are checked.
+  final Future<bool> Function(Attachment attachment) _fileAvailable;
 
   final String currentUserId;
   final ChatSource _source;
@@ -79,6 +99,7 @@ class Outbox {
   Future<void>? _flushing;
   bool _flushAgain = false;
   bool _online = true;
+  bool _authPaused = false;
   bool _disposed = false;
   Timer? _timer;
 
@@ -92,6 +113,11 @@ class Outbox {
       'react:$localId:$emoji';
 
   bool get isOnline => _online;
+
+  /// True after a write failed with an `AuthFailure`: nothing is sent and
+  /// queued messages stay "sending" (not failed) until [retryAll],
+  /// [retry] or going online again.
+  bool get isPausedForAuth => _authPaused;
 
   /// Edits, deletes and reactions that were rejected and reverted.
   Stream<OutboxError> get errors => _errors.stream;
@@ -227,7 +253,12 @@ class Outbox {
   }
 
   /// Sends a failed (or waiting) message again now.
+  ///
+  /// Throws `ValidationFailure({'attachments': 'file_unavailable'})` when
+  /// it failed again because its file is gone (see [fileUnavailable]);
+  /// offer to delete it.
   Future<void> retry(String localId) async {
+    _authPaused = false;
     await _locked(() async {
       final entry = await _cache.outboxEntry(sendKey(localId));
       final message = await _cache.messageByAnyId(localId);
@@ -240,10 +271,18 @@ class Outbox {
       );
     });
     await flush();
+    final entry = await _cache.outboxEntry(sendKey(localId));
+    final message = await _cache.messageByAnyId(localId);
+    if (entry?.lastError == fileUnavailable &&
+        message?.status == MessageStatus.failed) {
+      throw const ValidationFailure({'attachments': fileUnavailable});
+    }
   }
 
-  /// Retries every failed send and every write waiting for its backoff.
+  /// Retries every failed send and every write waiting for its backoff,
+  /// and ends a pause after an `AuthFailure` ([isPausedForAuth]).
   Future<void> retryAll() async {
+    _authPaused = false;
     await _locked(() async {
       for (final entry in await _cache.outbox()) {
         final message = entry.op == OutboxOp.send
@@ -278,11 +317,13 @@ class Outbox {
 
   // ------------------------------------------------------------- lifecycle
 
-  /// Offline pauses the queue (running writes finish); online flushes it.
+  /// Offline pauses the queue (running writes finish); online flushes it,
+  /// ending an auth pause too.
   void setOnline({required bool online}) {
     if (_online == online) return;
     _online = online;
     if (online) {
+      _authPaused = false;
       _kick();
     } else {
       _timer?.cancel();
@@ -293,7 +334,7 @@ class Outbox {
   /// Runs every due entry. Completes when the queue is idle or blocked by
   /// backoff; never throws.
   Future<void> flush() {
-    if (_disposed || !_online) return Future.value();
+    if (!_canRun) return Future.value();
     final running = _flushing;
     if (running != null) {
       _flushAgain = true;
@@ -320,8 +361,10 @@ class Outbox {
 
   // ------------------------------------------------------------------- run
 
+  bool get _canRun => _online && !_disposed && !_authPaused;
+
   void _kick() {
-    if (_online && !_disposed) unawaited(flush());
+    if (_canRun) unawaited(flush());
   }
 
   Future<void> _flushLoop() async {
@@ -337,8 +380,8 @@ class Outbox {
           byRoom.putIfAbsent(entry.roomId, () => []).add(entry);
         }
         await Future.wait([for (final list in byRoom.values) _runRoom(list)]);
-        if (!_flushAgain && _online && !_disposed) await _scheduleNext();
-      } while (_flushAgain && _online && !_disposed);
+        if (!_flushAgain && _canRun) await _scheduleNext();
+      } while (_flushAgain && _canRun);
     } on Object catch (error, stack) {
       if (!_disposed) _report(error, stack);
     } finally {
@@ -348,7 +391,7 @@ class Outbox {
 
   Future<void> _runRoom(List<OutboxEntry> entries) async {
     for (final entry in entries) {
-      if (_disposed || !_online) return;
+      if (!_canRun) return;
       final at = entry.nextAttemptAt;
       if (at != null && at.isAfter(_clock())) return;
       if (!await _run(entry)) return;
@@ -409,6 +452,9 @@ class Outbox {
         ..value = 0;
       for (var n = 0; n < uploads.length; n++) {
         final index = uploads[n];
+        if (!await _fileAvailable(attachments[index])) {
+          throw const ValidationFailure({'attachments': fileUnavailable});
+        }
         final done = await _upload(
           uploader,
           attachments[index],
@@ -547,7 +593,11 @@ class Outbox {
     return _locked(() async {
       if (await _cache.outboxEntry(entry.key) != entry) return true;
       final attempts = entry.attempts + 1;
-      final error = failure.runtimeType.toString();
+      final error = switch (failure) {
+        ValidationFailure(:final fields) when fields['attachments'] != null =>
+          fields['attachments'],
+        _ => failure.runtimeType.toString(),
+      };
       final message = entry.op == OutboxOp.send
           ? await _cache.messageByAnyId(entry.localId)
           : null;
@@ -555,6 +605,30 @@ class Outbox {
           (message == null || !message.status.isLocal)) {
         await _cache.removeOutbox(entry.key);
         return true;
+      }
+
+      if (failure is AuthFailure && _pausesForAuth(failure)) {
+        final waiting = _rescheduled(
+          entry,
+          attempts: entry.attempts,
+          error: error,
+        );
+        if (message != null) {
+          await _cache.stage(
+            message.copyWith(status: MessageStatus.pending),
+            enqueue: waiting,
+          );
+        } else {
+          await _cache.updateOutbox(waiting);
+        }
+        _progress[entry.localId]?.value = null;
+        if (!_authPaused) {
+          _authPaused = true;
+          _timer?.cancel();
+          _timer = null;
+          onAuthExpired?.call();
+        }
+        return false;
       }
 
       if (retryPolicy.isRetryable(failure) &&
@@ -755,6 +829,24 @@ class Outbox {
   }
 
   static bool _needsUpload(Attachment a) => !a.isUploaded;
+
+  /// A disabled account won't come back by refreshing a token, and rate
+  /// limits are retried with backoff.
+  static bool _pausesForAuth(AuthFailure failure) => switch (failure.reason) {
+    AuthReason.disabled || AuthReason.rateLimited => false,
+    _ => true,
+  };
+
+  static Future<bool> _defaultFileAvailable(Attachment attachment) async {
+    final path = attachment.localPath;
+    if (path == null || !path.startsWith('blob:')) return true;
+    try {
+      await XFile(path).openRead(0, 1).first;
+      return true;
+    } on Object {
+      return false;
+    }
+  }
 
   static List<Attachment> _attachmentsOf(Message message) {
     return switch (message) {

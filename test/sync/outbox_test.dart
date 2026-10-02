@@ -162,6 +162,52 @@ void main() {
       expect((await stored('m1'))?.status, MessageStatus.sent);
     });
 
+    test('a file that is gone fails the send; retry says why', () async {
+      final gone = <String>{'blob:old'};
+      await outbox.dispose();
+      outbox = Outbox(
+        currentUserId: 'me',
+        source: source,
+        cache: cache,
+        uploader: uploader,
+        retryPolicy: policy,
+        clock: () => now,
+        fileAvailable: (a) async => !gone.contains(a.localPath),
+      );
+      await outbox.send(images('m1', ['blob:old']));
+      await outbox.flush();
+      expect(uploader.uploads, isEmpty);
+      expect((await stored('m1'))?.status, MessageStatus.failed);
+      expect(
+        (await cache.outboxEntry(Outbox.sendKey('m1')))?.lastError,
+        Outbox.fileUnavailable,
+      );
+
+      await expectLater(
+        outbox.retry('m1'),
+        throwsA(
+          isA<ValidationFailure>().having(
+            (f) => f.fields['attachments'],
+            'attachments',
+            Outbox.fileUnavailable,
+          ),
+        ),
+      );
+
+      gone.clear();
+      await outbox.retry('m1');
+      expect((await stored('m1'))?.status, MessageStatus.sent);
+    });
+
+    test('attachment files read the same on every platform', () async {
+      const plain = Attachment(mimeType: 'image/jpeg', localPath: 'x.jpg');
+      expect(plain.file?.path, 'x.jpg');
+      expect(plain.file?.mimeType, 'image/jpeg');
+      const uploaded = Attachment(mimeType: 'image/jpeg', remoteUrl: 'u');
+      expect(uploaded.file, isNull);
+      expect(uploaded.readAsBytes, throwsStateError);
+    });
+
     test('media without an uploader is rejected up front', () async {
       final bare = Outbox(currentUserId: 'me', source: source, cache: cache);
       addTearDown(bare.dispose);
@@ -215,6 +261,49 @@ void main() {
       await outbox.retry('l1');
       expect((await stored('l1'))?.status, MessageStatus.sent);
       expect(await cache.outbox(), isEmpty);
+    });
+
+    test('an expired token pauses the queue until retryAll', () async {
+      var expired = 0;
+      await outbox.dispose();
+      outbox = Outbox(
+        currentUserId: 'me',
+        source: source,
+        cache: cache,
+        uploader: uploader,
+        retryPolicy: policy,
+        clock: () => now,
+        onAuthExpired: () => expired++,
+      );
+      source.failSend['l1'] = const AuthFailure(AuthReason.expired);
+      await outbox.send(text('l1'));
+      await outbox.send(text('l2'));
+      await outbox.flush();
+
+      expect(outbox.isPausedForAuth, isTrue);
+      expect(expired, 1);
+      expect((await stored('l1'))?.status, MessageStatus.pending);
+      expect((await stored('l2'))?.status, MessageStatus.pending);
+      expect(source.sendCalls, 0);
+
+      await outbox.send(text('l3'));
+      await outbox.flush();
+      expect(source.sendCalls, 0, reason: 'nothing leaves while paused');
+
+      await outbox.retryAll();
+      expect(outbox.isPausedForAuth, isFalse);
+      expect(source.sendCalls, 3);
+      for (final id in ['l1', 'l2', 'l3']) {
+        expect((await stored(id))?.status, MessageStatus.sent);
+      }
+    });
+
+    test('a disabled account fails instead of pausing', () async {
+      source.failSend['l1'] = const AuthFailure(AuthReason.disabled);
+      await outbox.send(text('l1'));
+      await outbox.flush();
+      expect(outbox.isPausedForAuth, isFalse);
+      expect((await stored('l1'))?.status, MessageStatus.failed);
     });
 
     test('discard removes a failed message; a sent one stays', () async {

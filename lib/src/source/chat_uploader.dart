@@ -57,13 +57,24 @@ abstract interface class ChatUploader {
   ///   with `StorageFailure`.
   /// - Throw `NetworkFailure` or `TimeoutFailure` to retry later; any other
   ///   error marks the message failed.
+  /// - Read the file with `attachment.openRead()` or
+  ///   `attachment.readAsBytes()` (see `AttachmentFile`), not
+  ///   `File(localPath)`: on the web `localPath` is a `blob:` URL.
+  /// - A video may also bring a `thumbnailPath` (a poster made on the
+  ///   device). When [UploadDone.thumbnailUrl] is null the kit uploads it
+  ///   through this same method, as an image with local id
+  ///   `'<localId>_thumb'`.
   ///
   /// ```dart
   /// @override
   /// Stream<UploadProgress> upload(Attachment attachment,
   ///     {required String roomId, required String localId}) async* {
   ///   final path = 'chat/$roomId/$localId/${attachment.name ?? 'file'}';
-  ///   final url = await storage.putFile(path, File(attachment.localPath!));
+  ///   yield const UploadRunning(0);
+  ///   final url = await storage.putBytes(
+  ///     path,
+  ///     await attachment.readAsBytes(),
+  ///   );
   ///   yield UploadDone(remoteUrl: url);
   /// }
   /// ```
