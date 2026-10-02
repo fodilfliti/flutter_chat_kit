@@ -40,19 +40,15 @@ class TextMessageView extends StatefulWidget {
     return trimmed.characters.where((c) => c.trim().isNotEmpty).length <= 3;
   }
 
-  static final _pictographic = RegExp(
-    // valid_regexps ignores `unicode: true`, which property escapes need.
-    // ignore: valid_regexps
-    r'\p{Extended_Pictographic}|\p{Regional_Indicator}',
-    unicode: true,
-  );
-  static final _other = RegExp(
-    // valid_regexps ignores `unicode: true`, which property escapes need.
-    // ignore: valid_regexps
-    r'[^\p{Extended_Pictographic}\p{Emoji_Component}\p{Emoji_Modifier}'
-    r'\u200d\ufe0f\u20e3\s]',
-    unicode: true,
-  );
+  // Kept out of the RegExp call: some analyzer versions run valid_regexps
+  // without `unicode: true` and wrongly reject the property escapes.
+  static const _pictographicPattern =
+      r'\p{Extended_Pictographic}|\p{Regional_Indicator}';
+  static const _otherPattern =
+      r'[^\p{Extended_Pictographic}\p{Emoji_Component}\p{Emoji_Modifier}'
+      r'\u200d\ufe0f\u20e3\s]';
+  static final _pictographic = RegExp(_pictographicPattern, unicode: true);
+  static final _other = RegExp(_otherPattern, unicode: true);
 
   /// URLs (`http(s)://` or `www.`), e-mail addresses and phone numbers.
   static final linkPattern = RegExp(

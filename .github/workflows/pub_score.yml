@@ -44,9 +44,16 @@ jobs:
               head = section.strip().splitlines()[0] if section.strip() else ''
               if not head.startswith('## '):
                   continue
-              body = section.strip().replace('%', '%25').replace('\r', '')
-              body = body.replace('\n', '%0A')[:60000]
-              print(f'::notice title={head[3:].strip()}::{body}')
+              # GitHub cuts annotation messages at about 4 KB, so long
+              # sections are split into numbered parts.
+              body = section.strip().replace('\r', '')
+              parts = [body[i:i + 3500] for i in range(0, len(body), 3500)]
+              for n, part in enumerate(parts, 1):
+                  part = part.replace('%', '%25').replace('\n', '%0A')
+                  title = head[3:].strip()
+                  if len(parts) > 1:
+                      title += f' [{n}/{len(parts)}]'
+                  print(f'::notice title={title}::{part}')
           if total:
               got, out_of = total.groups()
               level = 'notice' if got == out_of else 'error'
