@@ -16,7 +16,7 @@ For the web, first download drift's `sqlite3.wasm` and `drift_worker.js`
 into `web/` (the versions come from `pubspec.lock`), then run it:
 
 ```bash
-dart run tool/web_assets.dart
+dart run flutter_chat_kit:web_setup
 flutter run -d chrome
 ```
 
@@ -116,4 +116,6 @@ French, and that switching the language updates the running app.
 | `lib/pages/room_page.dart` | `ChatRoomView` with header, app bar actions and forward |
 
 To use a real backend, replace `FakeChatSource` with your own `ChatSource`;
-see the adapter guides in the package's `doc/adapters/` folder.
+see the adapter guides in the package's `doc/adapters/` folder. For a
+smaller starting point in your own app, the package ships
+`InMemoryChatSource.sample(...)`.

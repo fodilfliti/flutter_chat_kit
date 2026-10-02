@@ -3,22 +3,31 @@ import 'package:collection/collection.dart';
 /// Deep equality for model collections (lists, maps, sets).
 const deepEquality = DeepCollectionEquality();
 
-/// Reads ISO-8601 strings, epoch milliseconds, or [DateTime]; returns UTC.
+/// Numbers below this are epoch seconds: as milliseconds they would be
+/// before March 1973.
+const epochSecondsLimit = 100000000000;
+
+/// Reads ISO-8601 strings, epoch milliseconds or seconds, or [DateTime];
+/// returns UTC.
 DateTime? readDate(Object? value) {
   return switch (value) {
     null => null,
     final DateTime date => date.toUtc(),
-    final int millis => DateTime.fromMillisecondsSinceEpoch(
-      millis,
+    final num number => DateTime.fromMillisecondsSinceEpoch(
+      number.abs() < epochSecondsLimit
+          ? (number * 1000).round()
+          : number.round(),
       isUtc: true,
     ),
-    final num millis => DateTime.fromMillisecondsSinceEpoch(
-      millis.toInt(),
-      isUtc: true,
-    ),
-    final String text => DateTime.parse(text).toUtc(),
+    final String text => _parseDateText(text),
     _ => throw FormatException('Unsupported date value: $value'),
   };
+}
+
+DateTime _parseDateText(String text) {
+  final number = num.tryParse(text);
+  if (number != null) return readDate(number)!;
+  return DateTime.parse(text).toUtc();
 }
 
 DateTime readRequiredDate(Map<String, Object?> json, String key) {
@@ -68,6 +77,15 @@ Map<String, Object?> readMap(Object? value) {
 List<Map<String, Object?>> readMapList(Object? value) {
   if (value is! List) return const [];
   return [for (final item in value) readMap(item)];
+}
+
+/// A list as is, a single non-null value as a one-item list, else empty.
+List<Object?> readList(Object? value) {
+  return switch (value) {
+    null => const [],
+    final List<Object?> list => list,
+    _ => [value],
+  };
 }
 
 List<double> readDoubleList(Object? value) {

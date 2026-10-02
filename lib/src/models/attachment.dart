@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_chat_kit/src/models/json_keys.dart';
 import 'package:flutter_chat_kit/src/models/json_utils.dart';
 
 enum AttachmentKind { image, video, audio, file }
@@ -21,21 +22,92 @@ class Attachment {
     this.name,
   });
 
-  factory Attachment.fromJson(Map<String, Object?> json) {
+  /// Reads an attachment object, or a bare URL string.
+  ///
+  /// Without a mime type it is guessed from the file extension
+  /// ([guessMimeType]), else [mimeHint] is used (the message decoder passes
+  /// `image/*` for image messages, ...), else `application/octet-stream`.
+  factory Attachment.fromJson(
+    Object? json, {
+    AttachmentJsonKeys keys = const AttachmentJsonKeys(),
+    String? mimeHint,
+  }) {
+    final map = json is String ? {keys.remoteUrl: json} : readMap(json);
+    final remoteUrl =
+        readOptionalString(map[keys.remoteUrl]) ??
+        readOptionalString(map[_urlAlias]);
+    final localPath = readOptionalString(map[keys.localPath]);
+    final name = readOptionalString(map[keys.name]);
     return Attachment(
-      mimeType: readOptionalString(json['mime_type']) ?? _fallbackMime,
-      localPath: readOptionalString(json['local_path']),
-      remoteUrl: readOptionalString(json['remote_url']),
-      thumbnailUrl: readOptionalString(json['thumbnail_url']),
-      size: readInt(json['size']),
-      width: readInt(json['width']),
-      height: readInt(json['height']),
-      duration: readDuration(json['duration_ms']),
-      name: readOptionalString(json['name']),
+      mimeType:
+          readOptionalString(map[keys.mimeType]) ??
+          guessMimeType(remoteUrl ?? localPath ?? name) ??
+          mimeHint ??
+          fallbackMimeType,
+      localPath: localPath,
+      remoteUrl: remoteUrl,
+      thumbnailUrl: readOptionalString(map[keys.thumbnailUrl]),
+      size: readInt(map[keys.size]),
+      width: readInt(map[keys.width]),
+      height: readInt(map[keys.height]),
+      duration: readDuration(map[keys.duration]),
+      name: name,
     );
   }
 
-  static const _fallbackMime = 'application/octet-stream';
+  /// The type of a file whose kind is unknown; shown as a file.
+  static const fallbackMimeType = 'application/octet-stream';
+
+  static const _urlAlias = 'url';
+
+  /// The mime type for a URL, path or file name by its extension, or null.
+  /// Query strings and fragments are ignored.
+  static String? guessMimeType(String? path) {
+    if (path == null) return null;
+    final uri = Uri.tryParse(path);
+    final clean = uri != null && uri.hasScheme ? uri.path : path;
+    final dot = clean.lastIndexOf('.');
+    if (dot < 0 || dot < clean.lastIndexOf('/')) return null;
+    return _mimeByExtension[clean.substring(dot + 1).toLowerCase()];
+  }
+
+  static const _mimeByExtension = {
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'gif': 'image/gif',
+    'webp': 'image/webp',
+    'heic': 'image/heic',
+    'heif': 'image/heif',
+    'bmp': 'image/bmp',
+    'svg': 'image/svg+xml',
+    'mp4': 'video/mp4',
+    'm4v': 'video/x-m4v',
+    'mov': 'video/quicktime',
+    'webm': 'video/webm',
+    'mkv': 'video/x-matroska',
+    '3gp': 'video/3gpp',
+    'm4a': 'audio/mp4',
+    'mp3': 'audio/mpeg',
+    'aac': 'audio/aac',
+    'ogg': 'audio/ogg',
+    'oga': 'audio/ogg',
+    'opus': 'audio/opus',
+    'wav': 'audio/wav',
+    'flac': 'audio/flac',
+    'pdf': 'application/pdf',
+    'zip': 'application/zip',
+    'doc': 'application/msword',
+    'docx':
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'xls': 'application/vnd.ms-excel',
+    'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'ppt': 'application/vnd.ms-powerpoint',
+    'pptx':
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'txt': 'text/plain',
+    'csv': 'text/csv',
+  };
 
   final String mimeType;
   final String? localPath;
@@ -94,17 +166,19 @@ class Attachment {
     );
   }
 
-  Map<String, Object?> toJson() {
+  Map<String, Object?> toJson({
+    AttachmentJsonKeys keys = const AttachmentJsonKeys(),
+  }) {
     return withoutNulls({
-      'mime_type': mimeType,
-      'local_path': localPath,
-      'remote_url': remoteUrl,
-      'thumbnail_url': thumbnailUrl,
-      'size': size,
-      'width': width,
-      'height': height,
-      'duration_ms': duration?.inMilliseconds,
-      'name': name,
+      keys.mimeType: mimeType,
+      keys.localPath: localPath,
+      keys.remoteUrl: remoteUrl,
+      keys.thumbnailUrl: thumbnailUrl,
+      keys.size: size,
+      keys.width: width,
+      keys.height: height,
+      keys.duration: duration?.inMilliseconds,
+      keys.name: name,
     });
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_chat_kit/src/models/json_keys.dart';
 import 'package:flutter_chat_kit/src/models/json_utils.dart';
 
 /// A person who can author messages.
@@ -11,12 +12,22 @@ class ChatUser {
     this.metadata = const {},
   });
 
-  factory ChatUser.fromJson(Map<String, Object?> json) {
+  factory ChatUser.fromJson(
+    Map<String, Object?> json, {
+    UserJsonKeys keys = const UserJsonKeys(),
+  }) {
+    final id = readOptionalString(json[keys.id]);
+    if (id == null) {
+      throw FormatException(
+        'User needs "${keys.id}"; set UserJsonKeys(id: ...) if your API '
+        'names it differently. Got the fields ${json.keys.toList()}.',
+      );
+    }
     return ChatUser(
-      id: readString(json, 'id'),
-      name: readOptionalString(json['name']) ?? '',
-      avatarUrl: readOptionalString(json['avatar_url']),
-      metadata: readMap(json['metadata']),
+      id: id,
+      name: readOptionalString(json[keys.name]) ?? '',
+      avatarUrl: readOptionalString(json[keys.avatarUrl]),
+      metadata: readMap(json[keys.metadata]),
     );
   }
 
@@ -41,12 +52,12 @@ class ChatUser {
     );
   }
 
-  Map<String, Object?> toJson() {
+  Map<String, Object?> toJson({UserJsonKeys keys = const UserJsonKeys()}) {
     return withoutNulls({
-      'id': id,
-      'name': name,
-      'avatar_url': avatarUrl,
-      'metadata': metadata.isEmpty ? null : metadata,
+      keys.id: id,
+      keys.name: name,
+      keys.avatarUrl: avatarUrl,
+      keys.metadata: metadata.isEmpty ? null : metadata,
     });
   }
 

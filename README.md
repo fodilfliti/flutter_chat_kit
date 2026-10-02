@@ -10,6 +10,12 @@ cache, a send queue, media, voice messages, read receipts, and styling.
 **Platforms:** Android, iOS, Linux, macOS, Web, Windows
 **Requires:** Flutter `>=3.44.0`
 
+| Inbox and styling | Chat room | Custom messages and offline |
+| :---: | :---: | :---: |
+| ![Inbox, languages and style presets](https://raw.githubusercontent.com/fodilfliti/flutter_chat_kit/main/doc/media/demo_1.gif) | ![Chat room with replies and reactions](https://raw.githubusercontent.com/fodilfliti/flutter_chat_kit/main/doc/media/demo_2.gif) | ![Attachments, custom messages and offline mode](https://raw.githubusercontent.com/fodilfliti/flutter_chat_kit/main/doc/media/demo_3.gif) |
+
+[Watch the full demo video (73 s)](https://github.com/fodilfliti/flutter_chat_kit/blob/main/doc/media/chat_kit_demo.mp4)
+
 ### 🎯 [Try the live demo in your browser →](https://fodilfliti.github.io/flutter_chat_kit/)
 
 The [example app](example/) on a fake backend, inside a phone frame: pick a
@@ -27,14 +33,21 @@ device, switch presets and languages, go offline, turn on incoming messages.
   - [2. Platform setup](#2-platform-setup)
   - [3. The classes you write](#3-the-classes-you-write)
 - [Quick start: a working chat in 3 steps](#quick-start-a-working-chat-in-3-steps)
+  - [0. No backend yet? Start on fake data](#0-no-backend-yet-start-on-fake-data)
+  - [Text only, voice or attachments](#text-only-voice-or-attachments)
 - [How the pieces fit](#how-the-pieces-fit)
 - [Connect your backend](#connect-your-backend)
+  - [Pick your path](#pick-your-path)
+  - [The JSON the kit reads](#the-json-the-kit-reads)
+  - [Your field names, camelCase, or a mapper](#your-field-names-camelcase-or-a-mapper)
+  - [The ChatSource](#the-chatsource)
   - [Names and avatars](#names-and-avatars)
 - [Style the chat](#style-the-chat)
 - [Builders, text and custom messages](#builders-text-and-custom-messages)
   - [Several custom message types](#several-custom-message-types)
 - [Example app](#example-app)
 - [Screen size and theme kits](#screen-size-and-theme-kits)
+- [Troubleshooting](#troubleshooting)
 - [Let your AI agent build it](#let-your-ai-agent-build-it)
 
 ## Features
@@ -112,15 +125,17 @@ entitlements in both `DebugProfile.entitlements` and
 `com.apple.security.device.camera`,
 `com.apple.security.files.user-selected.read-write`.
 
-**Web.** The SQLite cache runs in a web worker. Copy two files into your
-app's `web/` folder:
+**Web.** The SQLite cache runs in a web worker and needs two files in your
+app's `web/` folder (`sqlite3.wasm` and `drift_worker.js`). One command
+downloads the versions that match your `pubspec.lock`:
 
-- `sqlite3.wasm` from the
-  [sqlite3.dart releases](https://github.com/simolus3/sqlite3.dart/releases)
-  (the version matching `sqlite3` in your `pubspec.lock`);
-- `drift_worker.js` from the
-  [drift releases](https://github.com/simolus3/drift/releases) (matching
-  `drift`).
+```bash
+dart run flutter_chat_kit:web_setup
+```
+
+Run it from your app folder after `flutter pub get`, and again after
+upgrading drift or sqlite3. Commit the two files, or run the command in CI
+before `flutter build web`.
 
 **Linux**: voice playback uses GStreamer
 (`libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev`).
@@ -133,8 +148,8 @@ in-app video there.
 
 | Class | Needed? | What it does |
 | --- | --- | --- |
-| `ChatSource` | **Always** | Reads and writes rooms and messages on your backend, and sends live events. See [Connect your backend](#connect-your-backend). |
-| `ChatUploader` | For photos, video, files and voice | Uploads one file to your storage and returns its URL. Without it the attach and mic buttons are hidden. |
+| `ChatSource` | **Always** | Reads and writes rooms and messages on your backend, and sends live events. See [Connect your backend](#connect-your-backend). Until it's ready, use the built-in `InMemoryChatSource`. |
+| `ChatUploader` | For photos, video, files and voice | Uploads one file to your storage and returns its URL. Without it the attach and mic buttons are hidden. To hide just one of them, see [Text only, voice or attachments](#text-only-voice-or-attachments). |
 | `ChatUserResolver` | Optional | Looks up names and avatars your backend did not send. Not needed when your API returns them with rooms and messages, see [Names and avatars](#names-and-avatars). |
 
 ```dart
@@ -164,6 +179,22 @@ class MyUserResolver implements ChatUserResolver {
 `ChatSource` and `ChatUploader` for each backend, ready to copy.
 
 ## Quick start: a working chat in 3 steps
+
+### 0. No backend yet? Start on fake data
+
+`InMemoryChatSource` is a complete backend kept in memory: sample chats and
+people, paging, sending, read receipts, typing and auto replies. Use it to
+build and style your screens before writing any server code:
+
+```dart
+final kit = ChatKit(
+  currentUserId: 'me',
+  source: InMemoryChatSource.sample(currentUserId: 'me'),
+);
+```
+
+Follow the steps below with it, then replace it with your own `ChatSource`
+(see [Connect your backend](#connect-your-backend)). Nothing else changes.
 
 ### 1. Create the kit and put it above your app
 
@@ -258,6 +289,20 @@ That's a working chat. It already follows your app's colors, fonts and
 dark mode. On sign-out call `await kit.close()` then
 `await kit.clearUserData()`, and create a new `ChatKit` for the next user.
 
+### Text only, voice or attachments
+
+Start with text only and add media later. Without a `ChatUploader` the
+kit hides the attach and mic buttons. Once you pass an uploader, both
+show up. To keep one of them hidden:
+
+```dart
+ChatRoomView(
+  controller: room,
+  enableVoice: false,       // no mic button
+  enableAttachments: false, // no attach button
+);
+```
+
 ## How the pieces fit
 
 | Piece | What it does |
@@ -271,33 +316,141 @@ dark mode. On sign-out call `await kit.close()` then
 
 ## Connect your backend
 
-Implement `ChatSource`. Mix in `ChatSourceDefaults` to skip the optional
-parts (typing, reactions, search, ...):
+You write one class, `ChatSource`, that turns your backend's data into kit
+models. The kit never talks to your server itself.
+
+### Pick your path
+
+| Your backend | Start here |
+| --- | --- |
+| Nothing yet, or still in design | `InMemoryChatSource` ([step 0](#0-no-backend-yet-start-on-fake-data)), then build your API on [the kit's JSON](doc/backend_json.md) |
+| Firebase (Firestore) | [Firestore guide](doc/adapters/firestore.md): schema, rules, realtime, Storage uploads |
+| Supabase | [Supabase guide](doc/adapters/supabase.md): tables, RLS, realtime, Storage uploads |
+| A new REST API (you choose the JSON) | [REST + WebSocket guide](doc/adapters/rest_websocket.md) with the [JSON contract](doc/backend_json.md) |
+| An existing API with its own JSON | [Plug in an existing API](doc/adapters/your_api.md): keys, camelCase, mappers, polling |
+| REST data, realtime elsewhere, or no realtime | [Mixing backends](doc/adapters/mixing.md): `ComposedChatSource`, `PollingRealtime` |
+| One account with several profiles | [Profiles and business accounts](doc/adapters/profiles.md) |
+
+### The JSON the kit reads
+
+The smallest message is four fields:
+
+```json
+{ "id": "m1", "author_id": "u2", "created_at": "2026-09-30T12:00:00Z", "text": "Hi" }
+```
+
+Decoding forgives what real APIs send:
+
+- **Ids** can be numbers.
+- **Dates** can be ISO-8601, epoch milliseconds or epoch seconds.
+- **`room_id` can be left out**: pass it with `Message.fromJson(json, roomId: id)`.
+- **An attachment can be just a URL** (`"attachment": "https://.../a.jpg"`).
+  Its type is guessed from the extension, or from the message type.
+- **A room without `updated_at`** takes the time of its last message.
+- **Members can be plain user ids.**
+- **`status: "read"`** is understood, in any case.
+- **Unknown types** become a `CustomMessage` you can draw.
+
+Every field, every type, and what you lose without each optional one:
+[Backend JSON](doc/backend_json.md).
+
+### Your field names, camelCase, or a mapper
+
+Rename only what differs:
+
+```dart
+const keys = ChatJsonKeys(
+  authorId: 'sender_id',
+  createdAt: 'sent_at',
+  typeAliases: {'photo': 'image', 'voice': 'audio'},
+  attachmentKeys: AttachmentJsonKeys(remoteUrl: 'file_url'),
+);
+final message = Message.fromJson(json, keys: keys, roomId: roomId);
+final room = ChatRoom.fromJson(json, keys: keys);
+```
+
+camelCase API? One line:
+
+```dart
+final message = Message.fromJson(json, keys: ChatJsonKeys.camelCase, roomId: roomId);
+```
+
+Nested JSON (`"sender": {"id": 7}`, a `files` array)? Reshape the map, then
+let `Message.fromJson` handle dates, ids and media types:
+
+```dart
+Message toMessage(Map<String, Object?> m, String roomId) => Message.fromJson({
+  'id': m['messageId'],
+  'local_id': m['clientId'],
+  'author_id': (m['sender']! as Map)['id'],
+  'created_at': m['sentAt'],
+  'type': m['kind'] == 'photo' ? 'image' : 'text',
+  'text': m['body'],
+  'attachments': [for (final f in m['files'] as List? ?? []) (f as Map)['url']],
+}, roomId: roomId);
+```
+
+Then check a saved real response once in a test. `ChatJsonCheck` names
+each field it can't read, or reads with a guess, and the fix:
+
+```dart
+expect(ChatJsonCheck.message(json, keys: keys, roomId: 'r1'), isEmpty);
+```
+
+### The ChatSource
+
+Mix in `ChatSourceDefaults` and only seven methods are left; reactions,
+pin, mute, typing and jump-to-message become optional:
 
 ```dart
 class MyChatSource with ChatSourceDefaults {
+  MyChatSource(this.api);
+
+  final MyApi api; // your HTTP client, Firebase, Supabase, ...
+
   @override
   Future<ChatPage<ChatRoom>> fetchRooms({RoomCursor? after, int limit = 20,
-      String? search, RoomFilter filter = RoomFilter.all}) { ... }
+      String? search, RoomFilter filter = RoomFilter.all}) async {
+    final res = await api.get('/rooms', {'after': after?.updatedAt, 'limit': limit, 'q': search});
+    return ChatPage(
+      items: [for (final r in res['items']) ChatRoom.fromJson(r)],
+      hasMore: res['has_more'] == true,
+      users: [for (final u in res['users'] ?? []) ChatUser.fromJson(u)],
+    );
+  }
 
   @override
   Future<ChatPage<Message>> fetchMessages(String roomId,
-      {MessageCursor? before, MessageCursor? after, int limit = 30}) { ... }
+      {MessageCursor? before, MessageCursor? after, int limit = 30}) async {
+    final res = await api.get('/rooms/$roomId/messages', {
+      'before': before?.createdAt, 'after': after?.createdAt, 'limit': limit,
+    });
+    return ChatPage(
+      items: [for (final m in res['items']) Message.fromJson(m, roomId: roomId)],
+      hasMore: res['has_more'] == true,
+    );
+  }
 
   @override
-  Stream<ChatEvent> events({String? roomId}) { ... }
+  Future<Message> send(Message pending) async => Message.fromJson(
+    await api.put('/rooms/${pending.roomId}/messages/${pending.localId}', pending.toJson()),
+  );
 
   @override
-  Future<Message> send(Message pending) { ... }
+  Future<Message> edit(Message message) async => Message.fromJson(
+    await api.patch('/rooms/${message.roomId}/messages/${message.id}', message.toJson()),
+  );
 
   @override
-  Future<Message> edit(Message message) { ... }
+  Future<void> delete(String roomId, String messageId) =>
+      api.delete('/rooms/$roomId/messages/$messageId');
 
   @override
-  Future<void> delete(String roomId, String messageId) { ... }
+  Future<void> markRead(String roomId, MessageCursor upTo) =>
+      api.post('/rooms/$roomId/read', upTo.toJson());
 
   @override
-  Future<void> markRead(String roomId, MessageCursor upTo) { ... }
+  Stream<ChatEvent> events({String? roomId}) => api.socketEvents(roomId);
 }
 ```
 
@@ -308,20 +461,14 @@ Four rules keep the cache correct:
 - Message pages are **newest first**. Cursors are exclusive bounds on
   `(createdAt, id)`.
 - `send` must be **idempotent on `localId`** (use it as the document id or a
-  unique key), so a retry never creates a duplicate.
+  unique key), so a retry never creates a duplicate. Return the saved
+  message with the same `local_id`.
 - `events` also delivers your own messages; the kit removes duplicates.
+  No realtime service? Use `PollingRealtime`
+  ([mixing backends](doc/adapters/mixing.md#rest-only-pollingrealtime)).
 
-`Message.fromJson` / `toJson` and `ChatRoom.fromJson` read the usual JSON
-shape; pass `ChatJsonKeys(...)` when your field names differ. Call
-`kit.setOnline(online: ...)` from your connectivity check: going online
-fills gaps, refreshes lists and sends queued messages.
-
-Step-by-step guides with schema, realtime and uploads:
-[Firestore](doc/adapters/firestore.md) ·
-[Supabase](doc/adapters/supabase.md) ·
-[REST + WebSocket](doc/adapters/rest_websocket.md) ·
-[Several lists and mixed backends](doc/adapters/mixing.md) ·
-[Profiles and business accounts](doc/adapters/profiles.md)
+Call `kit.setOnline(online: ...)` from your connectivity check: going
+online fills gaps, refreshes lists and sends queued messages.
 
 ### Names and avatars
 
@@ -926,6 +1073,65 @@ If you register a `ChatTheme` in the theme instead, keep the theme kit's
 extensions:
 `appST.light.copyWith(extensions: [...appST.light.extensions.values, myChatTheme])`.
 
+## Troubleshooting
+
+Most problems come from the JSON. Run `ChatJsonCheck` on a real response
+first ([how](doc/backend_json.md#check-your-json-chatjsoncheck)): it names
+the field and the fix.
+
+**Images or videos show as file cards.**
+The attachment has no `mime_type` and its URL has no extension, inside a
+`file` message (or a type the kit maps to file). Send `mime_type`, or use
+the `image` / `video` message type: an extension-less URL in an image
+message is shown as an image.
+
+**Times are off by a few hours.**
+Your dates have no time zone (`2026-09-30T12:00:00`), so each phone reads
+them in its own zone. End them with `Z` or an offset (`+01:00`).
+
+**Dates show in 1970, or thousands of years ahead.**
+The value is not epoch seconds or milliseconds (both work): it's `0`, a
+duration, microseconds or nanoseconds. Send milliseconds or ISO-8601.
+
+**My message appears twice after sending.**
+The server created a second message on a retry, or doesn't return
+`local_id`. Make send idempotent on `localId` and echo `local_id` in the
+response and in realtime events
+([Sending](doc/backend_json.md#sending)).
+
+**A room doesn't move to the top on a new message.**
+The inbox sorts by `updated_at`. Bump it on every new message, and emit
+`RoomChanged(Updated(room))` from `events()` (the inbox stream, `roomId ==
+null`), or use `PollingRealtime`.
+
+**Nothing updates live.**
+`events()` returns an empty stream or never emits for this room. Emit
+`MessageChanged` for room streams and `RoomChanged` for the inbox, or
+plug in `PollingRealtime`. After being offline, call
+`kit.setOnline(online: true)`.
+
+**`FormatException: Message "...": missing "room_id"`.**
+Your messages endpoint leaves the room out. Pass it:
+`Message.fromJson(json, roomId: roomId)`. Other "missing" errors name the
+`ChatJsonKeys` field to set.
+
+**Names are empty and avatars are blank.**
+The kit has no `ChatUser` for those ids. Return `users` with your pages,
+or pass a `ChatUserResolver` ([Names and avatars](#names-and-avatars)).
+
+**Avatars and images are blank on the web only.**
+The image host doesn't send CORS headers, so the browser blocks the
+pixels. Serve them with `Access-Control-Allow-Origin` (Firebase Storage
+needs a CORS config on the bucket), or through your own domain.
+
+**The chat stays empty or loading on the web.**
+`sqlite3.wasm` or `drift_worker.js` is missing from `web/`. Run
+`dart run flutter_chat_kit:web_setup`.
+
+**No attach or mic button.**
+`ChatKit` has no `uploader`. Pass a `ChatUploader`
+([The classes you write](#3-the-classes-you-write)).
+
 ## Let your AI agent build it
 
 This package ships an [Agent Skill](https://agentskills.io) that teaches
@@ -955,6 +1161,8 @@ Then ask your agent, for example:
 
 ## Links
 
+- [Backend JSON](doc/backend_json.md)
+- [Plug in an existing API](doc/adapters/your_api.md)
 - [Customization cookbook](doc/customization.md)
 - [GitHub](https://github.com/fodilfliti/flutter_chat_kit)
 - [Issues](https://github.com/fodilfliti/flutter_chat_kit/issues)

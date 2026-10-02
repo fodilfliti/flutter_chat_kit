@@ -355,14 +355,13 @@ void main() {
     });
 
     test('the app-inspired presets keep their signature look', () {
-      ChatTheme build(ChatPreset preset, Brightness brightness) =>
-          preset.build(
-            ColorScheme.fromSeed(
-              seedColor: preset.seedColor!,
-              brightness: brightness,
-            ),
-            Typography.material2021().englishLike,
-          );
+      ChatTheme build(ChatPreset preset, Brightness brightness) => preset.build(
+        ColorScheme.fromSeed(
+          seedColor: preset.seedColor!,
+          brightness: brightness,
+        ),
+        Typography.material2021().englishLike,
+      );
 
       for (final brightness in Brightness.values) {
         final whatsApp = build(ChatPreset.whatsAppNew, brightness);

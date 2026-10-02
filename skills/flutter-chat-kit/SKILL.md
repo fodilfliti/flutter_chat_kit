@@ -4,7 +4,9 @@ description: >
   Use flutter_chat_kit to build chat screens: a chat room page, an inbox
   (conversation list), direct and group chats, media and voice messages,
   replies, reactions, read receipts, offline cache and outbox. Activate when
-  implementing a ChatSource for Firebase, Supabase or REST, styling the chat
+  implementing a ChatSource for Firebase, Supabase, REST or an existing API
+  with its own JSON (ChatJsonKeys, camelCase, mappers, ChatJsonCheck),
+  prototyping on InMemoryChatSource, styling the chat
   (ChatStyle, presets like WhatsApp or Telegram, bubbles, inbox rows),
   scaling it with flutter_scale_kit, flutter_screenutil or
   flutter_scale_theme_kit, adding custom message types (offers, cards),
@@ -146,7 +148,36 @@ body in the same `ChatStyle` (put the options in one app widget, for example
 `ChatArea`, and use it in both places), or by a `ChatStyle` in
 `MaterialApp.builder` that covers every route.
 
+## Start on fake data
+
+Before (or while) writing the real source, run the whole UI on
+`InMemoryChatSource`: sample rooms and people, keyset paging, idempotent
+send, edit, delete, receipts, reactions, typing and optional auto replies.
+
+```dart
+final kit = ChatKit(
+  currentUserId: 'me',
+  source: InMemoryChatSource.sample(currentUserId: 'me'), // autoReply: true
+);
+// Or seed your own: InMemoryChatSource(currentUserId:, rooms:, messages:, users:)
+// source.receive(message) simulates an incoming message.
+```
+
+Swap in the real `ChatSource` later; nothing else changes. The example
+app's `FakeChatSource` is richer (offline switch, failures) but lives in
+`example/`, not in the package.
+
 ## Implementing `ChatSource`
+
+Pick the path by backend:
+
+| Backend | Guide (ships in the package) |
+| --- | --- |
+| Firestore | `doc/adapters/firestore.md` |
+| Supabase | `doc/adapters/supabase.md` |
+| New REST API (kit JSON) | `doc/adapters/rest_websocket.md` + `doc/backend_json.md` |
+| Existing API, own JSON | `doc/adapters/your_api.md` (keys, camelCase, mapper, polling) |
+| REST + other realtime, or none | `doc/adapters/mixing.md` (`ComposedChatSource`, `PollingRealtime`) |
 
 ```dart
 class MyChatSource with ChatSourceDefaults {
@@ -168,16 +199,44 @@ Rules:
   reverse.
 - **`send` is idempotent on `localId`**: use it as the document id, or a
   unique column with "insert or return existing". Return the confirmed
-  message with the server `id` and `createdAt`.
+  message with the server `id` and `createdAt` and the same `localId`
+  (echo `local_id` in realtime events too). The body the server gets has
+  `status: "sending"` and `local_path`; it should ignore both.
 - **Soft delete** (`deletedAt`) so deletions arrive as `Updated` changes.
 - **`events(roomId: null)`** = inbox events (`RoomChanged`,
   `PresenceChanged`); **`events(roomId: id)`** = `MessageChanged`,
   `TypingChanged`, `ReceiptChanged` for that room. Include the sender's own
   messages; the kit deduplicates by `localId`, then `id`.
-- Decode with `Message.fromJson(json, keys: ChatJsonKeys(...))` /
-  `ChatRoom.fromJson`; override only the keys that differ. Dates may be
-  ISO strings, epoch milliseconds or `DateTime` (convert Firestore
-  `Timestamp` first).
+- **Decode** with `Message.fromJson(json, keys:, roomId:)`,
+  `ChatRoom.fromJson(json, keys:)`, `ChatUser.fromJson(json, keys:
+  keys.userKeys)`. The contract is `doc/backend_json.md`. Pick the lightest
+  fit:
+  - other flat names: `ChatJsonKeys(authorId: 'sender_id', typeAliases:
+    {'photo': 'image'}, attachmentKeys: AttachmentJsonKeys(remoteUrl:
+    'file_url'), roomKeys: RoomJsonKeys(updatedAt: ...), userKeys:
+    UserJsonKeys(...))` (members: `RoomJsonKeys(member:
+    MemberJsonKeys(...))`); override only what differs;
+  - camelCase API: `ChatJsonKeys.camelCase`;
+  - nested or split JSON (`sender: {id}`, `files: [...]`): a small mapper
+    that builds the kit-shaped map, then `Message.fromJson` on it (keeps the
+    forgiving parsing). Send with the reverse mapper (switch on the sealed
+    `Message` type) or `MessageCodec(keys:).encode(message)`.
+- **Forgiven on decode** (don't write code for these): numeric ids;
+  dates as ISO, epoch ms, epoch seconds (below 1e11) or numeric strings;
+  missing `room_id` when `roomId:` is passed (message pages usually omit
+  it); attachments as bare URL strings or with `url`; missing `mime_type`
+  (guessed from the extension, else from the message type); a single
+  `attachment` or an `attachments` list for any media type; room without
+  `updated_at` (last message time); members as plain ids; status `read` /
+  `received` in any case; unknown types → `CustomMessage` with the extra
+  fields as `data`. Convert Firestore `Timestamp` to `DateTime` first.
+- **Check real responses once** in a test:
+  `expect(ChatJsonCheck.message(json, keys: keys, roomId: 'r1'), isEmpty)`
+  (also `.room`, `.user`). Issues name the field and the fix; errors mean
+  decoding fails, warnings mean a guess (epoch seconds, no time zone,
+  guessed mime, no image size, unknown type).
+- The kit's cache always uses the default keys: changing `ChatJsonKeys`
+  never needs a migration.
 - Emit `Change<T>` values from `lemsa_core_kit`: `Created(item)`,
   `Updated(item)`, `Deleted(id)`.
 - **`fetchRooms(filter:)`**: apply what the query supports (types, labels,
@@ -196,8 +255,11 @@ Rules:
 
 Full guides with schema, realtime mapping and uploads ship in the package:
 `doc/adapters/firestore.md`, `doc/adapters/supabase.md`,
-`doc/adapters/rest_websocket.md`, `doc/adapters/mixing.md`,
-`doc/adapters/profiles.md`.
+`doc/adapters/rest_websocket.md`, `doc/adapters/your_api.md`,
+`doc/adapters/mixing.md`, `doc/adapters/profiles.md`, and the JSON
+contract `doc/backend_json.md`. The README's "Troubleshooting" maps
+symptoms (images as files, wrong times, duplicates after send, inbox
+order, nothing live, blank avatars on web) to fixes.
 
 ## Several chat lists
 
@@ -474,7 +536,10 @@ or at sign-in), and still provide it to widgets with `ChatKitScope`.
 
 ## Platform setup
 
-- Web: serve `sqlite3.wasm` and `drift_worker.js` from `web/`.
+- Web: `dart run flutter_chat_kit:web_setup` from the app folder downloads
+  `sqlite3.wasm` and `drift_worker.js` into `web/` (versions from
+  `pubspec.lock`); rerun after upgrading drift or sqlite3, or run it in CI
+  before `flutter build web`. Image hosts need CORS headers on the web.
 - Microphone (voice) and camera / photos (pickers) permissions in
   `AndroidManifest.xml`, `Info.plist`, and macOS entitlements
   (`network.client`, `device.audio-input`, `device.camera`,

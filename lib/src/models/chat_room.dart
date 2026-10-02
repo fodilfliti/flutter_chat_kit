@@ -38,26 +38,54 @@ class ChatRoom {
     this.metadata = const {},
   });
 
+  /// Field names come from [keys] (`keys.roomKeys`); [codec], when given,
+  /// replaces [keys] for the room and its `last_message`.
+  ///
+  /// Without `updated_at`, the last message's time is used. The last
+  /// message may leave out its room id. Members can be objects or plain
+  /// user ids.
   factory ChatRoom.fromJson(
     Map<String, Object?> json, {
-    MessageCodec codec = const MessageCodec(),
+    ChatJsonKeys keys = const ChatJsonKeys(),
+    MessageCodec? codec,
   }) {
-    final last = json['last_message'];
+    final messages = codec ?? MessageCodec(keys: keys);
+    final k = messages.keys.roomKeys;
+    final id = readOptionalString(json[k.id]);
+    if (id == null) {
+      throw FormatException(
+        'Room needs "${k.id}"; set RoomJsonKeys(id: ...) if your API names '
+        'it differently. Got the fields ${json.keys.toList()}.',
+      );
+    }
+    final last = json[k.lastMessage];
+    final lastMessage = last is Map
+        ? messages.decode(readMap(last), roomId: id)
+        : null;
+    final updatedAt =
+        readDate(json[k.updatedAt]) ??
+        lastMessage?.createdAt ??
+        (throw FormatException(
+          'Room "$id": missing "${k.updatedAt}" and no "${k.lastMessage}" '
+          'to take the time from. Set RoomJsonKeys(updatedAt: ...) to your '
+          'last activity field.',
+        ));
     return ChatRoom(
-      id: readString(json, 'id'),
-      updatedAt: readRequiredDate(json, 'updated_at'),
-      type: RoomType.parse(json['type']),
-      title: readOptionalString(json['title']),
-      avatarUrl: readOptionalString(json['avatar_url']),
+      id: id,
+      updatedAt: updatedAt,
+      type: RoomType.parse(json[k.type]),
+      title: readOptionalString(json[k.title]),
+      avatarUrl: readOptionalString(json[k.avatarUrl]),
       members: [
-        for (final m in readMapList(json['members'])) RoomMember.fromJson(m),
+        for (final m in readList(json[k.members]))
+          if (m != null) RoomMember.fromJson(m, keys: k.member),
       ],
-      lastMessage: last is Map ? codec.decode(readMap(last)) : null,
-      unreadCount: readInt(json['unread_count']) ?? 0,
-      pinned: readBool(json['pinned']),
-      muted: readBool(json['muted']),
-      labels: readStringSet(json['labels']),
-      metadata: readMap(json['metadata']),
+      lastMessage: lastMessage,
+      unreadCount: readInt(json[k.unreadCount]) ?? 0,
+      pinned: readBool(json[k.pinned]),
+      muted: readBool(json[k.muted]),
+      labels: readStringSet(json[k.labels]),
+      metadata: readMap(json[k.metadata]),
     );
   }
 
@@ -127,21 +155,26 @@ class ChatRoom {
     );
   }
 
-  Map<String, Object?> toJson({MessageCodec codec = const MessageCodec()}) {
+  Map<String, Object?> toJson({
+    ChatJsonKeys keys = const ChatJsonKeys(),
+    MessageCodec? codec,
+  }) {
+    final messages = codec ?? MessageCodec(keys: keys);
+    final k = messages.keys.roomKeys;
     final last = lastMessage;
     return withoutNulls({
-      'id': id,
-      'updated_at': writeDate(updatedAt),
-      'type': type.name,
-      'title': title,
-      'avatar_url': avatarUrl,
-      'members': [for (final m in members) m.toJson()],
-      'last_message': last == null ? null : codec.encode(last),
-      'unread_count': unreadCount,
-      'pinned': pinned,
-      'muted': muted,
-      'labels': labels.isEmpty ? null : (labels.toList()..sort()),
-      'metadata': metadata.isEmpty ? null : metadata,
+      k.id: id,
+      k.updatedAt: writeDate(updatedAt),
+      k.type: type.name,
+      k.title: title,
+      k.avatarUrl: avatarUrl,
+      k.members: [for (final m in members) m.toJson(keys: k.member)],
+      k.lastMessage: last == null ? null : messages.encode(last),
+      k.unreadCount: unreadCount,
+      k.pinned: pinned,
+      k.muted: muted,
+      k.labels: labels.isEmpty ? null : (labels.toList()..sort()),
+      k.metadata: metadata.isEmpty ? null : metadata,
     });
   }
 

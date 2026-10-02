@@ -42,7 +42,7 @@ jobs:
         working-directory: ./example
 
       - name: Download drift web files
-        run: dart run tool/web_assets.dart
+        run: dart run flutter_chat_kit:web_setup
         working-directory: ./example
 
       - name: Build web app

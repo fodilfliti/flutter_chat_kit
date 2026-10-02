@@ -26,10 +26,27 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 ## Endpoints
 
-Bodies use the kit's JSON shape (`Message.toJson()`, `ChatRoom.fromJson`).
-If your server uses other field names, pass
-`ChatJsonKeys(authorId: 'sender_id', ...)` to a `MessageCodec` instead of
-writing mappers.
+Bodies use the kit's JSON shape (`Message.toJson()`, `ChatRoom.fromJson`);
+every field, what is optional and what is forgiven is in
+[Backend JSON](../backend_json.md). If your server uses other field names,
+pass keys instead of writing mappers:
+
+```dart
+static const _keys = ChatJsonKeys(
+  authorId: 'sender_id',
+  roomKeys: RoomJsonKeys(updatedAt: 'last_activity_at'),
+);
+// or: static const _keys = ChatJsonKeys.camelCase;
+static const _codec = MessageCodec(keys: _keys);
+
+ChatRoom.fromJson(json, keys: _keys);
+ChatUser.fromJson(json, keys: _keys.userKeys);
+```
+
+Message lists under `/rooms/{id}/messages` usually leave out `room_id`;
+pass it when decoding: `_codec.decode(json, roomId: roomId)`. For an API
+whose JSON is nested or shaped differently, see
+[Plug in an existing API](your_api.md).
 
 | Kit call | HTTP |
 | --- | --- |
@@ -190,7 +207,7 @@ class RestChatSource implements ChatSource {
       'after_created_at': after?.createdAt.toIso8601String(),
       'after_id': after?.id,
     }),
-    _codec.decode,
+    (json) => _codec.decode(json, roomId: roomId),
   );
 
   @override
@@ -204,7 +221,7 @@ class RestChatSource implements ChatSource {
       '/rooms/$roomId/messages/$messageId/around',
       query: {'limit': '$limit'},
     ),
-    _codec.decode,
+    (json) => _codec.decode(json, roomId: roomId),
   );
 
   @override

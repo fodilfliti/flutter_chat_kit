@@ -27,11 +27,15 @@ sealed class Message {
     this.sentBy,
   });
 
+  /// [roomId] is used when the JSON has no room id, as in the items of
+  /// `GET /rooms/{id}/messages`. See [MessageCodec] for what else is
+  /// accepted.
   factory Message.fromJson(
     Map<String, Object?> json, {
     ChatJsonKeys keys = const ChatJsonKeys(),
+    String? roomId,
   }) {
-    return MessageCodec(keys: keys).decode(json);
+    return MessageCodec(keys: keys).decode(json, roomId: roomId);
   }
 
   final String id;

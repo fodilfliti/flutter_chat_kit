@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_chat_kit/src/models/json_keys.dart';
 import 'package:flutter_chat_kit/src/models/json_utils.dart';
 import 'package:flutter_chat_kit/src/models/message.dart';
 
@@ -26,12 +27,26 @@ class RoomMember {
     this.lastDeliveredAt,
   });
 
-  factory RoomMember.fromJson(Map<String, Object?> json) {
+  /// Reads a member object, or a plain user id.
+  factory RoomMember.fromJson(
+    Object? json, {
+    MemberJsonKeys keys = const MemberJsonKeys(),
+  }) {
+    if (json is String || json is num) return RoomMember(userId: '$json');
+    final map = readMap(json);
+    final userId = readOptionalString(map[keys.userId]);
+    if (userId == null) {
+      throw FormatException(
+        'Room member needs "${keys.userId}"; set MemberJsonKeys(userId: ...) '
+        'if your API names it differently. Got the fields '
+        '${map.keys.toList()}.',
+      );
+    }
     return RoomMember(
-      userId: readString(json, 'user_id'),
-      role: MemberRole.parse(json['role']),
-      lastReadAt: readDate(json['last_read_at']),
-      lastDeliveredAt: readDate(json['last_delivered_at']),
+      userId: userId,
+      role: MemberRole.parse(map[keys.role]),
+      lastReadAt: readDate(map[keys.lastReadAt]),
+      lastDeliveredAt: readDate(map[keys.lastDeliveredAt]),
     );
   }
 
@@ -65,12 +80,12 @@ class RoomMember {
     );
   }
 
-  Map<String, Object?> toJson() {
+  Map<String, Object?> toJson({MemberJsonKeys keys = const MemberJsonKeys()}) {
     return withoutNulls({
-      'user_id': userId,
-      'role': role.name,
-      'last_read_at': writeDate(lastReadAt),
-      'last_delivered_at': writeDate(lastDeliveredAt),
+      keys.userId: userId,
+      keys.role: role.name,
+      keys.lastReadAt: writeDate(lastReadAt),
+      keys.lastDeliveredAt: writeDate(lastDeliveredAt),
     });
   }
 
