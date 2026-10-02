@@ -10,8 +10,9 @@ description: >
   (ChatStyle, presets like WhatsApp or Telegram, bubbles, inbox rows),
   scaling it with flutter_scale_kit, flutter_screenutil or
   flutter_scale_theme_kit, adding custom message types (offers, cards),
-  adding app bar actions to a chat page, or letting one account chat as
-  several profiles (personal and business pages answered by staff) — not for
+  adding app bar actions to a chat page, letting one account chat as
+  several profiles (personal and business pages answered by staff), or
+  wiring the kit into an app's Riverpod providers — not for
   backend SDK code inside the kit, Riverpod inside the kit, or localizing
   inside the kit.
 license: MIT
@@ -564,18 +565,187 @@ languages flip the chat automatically.
 
 ## Riverpod (app side)
 
+First read how the app already uses Riverpod and write the same way:
+code generation (`@riverpod`) or manual providers, file layout, provider
+names, how auth exposes the user, the connectivity package, the router.
+Apps without Riverpod use `ChatKitScope` and `State` pages (see "Pages").
+
+The style adapts to the app; these rules do not (Riverpod 3):
+
+1. One kit provider, kept alive (not auto-dispose): `Future<ChatKit?>`,
+   null when signed out.
+2. Watch only the uid (`ref.watch(auth.select((a) => a.value?.uid))`);
+   `ref.read` the API client. Any other emission closes and reopens the
+   database.
+3. `await kit.open()` first. If it throws, `kit.dispose()` and rethrow:
+   Riverpod 3 retries failed providers and each retry builds a new kit.
+   Give the provider a `retry` limit.
+4. After the await: `if (!ref.mounted) { await kit.close(); kit.dispose();
+   return null; }`, and only then register `ref.onDispose(() =>
+   unawaited(kit.close().then((_) => kit.dispose())))`. Never register it
+   before `open()`: a `close()` during `open()` does nothing and the kit
+   stays open.
+5. Connectivity: a plain `StreamSubscription` that calls `kit.setOnline`,
+   cancelled in `onDispose`. Not `ref.listen`: Riverpod 3 pauses it when
+   no visible widget uses the provider.
+6. One `ChatGate` in `MaterialApp.builder` is the only place with loading
+   and error UI. It must sit above the navigator, because pushed routes
+   are not children of the page that pushed them. When the kit is open it
+   overrides the scoped `readyKitProvider` in a nested `ProviderScope`
+   keyed by `ObjectKey(kit)`, so a new user rebuilds the chat screens.
+7. Controllers: auto-dispose providers that depend on `readyKitProvider`
+   (listed in `dependencies`), never null, with
+   `ref.onDispose(controller.dispose)`. Pages are `ConsumerWidget`s that
+   pass `ref.watch(...)` to `InboxView` / `ChatRoomView`: no `AsyncValue`,
+   no null checks, no spinners in pages (the views show their own).
+8. Sign-out: `await ref.read(chatKitProvider).value?.clearUserData()`,
+   then sign out. Chat widgets are only used while signed in.
+9. Never: `requireValue` on the kit provider inside controller providers
+   (while reloading it returns the old, closed kit), `ChangeNotifierProvider`,
+   chat data copied into `Notifier`s, an app-side send queue, a second kit
+   for the same user.
+10. A family controller is shared by every page with the same room id. If
+    the app can open one room twice in the stack, create that controller in
+    a `ConsumerStatefulWidget` with `ref.read(readyKitProvider).room(id)`
+    and dispose it there.
+11. Callbacks given to the kit (`onAuthExpired`) may run after the provider
+    is gone: check `ref.mounted` before using `ref` in them.
+
+Manual providers:
+
 ```dart
-@riverpod
-ChatKit chatKit(Ref ref) {
-  final uid = ref.watch(currentUserIdProvider);
-  final kit = ChatKit(currentUserId: uid, source: ref.watch(chatSourceProvider));
-  ref.onDispose(kit.close);
-  return kit;
+final chatKitProvider = FutureProvider<ChatKit?>(
+  (ref) async {
+    final uid = ref.watch(authProvider.select((a) => a.value?.uid));
+    if (uid == null) return null;
+    final api = ref.read(apiClientProvider);
+    late final ChatKit kit;
+    kit = ChatKit(
+      currentUserId: uid,
+      source: MyChatSource(api),
+      uploader: MyUploader(api),
+      onAuthExpired: () async {
+        if (!ref.mounted) return;
+        await ref.read(authProvider.notifier).refreshSession();
+        await kit.retryPending();
+      },
+    );
+    try {
+      await kit.open();
+    } catch (_) {
+      kit.dispose();
+      rethrow;
+    }
+    if (!ref.mounted) {
+      await kit.close();
+      kit.dispose();
+      return null;
+    }
+    ref.onDispose(() => unawaited(kit.close().then((_) => kit.dispose())));
+    final online = Connectivity().onConnectivityChanged.listen(
+      (r) => kit.setOnline(online: !r.contains(ConnectivityResult.none)),
+    );
+    ref.onDispose(() => unawaited(online.cancel()));
+    return kit;
+  },
+  retry: (count, error) => count < 3 ? Duration(seconds: 1 << count) : null,
+);
+
+final readyKitProvider = Provider<ChatKit>(
+  dependencies: const [],
+  (ref) => throw StateError('Chat used outside ChatGate (signed out?)'),
+);
+
+final inboxProvider = Provider.autoDispose<InboxController>(
+  dependencies: [readyKitProvider],
+  (ref) {
+    final inbox = ref.watch(readyKitProvider).inbox();
+    ref.onDispose(inbox.dispose);
+    return inbox;
+  },
+);
+
+final roomProvider = Provider.autoDispose.family<ChatRoomController, String>(
+  dependencies: [readyKitProvider],
+  (ref, roomId) {
+    final room = ref.watch(readyKitProvider).room(roomId);
+    ref.onDispose(room.dispose);
+    return room;
+  },
+);
+
+class ChatGate extends ConsumerWidget {
+  const ChatGate({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return switch (ref.watch(chatKitProvider)) {
+      AsyncData(value: final kit?) when kit.isOpen => ProviderScope(
+          overrides: [readyKitProvider.overrideWithValue(kit)],
+          child: KeyedSubtree(key: ObjectKey(kit), child: child),
+        ),
+      AsyncData() => child, // signed out
+      AsyncError() => Scaffold(
+          body: Center(
+            child: TextButton(
+              onPressed: () => ref.invalidate(chatKitProvider),
+              child: const Text('Could not open chat. Retry'),
+            ),
+          ),
+        ),
+      AsyncLoading() => const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+    };
+  }
+}
+
+// MaterialApp(builder: (context, child) => ChatGate(child: child!), ...)
+
+class RoomPage extends ConsumerWidget {
+  const RoomPage({required this.roomId, super.key});
+
+  final String roomId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) =>
+      ChatRoomView(controller: ref.watch(roomProvider(roomId)));
 }
 ```
 
-Open it before showing chat pages (`await kit.open()` in a `FutureProvider`
-or at sign-in), and still provide it to widgets with `ChatKitScope`.
+Badges and other app widgets inside the gate read the same controller and
+listen to it: `ListenableBuilder(listenable: inbox, builder: ...)` with
+`inbox.totalUnread`. Push handlers outside widgets read
+`ref.read(chatKitProvider).value?.activeRoomId.value`.
+
+Code generation, same bodies:
+
+```dart
+Duration? _chatRetry(int count, Object error) =>
+    count < 3 ? Duration(seconds: 1 << count) : null;
+
+@Riverpod(keepAlive: true, retry: _chatRetry)
+Future<ChatKit?> chatKit(Ref ref) async { /* body above */ }
+
+@Riverpod(dependencies: [])
+ChatKit readyKit(Ref ref) => throw StateError('Chat used outside ChatGate');
+
+@Riverpod(dependencies: [readyKit])
+InboxController inbox(Ref ref) { /* kit.inbox(), onDispose */ }
+
+@Riverpod(dependencies: [readyKit])
+ChatRoomController room(Ref ref, String roomId) { /* kit.room(id), onDispose */ }
+```
+
+With code generation and riverpod_lint, widgets that watch these providers
+declare them: `@Dependencies([inbox, room])`. A provider that watches
+`inboxProvider` or `roomProvider` lists them in its `dependencies` too.
+
+Keep the other kit rules: one kit per user, the provider (instead of the
+page) disposes controllers, `ChatStyle` / `ChatStrings` as in the sections
+above.
 
 ## Media
 
@@ -626,7 +796,7 @@ or at sign-in), and still provide it to widgets with `ChatKitScope`.
 | File storage upload | app `ChatUploader` implementation |
 | User names and avatars | `ChatPage.users` / `UsersChanged` from the source; app `ChatUserResolver` for the rest |
 | Account's chat profiles and their unread counts | app / backend, fed to `ChatProfileSwitcher` |
-| Riverpod providers | app (wrap `ChatKit` / controllers) |
+| Riverpod providers | app; follow "Riverpod (app side)" (kit provider, `ChatGate`, scoped controllers) |
 | Translated strings | app, via `ChatStrings` |
 | Chat look and screen scale | app, one `ChatStyle` (or an app widget wrapping it) |
 | Push notifications | app (`switcher.switchTo(profileId)` if needed, then open the room; `kit.activeRoomId` to suppress; `doc/push.md`) |

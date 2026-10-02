@@ -1,6 +1,9 @@
 # Changelog
 
-## [Unreleased]
+## [0.1.0] - 2026-10-02
+
+First release: a backend-agnostic chat room and inbox with an offline
+SQLite cache.
 
 ### Added
 
@@ -32,39 +35,6 @@
 - `ChatConfig.compressVideo` runs the app's compressor (for example `video_compress`) before a video uploads. The bubble shows `ChatStrings.compressing`; a throw sends the original. `maxAttachmentBytes` is checked on the compressed file, and a file still too big fails with `Outbox.fileTooLarge`.
 - `ChatKit.serverNow()`: the device clock corrected by the server's time on confirmed sends. Pending messages use it, so a phone with a wrong clock no longer sorts them above newer replies.
 - Docs: `doc/backend_json.md`, the JSON contract (every message type, attachments, rooms, members, users, pages, value formats, what is forgiven, what the server receives on send, and a "minimum vs nice to have" table); `doc/adapters/your_api.md`, a step-by-step guide to plug in an existing API (endpoint mapping, keys, camelCase, mappers for nested JSON, checks, realtime options, uploads).
-
-### Fixed
-
-- The example's style sheet shows the preset names in the app language (they stayed in English), and the zoom value shows "×" again.
-
-- Date separators, the floating date header, inbox times and "last seen" now use the app locale (they were always English).
-- "last seen" no longer shows its prefix twice in the room app bar.
-
-### Changed
-
-- Decoding forgives what real APIs send:
-  - An attachment can be a bare URL string, and `url` is read when `remote_url` is missing. A missing `mime_type` is guessed from the file extension, else from the message type (`image/*`, `video/*`, `audio/*`), so a URL-only image no longer shows as a file. Any media message accepts a single `attachment` or an `attachments` list.
-  - `Message.fromJson(json, roomId:)` and `MessageCodec.decode(json, roomId:)` fill in a missing `room_id`, as in message list responses. A room's `last_message` takes the room's id.
-  - A room without `updated_at` takes its last message's time. Members can be plain user ids.
-  - Numbers below 100 000 000 000 are read as epoch seconds instead of milliseconds near 1970; numeric date strings work too.
-  - Status is read in any case, and `read` and `received` mean `seen` and `delivered`. `MessageStatus.isKnown` tells whether a value is understood.
-  - Errors name the message or room, the field and the fix (for example "pass roomId: to Message.fromJson").
-- The README's "Connect your backend" is rewritten: a pick-your-path table, the smallest message JSON, what decoding forgives, `ChatJsonKeys`, camelCase and mapper examples, a filled-in `ChatSource`. The quick start starts with `InMemoryChatSource`, web setup is one command, and a new "Troubleshooting" section maps symptoms to fixes. The REST guide links the JSON contract and decodes message pages with `roomId:`. The agent skill covers the new path, keys, checker and demo source.
-- The example's `tool/web_assets.dart` is replaced by the package's `web_setup` command.
-- A `theme:` passed to `InboxView` or `ChatRoomView` is scaled by the `ChatStyle` above it.
-- The README is rewritten for app developers: a 3-step quick start, styling, and a section on screen-size and theme kits. The agent skill covers `ChatStyle` and scaling.
-- The README starts with "Before you start": the packages to add, platform setup and the classes you write. New sections show names and avatars from REST and Supabase, and several custom message types at once. The Supabase, REST + WebSocket and Firestore guides show how to send names with pages and push their changes.
-- Resolver results are saved through the same path as backend users, so a refresh after `userCacheTtl` also updates open screens.
-- Catching up a room that missed messages now fetches the newest page first and walks back with `before` until it meets the cache, at most `maxGapPages` (5) requests. Before, it paged forward with `after` from the cache, which could take dozens of requests and showed old messages first. Past the limit, the fetched pages replace the cached window and older ones load on scroll. `after` is now only used by `PollingRealtime` and after a jump.
-- The README has a "Media, sync and push" section: photo settings, a `video_compress` recipe, what the kit does on resume, reconnect and expired tokens, push, and `PagedMessages`. The agent skill covers the same.
-
-## [0.1.0] - 2026-09-30
-
-First usable release: a backend-agnostic chat room and inbox with an offline
-SQLite cache.
-
-### Added
-
 - Models: sealed `Message` hierarchy (text, image, video, audio, file, system, custom), `ChatRoom`, `RoomMember` read pointers, `Attachment`, keyset cursors, `ChatEvent`, and a configurable JSON codec (`ChatJsonKeys`, `MessageCodec`).
 - Backend contracts `ChatSource`, `ChatUploader`, `ChatUserResolver`; `ChatKit` root, `ChatKitScope`, and `ChatConfig`.
 - Customization surface: `ChatTheme` (`ThemeExtension` with `ColorScheme` fallback), `ChatStrings`, `ChatFormatters`, `ChatBuilders`, `InboxBuilders`, `MessageContext`, `GroupPosition`.
@@ -85,9 +55,30 @@ SQLite cache.
 - Custom messages: the `ChatBuilders.customBuilder` resolver picks a widget from the message data (several cards for one type) and returns null for unknown variants; `ChatBuilders.bubbledCustomTypes` draws custom widgets inside the regular bubble with reply preview, time and ticks.
 - Documentation: adapter guides for Firestore, Supabase and REST + WebSocket, a guide for several chat lists and mixed backends, a guide for profiles and business accounts, a customization cookbook, a full README, the consumer agent skill, and an example app on an in-memory fake backend (offline toggle, random failures, filter chips, live style sheet with presets, product offer, quote and booking messages, 5 000-message room, personal and business profiles).
 
+### Changed
+
+- Decoding forgives what real APIs send:
+  - An attachment can be a bare URL string, and `url` is read when `remote_url` is missing. A missing `mime_type` is guessed from the file extension, else from the message type (`image/*`, `video/*`, `audio/*`), so a URL-only image no longer shows as a file. Any media message accepts a single `attachment` or an `attachments` list.
+  - `Message.fromJson(json, roomId:)` and `MessageCodec.decode(json, roomId:)` fill in a missing `room_id`, as in message list responses. A room's `last_message` takes the room's id.
+  - A room without `updated_at` takes its last message's time. Members can be plain user ids.
+  - Numbers below 100 000 000 000 are read as epoch seconds instead of milliseconds near 1970; numeric date strings work too.
+  - Status is read in any case, and `read` and `received` mean `seen` and `delivered`. `MessageStatus.isKnown` tells whether a value is understood.
+  - Errors name the message or room, the field and the fix (for example "pass roomId: to Message.fromJson").
+- The README's "Connect your backend" is rewritten: a pick-your-path table, the smallest message JSON, what decoding forgives, `ChatJsonKeys`, camelCase and mapper examples, a filled-in `ChatSource`. The quick start starts with `InMemoryChatSource`, web setup is one command, and a new "Troubleshooting" section maps symptoms to fixes. The REST guide links the JSON contract and decodes message pages with `roomId:`. The agent skill covers the new path, keys, checker and demo source.
+- The example's `tool/web_assets.dart` is replaced by the package's `web_setup` command.
+- A `theme:` passed to `InboxView` or `ChatRoomView` is scaled by the `ChatStyle` above it.
+- The README is rewritten for app developers: a 3-step quick start, styling, and a section on screen-size and theme kits. The agent skill covers `ChatStyle` and scaling.
+- The README starts with "Before you start": the packages to add, platform setup and the classes you write. New sections show names and avatars from REST and Supabase, and several custom message types at once. The Supabase, REST + WebSocket and Firestore guides show how to send names with pages and push their changes.
+- Resolver results are saved through the same path as backend users, so a refresh after `userCacheTtl` also updates open screens.
+- Catching up a room that missed messages now fetches the newest page first and walks back with `before` until it meets the cache, at most `maxGapPages` (5) requests. Before, it paged forward with `after` from the cache, which could take dozens of requests and showed old messages first. Past the limit, the fetched pages replace the cached window and older ones load on scroll. `after` is now only used by `PollingRealtime` and after a jump.
+- The README has a "Media, sync and push" section: photo settings, a `video_compress` recipe, what the kit does on resume, reconnect and expired tokens, push, and `PagedMessages`. The agent skill covers the same, plus wiring the kit into Riverpod providers.
+
 ### Fixed
 
 - Avatar and image load errors (for example HTTP 404) no longer reach `FlutterError.onError`; the placeholder is shown instead.
+- The example's style sheet shows the preset names in the app language (they stayed in English), and the zoom value shows "×" again.
+- Date separators, the floating date header, inbox times and "last seen" now use the app locale (they were always English).
+- "last seen" no longer shows its prefix twice in the room app bar.
 
 ## [0.0.1] - 2026-09-30
 
