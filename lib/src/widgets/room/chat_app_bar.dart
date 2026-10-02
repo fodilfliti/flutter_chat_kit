@@ -17,8 +17,19 @@ typedef ChatAppBarBuilder =
     );
 
 /// Customization of [ChatAppBar].
+///
+/// ```dart
+/// ChatRoomView(
+///   controller: room,
+///   appBar: ChatAppBarOptions(
+///     actions: [IconButton(icon: Icon(Icons.call), onPressed: call)],
+///     onTitleTap: () => openRoomInfo(room.roomId),
+///   ),
+/// )
+/// ```
 @immutable
 class ChatAppBarOptions {
+  /// Options with a back button, no actions and no builders by default.
   const ChatAppBarOptions({
     this.actions = const [],
     this.titleBuilder,
@@ -44,11 +55,16 @@ class ChatAppBarOptions {
 
   /// Usually opens the room or profile details.
   final VoidCallback? onTitleTap;
+
+  /// Bar color, also used by the selection app bar. Defaults to
+  /// `ChatAppBarStyle.backgroundColor` of the theme.
   final Color? backgroundColor;
 
   /// Shows a back button when the route can be popped.
   final bool showBack;
 
+  /// A copy with the given fields replaced. Nullable fields cannot be set
+  /// back to null this way.
   ChatAppBarOptions copyWith({
     List<Widget>? actions,
     ChatAppBarBuilder? titleBuilder,
@@ -77,6 +93,8 @@ class ChatAppBarOptions {
 /// Presence arrives while an inbox is open (see
 /// `ChatRepository.presenceChanges`).
 class ChatAppBar extends StatefulWidget implements PreferredSizeWidget {
+  /// The bar of [controller]'s room. `ChatRoomView` builds one; use it
+  /// directly in a custom room screen.
   const ChatAppBar({
     required this.controller,
     this.options = const ChatAppBarOptions(),
@@ -85,9 +103,17 @@ class ChatAppBar extends StatefulWidget implements PreferredSizeWidget {
     super.key,
   });
 
+  /// The room whose name, avatar, typing and presence are shown.
   final ChatRoomController controller;
+
+  /// Actions, builders, title tap and color.
   final ChatAppBarOptions options;
+
+  /// Texts of the subtitle ("online", "typing", member count) and the back
+  /// tooltip.
   final ChatStrings strings;
+
+  /// Formats the "last seen" time.
   final ChatFormatters formatters;
 
   @override

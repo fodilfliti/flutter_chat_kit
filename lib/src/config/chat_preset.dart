@@ -34,6 +34,8 @@ enum ChatTiles {
 /// ```
 @immutable
 class ChatPreset {
+  /// A preset named [name]. Without [build] the base is
+  /// `ChatTheme.fallback`; null options leave `ChatStyle`'s defaults.
   const ChatPreset({
     required this.name,
     this.seedColor,
@@ -52,15 +54,31 @@ class ChatPreset {
 
   /// Chat colors come from this seed; null keeps the app's colors.
   final Color? seedColor;
+
+  /// Makes the base theme from the chat's color scheme and text theme;
+  /// the place for gradients, wallpapers and per-part colors.
   final ChatThemeFactory build;
+
+  /// Default for `ChatStyle.bubbleRadius`: bubble corner radius.
   final double? bubbleRadius;
+
+  /// Default for `ChatStyle.bubbleShadows`: a soft shadow under bubbles.
   final bool? bubbleShadows;
+
+  /// Default for `ChatStyle.bubbleBorder`: a thin outline around bubbles.
   final bool? bubbleBorder;
 
   /// Merged into the message text of both bubbles.
   final TextStyle? messageStyle;
+
+  /// Default for `ChatStyle.tiles`: layout of the inbox rows.
   final ChatTiles? tiles;
+
+  /// Default for `ChatStyle.tileRadius`: corner radius of card rows.
   final double? tileRadius;
+
+  /// Default for `ChatStyle.squareAvatars`: rounded squares instead of
+  /// circles.
   final bool? squareAvatars;
 
   static ChatTheme _fallback(ColorScheme scheme, TextTheme text) =>
@@ -152,6 +170,7 @@ class ChatPreset {
     tileRadius: 22,
   );
 
+  /// Every built-in preset, for a style picker.
   static const List<ChatPreset> values = [
     classic,
     whatsApp,

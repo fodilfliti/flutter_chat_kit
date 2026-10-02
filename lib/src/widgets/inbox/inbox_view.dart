@@ -24,7 +24,16 @@ typedef ChatRoomPageBuilder =
 /// surrounding `ChatStyle`, or calls [onRoomTap] for your own navigation
 /// (a router package, a split view). Long press shows the swipe actions in
 /// a sheet unless [onRoomLongPress] is set.
+///
+/// ```dart
+/// InboxView(
+///   controller: inbox, // kit.inbox(), disposed by the caller
+///   roomBuilder: (context, room) => RoomPage(kit: kit, roomId: room.id),
+/// )
+/// ```
 class InboxView extends StatefulWidget {
+  /// A room list for [controller]. Pass [roomBuilder] or [onRoomTap]
+  /// (asserted).
   const InboxView({
     required this.controller,
     this.onRoomTap,
@@ -43,6 +52,7 @@ class InboxView extends StatefulWidget {
          'Pass roomBuilder (or onRoomTap for your own navigation).',
        );
 
+  /// The rooms shown, from `ChatKit.inbox`. The caller disposes it.
   final InboxController controller;
 
   /// Your own navigation; wins over [roomBuilder]. Use
@@ -52,8 +62,16 @@ class InboxView extends StatefulWidget {
   /// Pushes this page with `ChatStyle.push`, so the room keeps the style
   /// of the list.
   final ChatRoomPageBuilder? roomBuilder;
+
+  /// Called with the long-pressed room. Null: a sheet shows the pin and
+  /// mute actions (or those from `InboxBuilders.swipeActions`).
   final ValueChanged<ChatRoom>? onRoomLongPress;
+
+  /// Replaces or wraps tiles, empty and error states, and swipe actions.
   final InboxBuilders builders;
+
+  /// Shows the search bar above the list, which filters by room title and
+  /// member name. Defaults to true.
   final bool showSearch;
 
   /// Shown below the search bar, such as stories or a banner.
@@ -62,10 +80,15 @@ class InboxView extends StatefulWidget {
   /// Applied to this list only; defaults to the ambient `ChatTheme`. The
   /// scale of a surrounding `ChatStyle` still applies.
   final ChatTheme? theme;
+
+  /// Every visible text (English by default); override for translations.
   final ChatStrings strings;
+
+  /// Times and dates shown on the tiles.
   final ChatFormatters formatters;
 
   /// Distance from the end, in pixels, at which the next page loads.
+  /// Defaults to 400.
   final double loadMoreThreshold;
 
   @override

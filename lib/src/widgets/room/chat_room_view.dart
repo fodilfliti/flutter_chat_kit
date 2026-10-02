@@ -31,7 +31,26 @@ typedef ChatRoomAppBarBuilder =
 /// Creates and disposes its own [ComposerController] unless [composer] is
 /// given. The room [controller] belongs to the caller. The view never
 /// navigates; taps are reported through callbacks.
+///
+/// ```dart
+/// class _RoomPageState extends State<RoomPage> {
+///   late final room = widget.kit.room(widget.roomId);
+///
+///   @override
+///   Widget build(BuildContext context) => ChatRoomView(controller: room);
+///
+///   @override
+///   void dispose() {
+///     room.dispose();
+///     super.dispose();
+///   }
+/// }
+/// ```
+///
+/// See doc/customization.md for builders, styles and strings.
 class ChatRoomView extends StatefulWidget {
+  /// A room screen for [controller]. Only [controller] is required; every
+  /// other parameter has a working default.
   const ChatRoomView({
     required this.controller,
     this.composer,
@@ -57,10 +76,16 @@ class ChatRoomView extends StatefulWidget {
     super.key,
   });
 
+  /// The room shown, from `ChatKit.room`. The caller disposes it.
   final ChatRoomController controller;
 
-  /// Defaults to one owned by the view.
+  /// The text field's state (draft, reply, edit). Pass one to control the
+  /// composer from outside, for example to prefill text. Defaults to one
+  /// owned by the view.
   final ComposerController? composer;
+
+  /// Actions, title tap, builders and color of the room app bar. Defaults
+  /// to avatar, room name and subtitle with a back button.
   final ChatAppBarOptions appBar;
 
   /// Applied last, to either bar; can hide it. `ChatBuilders.appBarBuilder`
@@ -76,19 +101,40 @@ class ChatRoomView extends StatefulWidget {
 
   /// Defaults to the kit's config.
   final ChatConfig? config;
+
+  /// Every visible text (English by default); override for translations.
   final ChatStrings strings;
+
+  /// Times, dates, file sizes and durations shown in the room.
   final ChatFormatters formatters;
 
   /// Shown between the app bar and the messages, such as a pinned message
   /// or a banner.
   final Widget? header;
+
+  /// Called with the tapped message. Null: a tap does nothing (long press
+  /// still opens the actions sheet). While selecting, taps toggle the
+  /// selection instead.
   final MessageCallback? onMessageTap;
+
+  /// Called with the author id when an avatar next to a message is tapped,
+  /// for example to open a profile. Null: avatars are not tappable.
   final ValueChanged<String>? onAvatarTap;
+
+  /// Called with the `https:`, `mailto:` or `tel:` URI of a tapped link,
+  /// usually to launch it. Null: links are styled but not tappable.
   final LinkTapCallback? onLinkTap;
 
   /// Replaces opening the media viewer or saving the file.
   final AttachmentTapCallback? onAttachmentTap;
+
+  /// Picks files when an attachment sheet option with a source is chosen.
+  /// Defaults to `DefaultAttachmentPicker` (`image_picker` and
+  /// `file_picker`).
   final AttachmentPicker? onAttachmentPick;
+
+  /// App options added after camera, gallery, video and file in the
+  /// attachment sheet, such as "Location" or "Offer". Empty by default.
   final List<AttachmentOption> extraAttachmentOptions;
 
   /// Shows the hold-to-record mic. Voice also needs a `ChatKit.uploader`.
@@ -103,12 +149,17 @@ class ChatRoomView extends StatefulWidget {
   /// Painted behind the messages, such as a wallpaper; replaces
   /// `ChatMessageListStyle.background`.
   final Widget? background;
+
+  /// Color of the whole screen behind the list and the composer. Defaults
+  /// to the `Scaffold` background of the app theme.
   final Color? backgroundColor;
 
   @override
   State<ChatRoomView> createState() => ChatRoomViewState();
 }
 
+/// State of [ChatRoomView]. Reach it with a `GlobalKey` to use the
+/// [composer] the view created.
 class ChatRoomViewState extends State<ChatRoomView> {
   ComposerController? _ownComposer;
 

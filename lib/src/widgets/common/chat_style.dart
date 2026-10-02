@@ -41,6 +41,8 @@ typedef ChatThemeMapper = ChatTheme Function(ChatTheme theme);
 /// this style and follow its changes. Sheets and dialogs opened from
 /// inside keep it too.
 class ChatStyle extends StatefulWidget {
+  /// Styles [child]; every option is null by default, which keeps the
+  /// inherited or app value. See doc/customization.md.
   const ChatStyle({
     required this.child,
     this.preset,
@@ -76,6 +78,7 @@ class ChatStyle extends StatefulWidget {
        customize = null,
        scale = null;
 
+  /// The chat screens to style.
   final Widget child;
 
   /// A ready-made look; its values are defaults for the options below.

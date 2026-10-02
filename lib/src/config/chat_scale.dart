@@ -27,6 +27,8 @@ typedef ChatScaler = ChatScale Function(BuildContext context);
 /// [text]; do not include it.
 @immutable
 class ChatScale {
+  /// Multiplies sizes by [size] and fonts by [text], which defaults to
+  /// [size].
   const ChatScale(this.size, {double? text}) : text = text ?? size;
 
   /// No scaling.

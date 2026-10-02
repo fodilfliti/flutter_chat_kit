@@ -5,8 +5,23 @@ import 'package:flutter_chat_kit/src/media/default_pickers.dart';
 
 /// One button of the [AttachmentSheet]. App options (for example "Offer"
 /// opening the app's own form, then `sendCustom`) use [onSelected].
+///
+/// ```dart
+/// ChatRoomView(
+///   controller: room,
+///   extraAttachmentOptions: [
+///     AttachmentOption(
+///       icon: Icons.local_offer_outlined,
+///       label: 'Offer',
+///       onSelected: () => showOfferForm(context, room),
+///     ),
+///   ],
+/// )
+/// ```
 @immutable
 class AttachmentOption {
+  /// A button with [icon] and [label]. Give [onSelected] for app options;
+  /// [source] is for the built-in pickers.
   const AttachmentOption({
     required this.icon,
     required this.label,
@@ -15,7 +30,10 @@ class AttachmentOption {
     this.color,
   });
 
+  /// Icon inside the round button.
   final IconData icon;
+
+  /// Text under the button.
   final String label;
 
   /// Called after the sheet closes.
@@ -23,6 +41,9 @@ class AttachmentOption {
 
   /// Set for the built-in options; the composer picks from it.
   final AttachmentSource? source;
+
+  /// Background of the round button. Defaults to the composer's send
+  /// button color.
   final Color? color;
 
   /// Camera, gallery, video and file, labeled from [strings].
@@ -56,10 +77,14 @@ class AttachmentOption {
 
 /// A bottom sheet grid of [options]; [show] returns the chosen one.
 class AttachmentSheet extends StatelessWidget {
+  /// A grid of [options]. Usually opened with [show].
   const AttachmentSheet({required this.options, super.key});
 
+  /// The buttons, in order.
   final List<AttachmentOption> options;
 
+  /// Opens the sheet over [context] and returns the tapped option, or null
+  /// when dismissed.
   static Future<AttachmentOption?> show(
     BuildContext context, {
     required List<AttachmentOption> options,
