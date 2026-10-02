@@ -1,15 +1,15 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_chat_pro/src/models/attachment.dart';
+import 'package:flutter_chat_pro/src/platform/io.dart';
+import 'package:flutter_chat_pro/src/platform/video.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:stream_thumbnail/stream_thumbnail.dart';
-import 'package:video_player/video_player.dart';
 
 /// Where the composer's attachment sheet picks from.
 enum AttachmentSource { camera, gallery, video, file }

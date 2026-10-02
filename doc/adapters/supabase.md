@@ -6,7 +6,7 @@ the kit never depends on `supabase_flutter`.
 
 ```yaml
 dependencies:
-  flutter_chat_pro: ^0.1.0
+  flutter_chat_pro: ^1.0.0
   lemsa_core_kit: ^1.1.0
   supabase_flutter: ^2.18.0
 ```

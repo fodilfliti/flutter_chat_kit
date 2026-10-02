@@ -8,7 +8,7 @@ kit never depends on Firebase.
 dependencies:
   cloud_firestore: ^6.10.0
   firebase_storage: ^13.6.0
-  flutter_chat_pro: ^0.1.0
+  flutter_chat_pro: ^1.0.0
   lemsa_core_kit: ^1.1.0
 ```
 

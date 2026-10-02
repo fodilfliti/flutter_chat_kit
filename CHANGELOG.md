@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.0] - 2026-10-02
+
+First stable release. The API is the same as 0.1.0.
+
+### Added
+
+- WebAssembly support (`flutter build web --wasm`). WebAssembly builds play videos and voice notes with the browser's own media elements and load images with `NetworkImage`. Native and JavaScript web builds keep `video_player`, `audioplayers` and `cached_network_image`.
+- `web` is now a direct dependency.
+
+### Fixed
+
+- The emoji check in `TextMessageView` passes static analysis on every analyzer version.
+
 ## [0.1.0] - 2026-10-02
 
 First release: a backend-agnostic chat room and inbox with an offline

@@ -1,6 +1,6 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_pro/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/platform/io.dart';
 
 /// An avatar: the image at [url] over the initials of [name], round or
 /// rounded per `ChatAvatarStyle.radius`.
@@ -50,18 +50,16 @@ class ChatAvatar extends StatelessWidget {
           ),
           if (image != null && image.isNotEmpty)
             Image(
-              image: CachedNetworkImageProvider(image, errorListener: _ignore),
+              image: networkImage(image),
               fit: BoxFit.cover,
               gaplessPlayback: true,
+              // Failed loads (offline, 404) fall back to the initials.
               errorBuilder: (_, _, _) => const SizedBox.shrink(),
             ),
         ],
       ),
     );
   }
-
-  /// Failed loads (offline, 404) fall back to the initials.
-  static void _ignore(Object _) {}
 
   /// Up to two initials: first letters of the first and last words.
   static String initialsOf(String name) {

@@ -1,13 +1,12 @@
 import 'dart:async';
-import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_pro/src/config/chat_strings.dart';
 import 'package:flutter_chat_pro/src/config/chat_theme.dart';
 import 'package:flutter_chat_pro/src/media/chat_media_store.dart';
 import 'package:flutter_chat_pro/src/models/attachment.dart';
+import 'package:flutter_chat_pro/src/platform/io.dart';
 import 'package:flutter_chat_pro/src/widgets/media/chat_media_scope.dart';
 
 /// An attachment image that fills its box.
@@ -98,7 +97,7 @@ class _ChatImageState extends State<ChatImage> {
         local != null &&
         (!widget.thumbnail || a.kind == AttachmentKind.image) &&
         File(local).existsSync()) {
-      _provider = FileImage(File(local));
+      _provider = fileImage(local);
       return;
     }
     if (poster != null) {
@@ -107,21 +106,19 @@ class _ChatImageState extends State<ChatImage> {
         return;
       }
       if (File(poster).existsSync()) {
-        _provider = FileImage(File(poster));
+        _provider = fileImage(poster);
         return;
       }
     }
     final url = _url;
     if (url == null) return;
     if (store == null || !store.isSupported) {
-      // The errorBuilder shows the failure; the listener keeps it out of
-      // the error log.
-      _provider = CachedNetworkImageProvider(url, errorListener: (_) {});
+      _provider = networkImage(url);
       return;
     }
     final known = store.peek(url);
     if (known != null) {
-      _provider = FileImage(known);
+      _provider = fileImage(known.path);
       return;
     }
     final auto = widget.autoDownload ?? scope.autoDownload.contains(a.kind);
@@ -140,7 +137,7 @@ class _ChatImageState extends State<ChatImage> {
       if (!mounted || _resolvedFor != key) return;
       setState(() {
         if (file != null) {
-          _provider = FileImage(file);
+          _provider = fileImage(file.path);
         } else {
           _waitingForTap = true;
         }

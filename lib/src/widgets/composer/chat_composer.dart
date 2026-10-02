@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +11,7 @@ import 'package:flutter_chat_pro/src/controllers/voice_recorder_controller.dart'
 import 'package:flutter_chat_pro/src/media/default_pickers.dart';
 import 'package:flutter_chat_pro/src/models/attachment.dart';
 import 'package:flutter_chat_pro/src/models/message.dart';
+import 'package:flutter_chat_pro/src/platform/io.dart';
 import 'package:flutter_chat_pro/src/widgets/composer/attachment_sheet.dart';
 import 'package:flutter_chat_pro/src/widgets/composer/reply_edit_banner.dart';
 import 'package:flutter_chat_pro/src/widgets/composer/staged_attachments.dart';

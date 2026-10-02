@@ -93,7 +93,7 @@ Do these three things once. Everything after this section builds on them.
 
 ```yaml
 dependencies:
-  flutter_chat_pro: ^0.1.0
+  flutter_chat_pro: ^1.0.0
   lemsa_core_kit: ^1.1.0 # the AppFailure errors your ChatSource throws
 ```
 
@@ -146,6 +146,11 @@ dart run flutter_chat_pro:web_setup
 Run it from your app folder after `flutter pub get`, and again after
 upgrading drift or sqlite3. Commit the two files, or run the command in CI
 before `flutter build web`.
+
+WebAssembly builds (`flutter build web --wasm`) work too. There, videos and
+voice notes play in the browser's own media elements and images load with
+`NetworkImage`; JavaScript builds keep `video_player`, `audioplayers` and
+`cached_network_image`.
 
 **Linux**: voice playback uses GStreamer
 (`libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev`).

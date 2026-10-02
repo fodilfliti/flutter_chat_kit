@@ -6,7 +6,7 @@ use `package:http` and `package:web_socket_channel`, but any client works.
 
 ```yaml
 dependencies:
-  flutter_chat_pro: ^0.1.0
+  flutter_chat_pro: ^1.0.0
   http: ^1.6.0
   lemsa_core_kit: ^1.1.0
   web_socket_channel: ^3.0.3

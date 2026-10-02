@@ -1,10 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_pro/src/config/chat_strings.dart';
 import 'package:flutter_chat_pro/src/config/chat_theme.dart';
 import 'package:flutter_chat_pro/src/models/attachment.dart';
+import 'package:flutter_chat_pro/src/platform/io.dart';
 import 'package:flutter_chat_pro/src/widgets/messages/file_message_view.dart';
 
 /// Files picked but not sent yet: a row of thumbnails, each with a remove
@@ -68,10 +67,13 @@ class _Thumb extends StatelessWidget {
     final local = file.localPath;
     Widget preview;
     if (file.kind == AttachmentKind.image && local != null && !kIsWeb) {
-      preview = Image.file(
-        File(local),
+      preview = Image(
+        image: ResizeImage.resizeIfNeeded(
+          (size * dpr).round(),
+          null,
+          fileImage(local),
+        ),
         fit: BoxFit.cover,
-        cacheWidth: (size * dpr).round(),
         errorBuilder: (_, _, _) => _icon(theme, Icons.broken_image_outlined),
       );
     } else if (file.kind == AttachmentKind.image && local != null) {

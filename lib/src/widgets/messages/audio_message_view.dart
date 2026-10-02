@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +8,7 @@ import 'package:flutter_chat_pro/src/config/chat_theme.dart';
 import 'package:flutter_chat_pro/src/controllers/audio_player_hub.dart';
 import 'package:flutter_chat_pro/src/media/chat_media_store.dart';
 import 'package:flutter_chat_pro/src/models/message.dart';
+import 'package:flutter_chat_pro/src/platform/io.dart';
 import 'package:flutter_chat_pro/src/widgets/media/chat_media_scope.dart';
 
 /// A voice message: play / pause, waveform bars colored up to the position
