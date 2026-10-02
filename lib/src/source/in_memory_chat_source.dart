@@ -32,6 +32,12 @@ import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 /// Media needs a `ChatUploader`; without one the kit hides the attach and
 /// mic buttons, and text chat works fully.
 class InMemoryChatSource with ChatSourceDefaults {
+  /// An in-memory backend seen by [currentUserId], starting with [rooms],
+  /// [messages] (by room id, any order) and [users]. All start empty; use
+  /// [InMemoryChatSource.sample] for ready-made content.
+  ///
+  /// [clock] gives server times (UTC now by default); [random] picks auto
+  /// reply texts and authors.
   InMemoryChatSource({
     required this.currentUserId,
     Iterable<ChatRoom> rooms = const [],
@@ -178,6 +184,8 @@ class InMemoryChatSource with ChatSourceDefaults {
     );
   }
 
+  /// The user this source acts for: [markRead], [react] and unread counts
+  /// apply to them. Use the same id as `ChatKit.currentUserId`.
   final String currentUserId;
 
   /// After each message you send, another member reads it, types, and
@@ -190,6 +198,8 @@ class InMemoryChatSource with ChatSourceDefaults {
   /// Waits this long in every call, like a network.
   Duration latency;
 
+  /// Server time, in UTC: `createdAt` of sent messages, `editedAt`,
+  /// `deletedAt` and presence times.
   final DateTime Function() clock;
   final Random _random;
 
@@ -248,6 +258,8 @@ class InMemoryChatSource with ChatSourceDefaults {
     ),
   );
 
+  /// Cancels pending auto replies and closes the event streams. Call it
+  /// after the `ChatKit` using this source is closed.
   Future<void> dispose() async {
     _disposed = true;
     for (final t in _timers) {

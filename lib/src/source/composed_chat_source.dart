@@ -19,11 +19,18 @@ import 'package:flutter_chat_kit/src/source/chat_source.dart';
 /// ```
 ///
 /// A full `ChatSource` is also a `ChatDataSource` and a `ChatRealtime`, so
-/// either side can reuse an existing adapter.
+/// either side can reuse an existing adapter. See doc/adapters/mixing.md.
 class ComposedChatSource implements ChatSource {
+  /// Sends every read and write to [data] and every subscription and typing
+  /// update to [realtime].
   const ComposedChatSource({required this.data, required this.realtime});
 
+  /// Handles `fetchRooms`, `fetchMessages`, `fetchAround`, `send`, `edit`,
+  /// `delete`, `markRead`, `react`, `setPinned` and `setMuted`.
   final ChatDataSource data;
+
+  /// Handles `events` and `setTyping`. Its messages must use the same ids
+  /// as [data] (or echo `local_id`), or the kit shows duplicates.
   final ChatRealtime realtime;
 
   @override

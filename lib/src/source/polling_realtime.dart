@@ -34,7 +34,11 @@ import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 ///   realtime: PollingRealtime(api),
 /// );
 /// ```
+///
+/// See doc/adapters/rest_websocket.md and doc/adapters/mixing.md.
 class PollingRealtime implements ChatRealtime {
+  /// Polls [data]; intervals and page sizes default to values suited to a
+  /// small REST API.
   PollingRealtime(
     this.data, {
     this.roomInterval = const Duration(seconds: 3),
@@ -44,17 +48,25 @@ class PollingRealtime implements ChatRealtime {
     this.maxCatchUpPages = 10,
   });
 
+  /// The API polled with `fetchMessages` and `fetchRooms`.
   final ChatDataSource data;
+
+  /// Time between two polls of an open room; new messages appear at most
+  /// this late. Defaults to 3 seconds. The first poll runs at once.
   final Duration roomInterval;
+
+  /// Time between two polls of the room list while an inbox is open.
+  /// Defaults to 15 seconds.
   final Duration inboxInterval;
 
-  /// Messages fetched per room poll.
+  /// Messages fetched per room poll. Defaults to 30.
   final int pageSize;
 
-  /// Rooms fetched per inbox poll.
+  /// Rooms fetched per inbox poll. Defaults to 20.
   final int roomsPageSize;
 
-  /// Upper bound of forward pages read after a burst, per poll.
+  /// Upper bound of forward pages read after a burst, per poll. Defaults
+  /// to 10.
   final int maxCatchUpPages;
 
   @override
