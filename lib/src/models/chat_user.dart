@@ -2,9 +2,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_chat_kit/src/models/json_keys.dart';
 import 'package:flutter_chat_kit/src/models/json_utils.dart';
 
-/// A person who can author messages.
+/// A person who can author messages: the name and avatar shown on bubbles,
+/// inbox rows and app bars.
+///
+/// The kit gets users from `ChatPage.users`, the `UsersChanged` event,
+/// `ChatKit.updateUsers` or a `ChatUserResolver`, and caches them. Field
+/// names come from [UserJsonKeys]:
+///
+/// ```json
+/// {"id": "u2", "name": "Lina Mansouri",
+///  "avatar_url": "https://cdn.example.com/u2.jpg"}
+/// ```
 @immutable
 class ChatUser {
+  /// A user; [id] and [name] are required.
   const ChatUser({
     required this.id,
     required this.name,
@@ -12,6 +23,11 @@ class ChatUser {
     this.metadata = const {},
   });
 
+  /// Reads a user from backend JSON.
+  ///
+  /// `id` (a string or a number) is required, else it throws a
+  /// [FormatException]. A missing `name` reads as an empty string. Check
+  /// real responses with `ChatJsonCheck.user`.
   factory ChatUser.fromJson(
     Map<String, Object?> json, {
     UserJsonKeys keys = const UserJsonKeys(),
@@ -31,13 +47,21 @@ class ChatUser {
     );
   }
 
+  /// The user id (JSON `id`), matching `Message.authorId` and
+  /// `RoomMember.userId`.
   final String id;
+
+  /// The display name (JSON `name`).
   final String name;
+
+  /// The profile picture (JSON `avatar_url`). Without it the avatar shows
+  /// the name's initials.
   final String? avatarUrl;
 
   /// App extras (role, verified badge, ...), round-tripped untouched.
   final Map<String, Object?> metadata;
 
+  /// A copy with the given fields replaced; null keeps the current value.
   ChatUser copyWith({
     String? id,
     String? name,
@@ -52,6 +76,8 @@ class ChatUser {
     );
   }
 
+  /// This user as JSON with the names of [keys]; null and empty fields are
+  /// left out.
   Map<String, Object?> toJson({UserJsonKeys keys = const UserJsonKeys()}) {
     return withoutNulls({
       keys.id: id,

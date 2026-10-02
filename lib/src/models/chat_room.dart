@@ -6,11 +6,21 @@ import 'package:flutter_chat_kit/src/models/message.dart';
 import 'package:flutter_chat_kit/src/models/message_cursor.dart';
 import 'package:flutter_chat_kit/src/models/room_member.dart';
 
+/// The kind of conversation, which changes how the room is drawn.
 enum RoomType {
+  /// Two people. The app bar and inbox row show the other member's avatar,
+  /// online state and, when the room has no title, name.
   direct,
+
+  /// Several people. Bubbles show the author's name and avatar; the app bar
+  /// shows the member count.
   group,
+
+  /// Like [group], for broadcast-style rooms.
   channel;
 
+  /// Reads `direct`, `group` or `channel`; anything else, or a missing
+  /// value, reads as [direct].
   static RoomType parse(Object? value) {
     if (value is! String) return RoomType.direct;
     return RoomType.values.asNameMap()[value] ?? RoomType.direct;
@@ -21,8 +31,22 @@ enum RoomType {
 ///
 /// [unreadCount], [pinned] and [muted] are per-user values, like the
 /// "one conversation row per member" model.
+///
+/// Read backend JSON with [ChatRoom.fromJson]; field names come from
+/// `RoomJsonKeys`. Only `id` is required, plus `updated_at` or a
+/// `last_message` to take the time from:
+///
+/// ```json
+/// {"id": "r1", "type": "group", "title": "Weekend trip",
+///  "updated_at": "2026-01-02T10:06:00Z", "unread_count": 2,
+///  "members": [{"user_id": "u1", "last_read_at": "2026-01-02T10:00:00Z"},
+///    "u2"],
+///  "last_message": {"id": "m7", "author_id": "u2",
+///    "created_at": "2026-01-02T10:06:00Z", "text": "Deal!"}}
+/// ```
 @immutable
 class ChatRoom {
+  /// A room; [id] and [updatedAt] are required.
   const ChatRoom({
     required this.id,
     required this.updatedAt,
@@ -38,12 +62,25 @@ class ChatRoom {
     this.metadata = const {},
   });
 
+  /// Reads a room from backend JSON.
+  ///
   /// Field names come from [keys] (`keys.roomKeys`); [codec], when given,
   /// replaces [keys] for the room and its `last_message`.
   ///
-  /// Without `updated_at`, the last message's time is used. The last
-  /// message may leave out its room id. Members can be objects or plain
-  /// user ids.
+  /// Without `updated_at`, the last message's `created_at` is used; with
+  /// neither, or without `id`, it throws a [FormatException] that names the
+  /// field. The last message may leave out its room id. Members can be
+  /// objects or plain user ids. `pinned` and `muted` accept booleans, 0/1
+  /// or `"true"`; `labels` accepts a list or one string. Check real
+  /// responses with `ChatJsonCheck.room`.
+  ///
+  /// ```dart
+  /// final rooms = [
+  ///   for (final item in body['rooms'] as List)
+  ///     ChatRoom.fromJson(item as Map<String, Object?>,
+  ///         keys: ChatJsonKeys.camelCase),
+  /// ];
+  /// ```
   factory ChatRoom.fromJson(
     Map<String, Object?> json, {
     ChatJsonKeys keys = const ChatJsonKeys(),
@@ -89,32 +126,68 @@ class ChatRoom {
     );
   }
 
+  /// The room id (JSON `id`), a string or a number. Required.
   final String id;
 
-  /// Last activity; the inbox sorts by this.
+  /// Last activity (JSON `updated_at`); the inbox sorts by this, newest
+  /// first. Falls back to the last message's time when missing.
   final DateTime updatedAt;
+
+  /// Direct, group or channel (JSON `type`); defaults to
+  /// [RoomType.direct].
   final RoomType type;
 
-  /// Null for direct rooms; the UI shows the other member's name.
+  /// The room name (JSON `title`). Usually null for direct rooms. Without
+  /// it, a direct room shows the other member's name and a group lists its
+  /// members' names.
   final String? title;
+
+  /// The room picture (JSON `avatar_url`). Direct rooms prefer the other
+  /// member's avatar and fall back to this; groups without it show two
+  /// stacked member avatars.
   final String? avatarUrl;
+
+  /// Who is in the room (JSON `members`), as objects or plain user ids.
+  ///
+  /// Their read pointers drive the ticks on my messages, and in direct
+  /// rooms the other member gives the name, avatar and online state.
+  /// Without members, ticks come only from `Message.status`.
   final List<RoomMember> members;
+
+  /// The newest message (JSON `last_message`), shown as the inbox preview.
   final Message? lastMessage;
+
+  /// Unread messages for the current user (JSON `unread_count`), shown as
+  /// the inbox badge. Defaults to 0.
   final int unreadCount;
+
+  /// Whether the current user pinned the room to the top of the inbox
+  /// (JSON `pinned`).
   final bool pinned;
+
+  /// Whether the current user muted the room (JSON `muted`); the inbox row
+  /// shows a muted icon and a badge in `ChatBadgeStyle.mutedColor`.
   final bool muted;
 
   /// App-defined categories of this room for the current user, such as
-  /// `archived`, `selling` or `support`. `RoomFilter.labels` selects them.
+  /// `archived`, `selling` or `support` (JSON `labels`). `RoomFilter.labels`
+  /// selects them.
   final Set<String> labels;
+
+  /// App extras (JSON `metadata`), kept untouched. The kit never reads it.
   final Map<String, Object?> metadata;
 
+  /// Whether [type] is [RoomType.direct].
   bool get isDirect => type == RoomType.direct;
 
+  /// Whether [labels] contains [label].
   bool hasLabel(String label) => labels.contains(label);
 
+  /// This room's position in the inbox, for paging with
+  /// `ChatSource.fetchRooms`.
   RoomCursor get cursor => RoomCursor(updatedAt, id);
 
+  /// The member with [userId], or null.
   RoomMember? member(String userId) {
     return members.firstWhereOrNull((m) => m.userId == userId);
   }
@@ -125,6 +198,7 @@ class ChatRoom {
     return members.firstWhereOrNull((m) => m.userId != currentUserId)?.userId;
   }
 
+  /// A copy with the given fields replaced; null keeps the current value.
   ChatRoom copyWith({
     String? id,
     DateTime? updatedAt,
@@ -155,6 +229,8 @@ class ChatRoom {
     );
   }
 
+  /// This room as JSON with the names of [keys] (or [codec]); null and
+  /// empty fields are left out.
   Map<String, Object?> toJson({
     ChatJsonKeys keys = const ChatJsonKeys(),
     MessageCodec? codec,

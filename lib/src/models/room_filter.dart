@@ -9,8 +9,17 @@ import 'package:flutter_chat_kit/src/models/json_utils.dart';
 /// to `ChatDataSource.fetchRooms`, so the backend can return only matching
 /// rooms; a backend that ignores it still works, because non-matching rooms
 /// are hidden and paging continues until the list fills.
+///
+/// ```dart
+/// final archived = kit.inbox(
+///   filter: const RoomFilter(labels: {'archived'}),
+/// );
+/// ```
+///
+/// See doc/adapters/mixing.md for several lists side by side.
 @immutable
 class RoomFilter {
+  /// A filter; every condition is optional and they all must match.
   const RoomFilter({
     this.types,
     this.labels,
@@ -44,6 +53,7 @@ class RoomFilter {
   /// An extra condition checked on the device only; backends never see it.
   final bool Function(ChatRoom room)? where;
 
+  /// Whether this filter has no condition, like [all].
   bool get isAll =>
       types == null &&
       labels == null &&
@@ -51,6 +61,7 @@ class RoomFilter {
       !unreadOnly &&
       where == null;
 
+  /// Whether [room] passes every condition.
   bool matches(ChatRoom room) {
     final types = this.types;
     if (types != null && !types.contains(room.type)) return false;
@@ -62,6 +73,7 @@ class RoomFilter {
     return where?.call(room) ?? true;
   }
 
+  /// The rooms of [rooms] that [matches], in the same order.
   List<ChatRoom> apply(List<ChatRoom> rooms) => isAll
       ? rooms
       : [
@@ -86,6 +98,7 @@ class RoomFilter {
     };
   }
 
+  /// A copy with the given conditions replaced; null keeps the current one.
   RoomFilter copyWith({
     Set<RoomType>? types,
     Set<String>? labels,

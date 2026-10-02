@@ -3,16 +3,31 @@ import 'package:flutter_chat_kit/src/models/chat_user.dart';
 import 'package:flutter_chat_kit/src/models/json_utils.dart';
 
 /// One page returned by a `ChatSource` fetch.
+///
+/// ```dart
+/// return ChatPage(
+///   items: [for (final m in body['items'] as List) Message.fromJson(...)],
+///   hasMore: body['has_more'] == true,
+///   users: [for (final u in body['users'] as List) ChatUser.fromJson(...)],
+/// );
+/// ```
+///
+/// When the API has no "has more" flag, `items.length == limit` is a safe
+/// guess; one extra empty fetch then ends paging.
 @immutable
 class ChatPage<T> {
+  /// A page of [items]; [hasMore] is required.
   const ChatPage({
     required this.items,
     required this.hasMore,
     this.users = const [],
   });
 
+  /// A page with no items and nothing more to load.
   const ChatPage.empty() : items = const [], hasMore = false, users = const [];
 
+  /// The rooms or messages of this page, in the order the method asks for
+  /// (newest first).
   final List<T> items;
 
   /// Whether another page exists in the direction that was fetched.

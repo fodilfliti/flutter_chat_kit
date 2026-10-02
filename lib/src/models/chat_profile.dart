@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_chat_kit/src/models/chat_user.dart';
 import 'package:flutter_chat_kit/src/models/json_utils.dart';
 
+/// Whether a [ChatProfile] is a person or a business.
 enum ChatProfileKind {
   /// The person themselves.
   personal,
@@ -9,6 +10,7 @@ enum ChatProfileKind {
   /// A business, page or team; possibly answered by several staff members.
   business;
 
+  /// Reads `business`; anything else reads as [personal].
   static ChatProfileKind parse(Object? value) => switch (value) {
     'business' => business,
     _ => personal,
@@ -19,9 +21,11 @@ enum ChatProfileKind {
 /// a business page the account owns or works for.
 ///
 /// Its [id] becomes `ChatKit.currentUserId`: rooms, messages and read
-/// pointers belong to the profile, not to the account.
+/// pointers belong to the profile, not to the account. Switch between
+/// profiles with `ChatProfileSwitcher`; see doc/adapters/profiles.md.
 @immutable
 class ChatProfile {
+  /// A profile; [id] and [name] are required.
   const ChatProfile({
     required this.id,
     required this.name,
@@ -32,6 +36,15 @@ class ChatProfile {
     this.metadata = const {},
   });
 
+  /// Reads a profile with fixed snake_case names: `id` (required, else a
+  /// [FormatException]), `name`, `avatar_url`, `kind` (`personal` or
+  /// `business`), `agent_id`, `unread_count` and `metadata`. These names
+  /// cannot be changed with `ChatJsonKeys`.
+  ///
+  /// ```json
+  /// {"id": "shop-1", "name": "Lemsa Shop", "kind": "business",
+  ///  "agent_id": "u1", "unread_count": 3}
+  /// ```
   factory ChatProfile.fromJson(Map<String, Object?> json) {
     return ChatProfile(
       id: readString(json, 'id'),
@@ -44,9 +57,16 @@ class ChatProfile {
     );
   }
 
+  /// The id the profile chats as; becomes `ChatKit.currentUserId`.
   final String id;
+
+  /// The name shown in the profile menu and to people chatting with it.
   final String name;
+
+  /// The profile picture.
   final String? avatarUrl;
+
+  /// Personal or business.
   final ChatProfileKind kind;
 
   /// Who acts for this profile when several people share it, usually the
@@ -62,12 +82,15 @@ class ChatProfile {
   /// App extras (role, verified badge, ...).
   final Map<String, Object?> metadata;
 
+  /// Whether [kind] is [ChatProfileKind.business].
   bool get isBusiness => kind == ChatProfileKind.business;
 
   /// This profile as a message author, for avatars.
   ChatUser toUser() =>
       ChatUser(id: id, name: name, avatarUrl: avatarUrl, metadata: metadata);
 
+  /// A copy with the given fields replaced; null keeps the current value.
+  /// The [id] never changes.
   ChatProfile copyWith({
     String? name,
     String? avatarUrl,
@@ -87,6 +110,7 @@ class ChatProfile {
     );
   }
 
+  /// This profile as JSON with the names read by [ChatProfile.fromJson].
   Map<String, Object?> toJson() {
     return withoutNulls({
       'id': id,

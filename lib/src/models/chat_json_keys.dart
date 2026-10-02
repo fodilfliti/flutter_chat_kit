@@ -7,10 +7,25 @@ import 'package:flutter_chat_kit/src/models/message_status.dart';
 /// JSON field names used by [MessageCodec], `ChatRoom.fromJson`,
 /// `RoomMember.fromJson` and `ChatUser.fromJson`.
 ///
-/// Override only what differs in your backend, for example
-/// `ChatJsonKeys(authorId: 'sender_id', typeAliases: {'msg': 'text'})`,
-/// or start from [camelCase]. The kit's own cache always uses the defaults.
+/// The defaults are snake_case (`author_id`, `created_at`, ...). Override
+/// only what differs in your backend, or start from [camelCase]:
+///
+/// ```dart
+/// const keys = ChatJsonKeys(
+///   authorId: 'sender_id',
+///   createdAt: 'sent_at',
+///   typeAliases: {'msg': 'text', 'photo': 'image'},
+///   attachmentKeys: AttachmentJsonKeys(remoteUrl: 'file_url'),
+/// );
+/// final message = Message.fromJson(json, keys: keys);
+/// ```
+///
+/// Nested JSON (such as `{"sender": {"id": ...}}`) needs a small mapper
+/// before decoding; see doc/adapters/your_api.md. The kit's own cache
+/// always uses the defaults.
 class ChatJsonKeys {
+  /// Field names; each parameter defaults to the snake_case name shown in
+  /// its field's doc.
   const ChatJsonKeys({
     this.type = 'type',
     this.id = 'id',
@@ -59,46 +74,99 @@ class ChatJsonKeys {
     userKeys: UserJsonKeys.camelCase,
   );
 
+  /// The message type discriminator; default `type`. Missing reads as
+  /// `text`.
   final String type;
+
+  /// `Message.id`; default `id`.
   final String id;
+
+  /// `Message.localId`; default `local_id`.
   final String localId;
+
+  /// `Message.roomId`; default `room_id`.
   final String roomId;
+
+  /// `Message.authorId`; default `author_id`.
   final String authorId;
+
+  /// `Message.createdAt`; default `created_at`.
   final String createdAt;
+
+  /// `Message.editedAt`; default `edited_at`.
   final String editedAt;
+
+  /// `Message.deletedAt`; default `deleted_at`.
   final String deletedAt;
+
+  /// `Message.status`; default `status`.
   final String status;
+
+  /// `Message.replyToId`; default `reply_to_id`.
   final String replyToId;
+
+  /// `Message.reactions`; default `reactions`.
   final String reactions;
+
+  /// `Message.metadata`; default `metadata`.
   final String metadata;
+
+  /// `Message.sentBy`; default `sent_by`.
   final String sentBy;
+
+  /// `TextMessage.text`; default `text`.
   final String text;
+
+  /// The caption of image and video messages; default `caption`.
   final String caption;
+
+  /// A list of attachments; default `attachments`. Image messages are
+  /// encoded with it; other types read its first item when [attachment] is
+  /// missing.
   final String attachments;
+
+  /// A single attachment; default `attachment`. Video, audio and file
+  /// messages are encoded with it; image messages read it when
+  /// [attachments] is missing.
   final String attachment;
+
+  /// `AudioMessage.duration` in milliseconds; default `duration_ms`.
   final String duration;
+
+  /// `AudioMessage.waveform`; default `waveform`.
   final String waveform;
+
+  /// `SystemMessage.code`; default `code`.
   final String code;
+
+  /// `SystemMessage.args`; default `args`.
   final String args;
+
+  /// `CustomMessage.customType`; default `custom_type`.
   final String customType;
+
+  /// `CustomMessage.data`; default `data`.
   final String data;
 
-  /// Backend type name to kit type name, applied when decoding.
+  /// Backend type name to kit type name, applied when decoding, for example
+  /// `{'msg': 'text', 'photo': 'image'}`. Encoding always writes the kit
+  /// name.
   final Map<String, String> typeAliases;
 
-  /// Field names inside attachments.
+  /// Field names inside attachments; see [AttachmentJsonKeys].
   final AttachmentJsonKeys attachmentKeys;
 
-  /// Field names of rooms and their members.
+  /// Field names of rooms and their members; see [RoomJsonKeys].
   final RoomJsonKeys roomKeys;
 
-  /// Field names of users.
+  /// Field names of users; see [UserJsonKeys].
   final UserJsonKeys userKeys;
 
   /// The kit type for a backend [rawType], after [typeAliases].
   String resolveType(String rawType) => typeAliases[rawType] ?? rawType;
 
-  /// Message fields shared by every type.
+  /// Message fields shared by every type. For an unknown type, every other
+  /// field becomes `CustomMessage.data`.
   Set<String> get baseKeys => _baseKeys;
 
   Set<String> get _baseKeys => {
@@ -146,13 +214,25 @@ typedef _Base = ({
 ///   file messages accept an `attachments` list (the first item is used).
 /// - Unknown `type` values decode to [CustomMessage] with the remaining
 ///   fields as `data`.
+/// - Ids may be strings or numbers; durations are milliseconds; `status`
+///   accepts the aliases of [MessageStatus.parse].
+///
+/// [Message.fromJson] and [Message.toJson] use it; create one yourself to
+/// share [keys] between rooms and messages, as `ChatRoom.fromJson(codec:)`
+/// does.
 class MessageCodec {
+  /// A codec using the field names of [keys].
   const MessageCodec({this.keys = const ChatJsonKeys()});
 
+  /// The field names read and written.
   final ChatJsonKeys keys;
 
+  /// Reads a message from [json].
+  ///
   /// [roomId] is used when the JSON has no room id, as in the items of
-  /// `GET /rooms/{id}/messages`.
+  /// `GET /rooms/{id}/messages`. Throws a [FormatException] naming the
+  /// field when there is no id, author, creation time or room id, or when
+  /// a date cannot be read.
   Message decode(Map<String, Object?> json, {String? roomId}) {
     final type = keys.resolveType(
       readOptionalString(json[keys.type]) ?? 'text',
@@ -265,6 +345,11 @@ class MessageCodec {
     };
   }
 
+  /// Writes [message] as JSON with the names of [keys].
+  ///
+  /// Null and empty fields are left out and dates are ISO-8601 UTC. Image
+  /// messages write `attachments`; video, audio and file messages write
+  /// `attachment`. `status` is written by name, such as `sending`.
   Map<String, Object?> encode(Message message) {
     final k = keys;
     final a = k.attachmentKeys;

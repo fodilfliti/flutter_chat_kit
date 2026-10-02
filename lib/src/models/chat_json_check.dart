@@ -6,12 +6,16 @@ import 'package:flutter_chat_kit/src/models/json_utils.dart';
 import 'package:flutter_chat_kit/src/models/message.dart';
 import 'package:flutter_chat_kit/src/models/message_status.dart';
 
-/// One finding of [ChatJsonCheck].
+/// One finding of [ChatJsonCheck]. `toString` prints
+/// `error created_at: ...` or `warning attachments[0]: ...`.
 class ChatJsonIssue {
+  /// A finding about [field].
   const ChatJsonIssue(this.field, this.message, {this.isError = false});
 
   /// The JSON field, such as `created_at` or `attachments[0]`.
   final String field;
+
+  /// What is wrong and how to fix it, in plain words.
   final String message;
 
   /// The JSON cannot be read; otherwise it is read with a guess or with
@@ -24,6 +28,12 @@ class ChatJsonIssue {
 
 /// Checks JSON from your backend against what the kit reads, and explains
 /// each problem in plain words. It never throws.
+///
+/// Errors are JSON the kit cannot read, or that shows nothing. Warnings are
+/// read with a guess (epoch seconds, a date without a time zone, a guessed
+/// mime type, an unknown type) or with something missing on screen (no
+/// image size, no audio length, no members). An empty list means the kit
+/// reads everything it needs. See doc/backend_json.md.
 ///
 /// Use it once on real responses while writing a `ChatSource`:
 ///
@@ -101,7 +111,7 @@ abstract final class ChatJsonCheck {
     return issues;
   }
 
-  /// Problems in one user.
+  /// Problems in one user, read with `keys.userKeys`.
   static List<ChatJsonIssue> user(
     Map<String, Object?> json, {
     ChatJsonKeys keys = const ChatJsonKeys(),

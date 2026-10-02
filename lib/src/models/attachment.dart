@@ -2,14 +2,40 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_chat_kit/src/models/json_keys.dart';
 import 'package:flutter_chat_kit/src/models/json_utils.dart';
 
-enum AttachmentKind { image, video, audio, file }
+/// What an [Attachment] is, from its mime type.
+enum AttachmentKind {
+  /// `image/*`.
+  image,
+
+  /// `video/*`.
+  video,
+
+  /// `audio/*`.
+  audio,
+
+  /// Anything else, including `application/octet-stream`.
+  file,
+}
 
 /// A media or file payload of a message.
 ///
-/// While uploading, [localPath] is set and [remoteUrl] is null. [width] and
-/// [height] let the UI reserve space before the image loads.
+/// While uploading, [localPath] is set and [remoteUrl] is null; the
+/// `ChatUploader` fills [remoteUrl]. [width] and [height] let the UI
+/// reserve space before the image loads.
+///
+/// In JSON it can be an object or a bare URL string; only the URL is
+/// needed:
+///
+/// ```json
+/// {"remote_url": "https://cdn.example.com/a.jpg", "mime_type": "image/jpeg",
+///  "width": 1080, "height": 1440, "size": 245100}
+/// ```
+///
+/// Field names come from [AttachmentJsonKeys].
 @immutable
 class Attachment {
+  /// An attachment; only [mimeType] is required. Set [localPath] for a file
+  /// on this device, or [remoteUrl] for one already uploaded.
   const Attachment({
     required this.mimeType,
     this.localPath,
@@ -24,9 +50,14 @@ class Attachment {
 
   /// Reads an attachment object, or a bare URL string.
   ///
-  /// Without a mime type it is guessed from the file extension
+  /// The URL is read from `remote_url`, else `url`. Without a mime type it
+  /// is guessed from the extension of the URL, path or name
   /// ([guessMimeType]), else [mimeHint] is used (the message decoder passes
-  /// `image/*` for image messages, ...), else `application/octet-stream`.
+  /// `image/*` for image messages, ...), else [fallbackMimeType]. Numbers
+  /// may be numbers or numeric strings; `duration_ms` is milliseconds.
+  ///
+  /// It never throws: anything that is not a string or an object reads as
+  /// an attachment without a URL. `ChatJsonCheck` reports that case.
   factory Attachment.fromJson(
     Object? json, {
     AttachmentJsonKeys keys = const AttachmentJsonKeys(),
@@ -61,7 +92,12 @@ class Attachment {
   static const _urlAlias = 'url';
 
   /// The mime type for a URL, path or file name by its extension, or null.
-  /// Query strings and fragments are ignored.
+  ///
+  /// Query strings and fragments are ignored and case does not matter.
+  /// Known extensions: images (jpg, jpeg, png, gif, webp, heic, heif, bmp,
+  /// svg), videos (mp4, m4v, mov, webm, mkv, 3gp), audio (m4a, mp3, aac,
+  /// ogg, oga, opus, wav, flac) and documents (pdf, zip, doc, docx, xls,
+  /// xlsx, ppt, pptx, txt, csv).
   static String? guessMimeType(String? path) {
     if (path == null) return null;
     final uri = Uri.tryParse(path);
@@ -109,20 +145,40 @@ class Attachment {
     'csv': 'text/csv',
   };
 
+  /// The file type, such as `image/jpeg` (JSON `mime_type`). Decides
+  /// [kind], so how the file is shown. Guessed when missing.
   final String mimeType;
+
+  /// Path of the file on this device (JSON `local_path`), set while it is
+  /// waiting to upload. Other devices never have it.
   final String? localPath;
+
+  /// Where the file can be downloaded (JSON `remote_url`, or `url`). Null
+  /// until the upload finishes.
   final String? remoteUrl;
+
+  /// A small preview image, such as a video poster (JSON `thumbnail_url`).
+  /// Without it a video bubble shows a placeholder instead of a poster.
   final String? thumbnailUrl;
 
-  /// Size in bytes.
+  /// Size in bytes (JSON `size`), shown on file messages.
   final int? size;
+
+  /// Width in pixels (JSON `width`). With [height] it reserves the bubble
+  /// size, so the list does not jump when the media loads.
   final int? width;
+
+  /// Height in pixels (JSON `height`). See [width].
   final int? height;
+
+  /// Length of a video or audio file (JSON `duration_ms`, milliseconds).
   final Duration? duration;
 
-  /// Original file name, shown for file messages.
+  /// Original file name (JSON `name`), shown for file messages and used to
+  /// guess the mime type.
   final String? name;
 
+  /// Image, video, audio or file, from [mimeType].
   AttachmentKind get kind {
     if (mimeType.startsWith('image/')) return AttachmentKind.image;
     if (mimeType.startsWith('video/')) return AttachmentKind.video;
@@ -130,6 +186,7 @@ class Attachment {
     return AttachmentKind.file;
   }
 
+  /// [width] divided by [height], or null when either is missing or zero.
   double? get aspectRatio {
     final w = width;
     final h = height;
@@ -137,11 +194,13 @@ class Attachment {
     return w / h;
   }
 
+  /// Whether [remoteUrl] is set.
   bool get isUploaded => remoteUrl != null;
 
   /// Remote URL when uploaded, otherwise the local path.
   String? get source => remoteUrl ?? localPath;
 
+  /// A copy with the given fields replaced; null keeps the current value.
   Attachment copyWith({
     String? mimeType,
     String? localPath,
@@ -166,6 +225,8 @@ class Attachment {
     );
   }
 
+  /// This attachment as JSON with the names of [keys]; null fields are left
+  /// out.
   Map<String, Object?> toJson({
     AttachmentJsonKeys keys = const AttachmentJsonKeys(),
   }) {
