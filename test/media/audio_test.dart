@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter_chat_kit/flutter_chat_kit.dart';
+import 'package:flutter_chat_pro/flutter_chat_pro.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

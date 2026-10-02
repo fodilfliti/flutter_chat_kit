@@ -1,4 +1,4 @@
-package dev.lemsa.flutter_chat_kit_example
+package dev.lemsa.flutter_chat_pro_example
 
 import io.flutter.embedding.android.FlutterActivity
 

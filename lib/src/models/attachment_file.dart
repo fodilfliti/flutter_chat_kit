@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
-import 'package:flutter_chat_kit/src/models/attachment.dart';
+import 'package:flutter_chat_pro/src/models/attachment.dart';
 
 /// Reads an attachment's local file the same way on every platform,
 /// including the web, where `localPath` is a `blob:` URL that `dart:io`

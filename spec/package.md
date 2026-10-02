@@ -1,4 +1,4 @@
-# flutter_chat_kit
+# flutter_chat_pro
 
 Backend-agnostic chat kit. The app implements a small backend contract; the kit owns models, cache, sync, outbox, controllers, and a fully customizable chat room and inbox UI. Replaces the hand-built chats in valizex (Firebase, sqflite, `Map` messages) and lightnessword (Supabase, ReaxDB blob cache).
 
@@ -29,7 +29,7 @@ Backend-agnostic chat kit. The app implements a small backend contract; the kit 
 
 | Export | Contents |
 | --- | --- |
-| `flutter_chat_kit.dart` | Everything below; the only barrel |
+| `flutter_chat_pro.dart` | Everything below; the only barrel |
 
 ```dart
 abstract interface class ChatSource {
@@ -65,7 +65,7 @@ await kit.clearUserData();        // on sign-out
 
 | Layer | Path | Role |
 | --- | --- | --- |
-| Barrel | `lib/flutter_chat_kit.dart` | Only public export |
+| Barrel | `lib/flutter_chat_pro.dart` | Only public export |
 | Models | `lib/src/models/` | Immutable data + JSON |
 | Source | `lib/src/source/` | Contracts the app implements |
 | Cache | `lib/src/cache/` | `ChatCache` interface + Drift implementation |

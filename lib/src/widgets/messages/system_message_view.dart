@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
-import 'package:flutter_chat_kit/src/widgets/room/date_separator.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/widgets/room/date_separator.dart';
 
 /// A centered pill for room events ("Ana joined"), drawn from
 /// `ChatTheme.systemMessage`.

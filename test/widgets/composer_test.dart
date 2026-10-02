@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_chat_kit/flutter_chat_kit.dart';
+import 'package:flutter_chat_pro/flutter_chat_pro.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../controllers/harness.dart';

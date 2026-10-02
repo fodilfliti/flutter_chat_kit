@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
-import 'package:flutter_chat_kit/src/controllers/audio_player_hub.dart';
-import 'package:flutter_chat_kit/src/controllers/chat_kit_scope.dart';
-import 'package:flutter_chat_kit/src/media/chat_media_store.dart';
-import 'package:flutter_chat_kit/src/models/attachment.dart';
+import 'package:flutter_chat_pro/src/controllers/audio_player_hub.dart';
+import 'package:flutter_chat_pro/src/controllers/chat_kit_scope.dart';
+import 'package:flutter_chat_pro/src/media/chat_media_store.dart';
+import 'package:flutter_chat_pro/src/models/attachment.dart';
 
 /// Gives media widgets (`ChatImage`, the audio and video views) the media
 /// store and the audio player. `ChatMessageList` provides the kit's; without

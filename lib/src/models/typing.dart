@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_chat_kit/src/models/json_utils.dart';
+import 'package:flutter_chat_pro/src/models/json_utils.dart';
 
 /// Who is currently typing in a room (never cached).
 ///

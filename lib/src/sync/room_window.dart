@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_chat_kit/src/models/message_cursor.dart';
+import 'package:flutter_chat_pro/src/models/message_cursor.dart';
 
 /// Which slice of a room's cached history the message list shows.
 ///

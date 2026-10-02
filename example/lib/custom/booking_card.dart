@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/flutter_chat_kit.dart';
-import 'package:flutter_chat_kit_example/i18n/strings.g.dart';
+import 'package:flutter_chat_pro/flutter_chat_pro.dart';
+import 'package:flutter_chat_pro_example/i18n/strings.g.dart';
 
 /// `booking`: listed in `bubbledCustomTypes`, so the kit draws the bubble,
 /// the reply preview, the time and the ticks around it. The content uses

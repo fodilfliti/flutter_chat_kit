@@ -1,7 +1,7 @@
-import 'package:flutter_chat_kit/src/models/chat_room.dart';
-import 'package:flutter_chat_kit/src/models/chat_user.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
-import 'package:flutter_chat_kit/src/models/presence.dart';
+import 'package:flutter_chat_pro/src/models/chat_room.dart';
+import 'package:flutter_chat_pro/src/models/chat_user.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
+import 'package:flutter_chat_pro/src/models/presence.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 
 /// A realtime event emitted by `ChatSource.events`.

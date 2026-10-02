@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/builders/inbox_builders.dart';
-import 'package:flutter_chat_kit/src/config/chat_formatters.dart';
-import 'package:flutter_chat_kit/src/config/chat_strings.dart';
-import 'package:flutter_chat_kit/src/config/chat_styles.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
-import 'package:flutter_chat_kit/src/models/chat_user.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
-import 'package:flutter_chat_kit/src/widgets/common/message_snippet.dart';
-import 'package:flutter_chat_kit/src/widgets/common/room_avatar.dart';
+import 'package:flutter_chat_pro/src/builders/inbox_builders.dart';
+import 'package:flutter_chat_pro/src/config/chat_formatters.dart';
+import 'package:flutter_chat_pro/src/config/chat_strings.dart';
+import 'package:flutter_chat_pro/src/config/chat_styles.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/models/chat_user.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
+import 'package:flutter_chat_pro/src/widgets/common/message_snippet.dart';
+import 'package:flutter_chat_pro/src/widgets/common/room_avatar.dart';
 
 /// One inbox row: avatar with online dot, name, muted icon, last message
 /// preview (or who is typing), time, pinned icon and unread badge.

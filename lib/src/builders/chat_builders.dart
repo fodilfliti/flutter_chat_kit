@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
-import 'package:flutter_chat_kit/src/builders/message_context.dart';
-import 'package:flutter_chat_kit/src/models/chat_room.dart';
-import 'package:flutter_chat_kit/src/models/chat_user.dart';
-import 'package:flutter_chat_kit/src/models/typing.dart';
+import 'package:flutter_chat_pro/src/builders/message_context.dart';
+import 'package:flutter_chat_pro/src/models/chat_room.dart';
+import 'package:flutter_chat_pro/src/models/chat_user.dart';
+import 'package:flutter_chat_pro/src/models/typing.dart';
 
 /// Wraps or replaces a default widget.
 typedef DefaultChildBuilder =

@@ -53,7 +53,7 @@ class _Translations$app$fr extends Translations$app$en {
 	final TranslationsFr _root; // ignore: unused_field
 
 	// Translations
-	@override String get title => 'Exemple flutter_chat_kit';
+	@override String get title => 'Exemple flutter_chat_pro';
 	@override String get chats => 'Discussions';
 	@override String chatsWithUnread({required Object n}) => 'Discussions (${n})';
 	@override String get language => 'Langue';
@@ -305,7 +305,7 @@ extension on TranslationsFr {
 	dynamic _flatMapFunction(String path) {
 		return switch (path) {
 			'languageName' => 'Français',
-			'app.title' => 'Exemple flutter_chat_kit',
+			'app.title' => 'Exemple flutter_chat_pro',
 			'app.chats' => 'Discussions',
 			'app.chatsWithUnread' => ({required Object n}) => 'Discussions (${n})',
 			'app.language' => 'Langue',

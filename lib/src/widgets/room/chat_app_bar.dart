@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/config/chat_formatters.dart';
-import 'package:flutter_chat_kit/src/config/chat_strings.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
-import 'package:flutter_chat_kit/src/controllers/chat_room_controller.dart';
-import 'package:flutter_chat_kit/src/models/presence.dart';
-import 'package:flutter_chat_kit/src/widgets/common/room_avatar.dart';
+import 'package:flutter_chat_pro/src/config/chat_formatters.dart';
+import 'package:flutter_chat_pro/src/config/chat_strings.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/controllers/chat_room_controller.dart';
+import 'package:flutter_chat_pro/src/models/presence.dart';
+import 'package:flutter_chat_pro/src/widgets/common/room_avatar.dart';
 
 /// Wraps or replaces part of the room app bar.
 typedef ChatAppBarBuilder =

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/config/chat_styles.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/config/chat_styles.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
 
 /// A centered day label between messages, for example `Today`.
 class DateSeparator extends StatelessWidget {

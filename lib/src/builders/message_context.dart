@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_chat_kit/src/models/chat_room.dart';
-import 'package:flutter_chat_kit/src/models/chat_user.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
-import 'package:flutter_chat_kit/src/models/message_status.dart';
-import 'package:flutter_chat_kit/src/models/room_member.dart';
+import 'package:flutter_chat_pro/src/models/chat_room.dart';
+import 'package:flutter_chat_pro/src/models/chat_user.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
+import 'package:flutter_chat_pro/src/models/message_status.dart';
+import 'package:flutter_chat_pro/src/models/room_member.dart';
 
 /// Where a message sits in a run of consecutive messages by one author.
 /// `first` is the oldest (top) message of the run.

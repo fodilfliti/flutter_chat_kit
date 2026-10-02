@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
 
 /// Three pulsing dots in an incoming bubble, with an optional label such
 /// as "Sara is typing".

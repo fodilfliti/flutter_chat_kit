@@ -1,19 +1,19 @@
 import 'package:drift/drift.dart';
-import 'package:flutter_chat_kit/src/cache/chat_cache.dart';
-import 'package:flutter_chat_kit/src/cache/drift/chat_database.dart';
-import 'package:flutter_chat_kit/src/cache/drift/converters.dart';
-import 'package:flutter_chat_kit/src/cache/drift/open_chat_database.dart';
-import 'package:flutter_chat_kit/src/media/media_entry.dart';
-import 'package:flutter_chat_kit/src/models/chat_room.dart';
-import 'package:flutter_chat_kit/src/models/chat_user.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
-import 'package:flutter_chat_kit/src/models/message_cursor.dart';
-import 'package:flutter_chat_kit/src/models/message_status.dart';
-import 'package:flutter_chat_kit/src/models/room_member.dart';
-import 'package:flutter_chat_kit/src/sync/outbox_entry.dart';
-import 'package:flutter_chat_kit/src/sync/room_sync_state.dart';
+import 'package:flutter_chat_pro/src/cache/chat_cache.dart';
+import 'package:flutter_chat_pro/src/cache/drift/chat_database.dart';
+import 'package:flutter_chat_pro/src/cache/drift/converters.dart';
+import 'package:flutter_chat_pro/src/cache/drift/open_chat_database.dart';
+import 'package:flutter_chat_pro/src/media/media_entry.dart';
+import 'package:flutter_chat_pro/src/models/chat_room.dart';
+import 'package:flutter_chat_pro/src/models/chat_user.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
+import 'package:flutter_chat_pro/src/models/message_cursor.dart';
+import 'package:flutter_chat_pro/src/models/message_status.dart';
+import 'package:flutter_chat_pro/src/models/room_member.dart';
+import 'package:flutter_chat_pro/src/sync/outbox_entry.dart';
+import 'package:flutter_chat_pro/src/sync/room_sync_state.dart';
 
-export 'package:flutter_chat_kit/src/cache/drift/open_chat_database.dart'
+export 'package:flutter_chat_pro/src/cache/drift/open_chat_database.dart'
     show chatDatabaseName, openChatDatabase;
 
 /// Creates the database connection for a user id.

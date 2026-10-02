@@ -1,16 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/builders/inbox_builders.dart';
-import 'package:flutter_chat_kit/src/config/chat_formatters.dart';
-import 'package:flutter_chat_kit/src/config/chat_strings.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
-import 'package:flutter_chat_kit/src/controllers/inbox_controller.dart';
-import 'package:flutter_chat_kit/src/models/chat_room.dart';
-import 'package:flutter_chat_kit/src/widgets/common/chat_style.dart';
-import 'package:flutter_chat_kit/src/widgets/inbox/inbox_search_bar.dart';
-import 'package:flutter_chat_kit/src/widgets/inbox/room_swipe_actions.dart';
-import 'package:flutter_chat_kit/src/widgets/inbox/room_tile.dart';
+import 'package:flutter_chat_pro/src/builders/inbox_builders.dart';
+import 'package:flutter_chat_pro/src/config/chat_formatters.dart';
+import 'package:flutter_chat_pro/src/config/chat_strings.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/controllers/inbox_controller.dart';
+import 'package:flutter_chat_pro/src/models/chat_room.dart';
+import 'package:flutter_chat_pro/src/widgets/common/chat_style.dart';
+import 'package:flutter_chat_pro/src/widgets/inbox/inbox_search_bar.dart';
+import 'package:flutter_chat_pro/src/widgets/inbox/room_swipe_actions.dart';
+import 'package:flutter_chat_pro/src/widgets/inbox/room_tile.dart';
 
 /// Builds the page of a room opened from the inbox.
 typedef ChatRoomPageBuilder =

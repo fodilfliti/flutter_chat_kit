@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_chat_kit/src/models/message_cursor.dart';
+import 'package:flutter_chat_pro/src/models/message_cursor.dart';
 
 /// What the cache holds for one room, so sync resumes from the right place.
 @immutable

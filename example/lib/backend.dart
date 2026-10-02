@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/flutter_chat_kit.dart';
-import 'package:flutter_chat_kit_example/fake/fake_chat_source.dart';
-import 'package:flutter_chat_kit_example/fake/fake_uploader.dart';
-import 'package:flutter_chat_kit_example/i18n/strings.g.dart';
+import 'package:flutter_chat_pro/flutter_chat_pro.dart';
+import 'package:flutter_chat_pro_example/fake/fake_chat_source.dart';
+import 'package:flutter_chat_pro_example/fake/fake_uploader.dart';
+import 'package:flutter_chat_pro_example/i18n/strings.g.dart';
 
 /// The fake backend of one signed-in account, which chats as two profiles:
 /// its personal profile and "Lemsa Shop", a business it answers for along

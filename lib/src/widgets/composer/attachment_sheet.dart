@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/config/chat_strings.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
-import 'package:flutter_chat_kit/src/media/default_pickers.dart';
+import 'package:flutter_chat_pro/src/config/chat_strings.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/media/default_pickers.dart';
 
 /// One button of the [AttachmentSheet]. App options (for example "Offer"
 /// opening the app's own form, then `sendCustom`) use [onSelected].

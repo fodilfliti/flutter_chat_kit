@@ -1,9 +1,9 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/flutter_chat_kit.dart';
-import 'package:flutter_chat_kit_example/i18n/strings.g.dart';
-import 'package:flutter_chat_kit_example/style/style_settings.dart';
+import 'package:flutter_chat_pro/flutter_chat_pro.dart';
+import 'package:flutter_chat_pro_example/i18n/strings.g.dart';
+import 'package:flutter_chat_pro_example/style/style_settings.dart';
 
 /// App bar button that opens the live style sheet.
 class StyleButton extends StatelessWidget {

@@ -2,29 +2,29 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/builders/chat_builders.dart';
-import 'package:flutter_chat_kit/src/builders/message_context.dart';
-import 'package:flutter_chat_kit/src/config/chat_formatters.dart';
-import 'package:flutter_chat_kit/src/config/chat_strings.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
-import 'package:flutter_chat_kit/src/models/attachment.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
-import 'package:flutter_chat_kit/src/models/message_status.dart';
-import 'package:flutter_chat_kit/src/widgets/common/message_snippet.dart';
-import 'package:flutter_chat_kit/src/widgets/media/chat_media_scope.dart';
-import 'package:flutter_chat_kit/src/widgets/messages/audio_message_view.dart';
-import 'package:flutter_chat_kit/src/widgets/messages/deleted_message_view.dart';
-import 'package:flutter_chat_kit/src/widgets/messages/file_message_view.dart';
-import 'package:flutter_chat_kit/src/widgets/messages/image_message_view.dart';
-import 'package:flutter_chat_kit/src/widgets/messages/system_message_view.dart';
-import 'package:flutter_chat_kit/src/widgets/messages/text_message_view.dart';
-import 'package:flutter_chat_kit/src/widgets/messages/unsupported_message_view.dart';
-import 'package:flutter_chat_kit/src/widgets/messages/video_message_view.dart';
-import 'package:flutter_chat_kit/src/widgets/room/message_bubble.dart';
-import 'package:flutter_chat_kit/src/widgets/room/message_meta.dart';
-import 'package:flutter_chat_kit/src/widgets/room/reactions_bar.dart';
-import 'package:flutter_chat_kit/src/widgets/room/reply_preview.dart';
-import 'package:flutter_chat_kit/src/widgets/room/status_ticks.dart';
+import 'package:flutter_chat_pro/src/builders/chat_builders.dart';
+import 'package:flutter_chat_pro/src/builders/message_context.dart';
+import 'package:flutter_chat_pro/src/config/chat_formatters.dart';
+import 'package:flutter_chat_pro/src/config/chat_strings.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/models/attachment.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
+import 'package:flutter_chat_pro/src/models/message_status.dart';
+import 'package:flutter_chat_pro/src/widgets/common/message_snippet.dart';
+import 'package:flutter_chat_pro/src/widgets/media/chat_media_scope.dart';
+import 'package:flutter_chat_pro/src/widgets/messages/audio_message_view.dart';
+import 'package:flutter_chat_pro/src/widgets/messages/deleted_message_view.dart';
+import 'package:flutter_chat_pro/src/widgets/messages/file_message_view.dart';
+import 'package:flutter_chat_pro/src/widgets/messages/image_message_view.dart';
+import 'package:flutter_chat_pro/src/widgets/messages/system_message_view.dart';
+import 'package:flutter_chat_pro/src/widgets/messages/text_message_view.dart';
+import 'package:flutter_chat_pro/src/widgets/messages/unsupported_message_view.dart';
+import 'package:flutter_chat_pro/src/widgets/messages/video_message_view.dart';
+import 'package:flutter_chat_pro/src/widgets/room/message_bubble.dart';
+import 'package:flutter_chat_pro/src/widgets/room/message_meta.dart';
+import 'package:flutter_chat_pro/src/widgets/room/reactions_bar.dart';
+import 'package:flutter_chat_pro/src/widgets/room/reply_preview.dart';
+import 'package:flutter_chat_pro/src/widgets/room/status_ticks.dart';
 
 /// Called with the attachment of a tapped file (or media) message.
 typedef AttachmentTapCallback =
@@ -288,7 +288,7 @@ class MessageContent extends StatelessWidget {
 
   /// Hero tag of media [index] of a message, shared with `MediaViewer`.
   static Object heroTagFor(String localId, int index) =>
-      'flutter_chat_kit/media/$localId/$index';
+      'flutter_chat_pro/media/$localId/$index';
 
   ValueListenable<double?>? get _uploadProgress =>
       message.status.isLocal ? message.uploadProgress : null;

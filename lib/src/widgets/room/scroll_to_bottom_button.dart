@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
 
 /// Round button that returns the list to the newest message, with a badge
 /// counting messages that arrived while scrolled up.

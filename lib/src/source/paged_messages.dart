@@ -1,7 +1,7 @@
-import 'package:flutter_chat_kit/src/models/chat_page.dart';
-import 'package:flutter_chat_kit/src/models/chat_user.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
-import 'package:flutter_chat_kit/src/models/message_cursor.dart';
+import 'package:flutter_chat_pro/src/models/chat_page.dart';
+import 'package:flutter_chat_pro/src/models/chat_user.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
+import 'package:flutter_chat_pro/src/models/message_cursor.dart';
 
 /// Loads page [page] of a room, [size] messages per page, page `firstPage`
 /// being the newest. Returns the raw JSON items.

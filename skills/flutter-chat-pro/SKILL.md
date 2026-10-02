@@ -1,7 +1,7 @@
 ---
-name: flutter-chat-kit
+name: flutter-chat-pro
 description: >
-  Use flutter_chat_kit to build chat screens: a chat room page, an inbox
+  Use flutter_chat_pro to build chat screens: a chat room page, an inbox
   (conversation list), direct and group chats, media and voice messages,
   replies, reactions, read receipts, offline cache and outbox. Activate when
   implementing a ChatSource for Firebase, Supabase, REST or an existing API
@@ -19,15 +19,15 @@ license: MIT
 metadata:
   author: fodilfliti
   version: "0.1.0"
-  homepage: https://pub.dev/packages/flutter_chat_kit
+  homepage: https://pub.dev/packages/flutter_chat_pro
 ---
 
-# flutter_chat_kit (consumer)
+# flutter_chat_pro (consumer)
 
 ## Import
 
 ```dart
-import 'package:flutter_chat_kit/flutter_chat_kit.dart';
+import 'package:flutter_chat_pro/flutter_chat_pro.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart'; // AppFailure, Change
 ```
 
@@ -763,7 +763,7 @@ above.
 
 ## Platform setup
 
-- Web: `dart run flutter_chat_kit:web_setup` from the app folder downloads
+- Web: `dart run flutter_chat_pro:web_setup` from the app folder downloads
   `sqlite3.wasm` and `drift_worker.js` into `web/` (versions from
   `pubspec.lock`); rerun after upgrading drift or sqlite3, or run it in CI
   before `flutter build web`. Image hosts need CORS headers on the web.

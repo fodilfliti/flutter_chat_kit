@@ -1,8 +1,8 @@
-import 'package:flutter_chat_kit/src/models/attachment.dart';
-import 'package:flutter_chat_kit/src/models/json_keys.dart';
-import 'package:flutter_chat_kit/src/models/json_utils.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
-import 'package:flutter_chat_kit/src/models/message_status.dart';
+import 'package:flutter_chat_pro/src/models/attachment.dart';
+import 'package:flutter_chat_pro/src/models/json_keys.dart';
+import 'package:flutter_chat_pro/src/models/json_utils.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
+import 'package:flutter_chat_pro/src/models/message_status.dart';
 
 /// JSON field names used by [MessageCodec], `ChatRoom.fromJson`,
 /// `RoomMember.fromJson` and `ChatUser.fromJson`.

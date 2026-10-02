@@ -1,8 +1,8 @@
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_chat_kit/src/controllers/chat_kit.dart';
-import 'package:flutter_chat_kit/src/controllers/chat_kit_scope.dart';
-import 'package:flutter_chat_kit/src/controllers/chat_profile_switcher.dart';
+import 'package:flutter_chat_pro/src/controllers/chat_kit.dart';
+import 'package:flutter_chat_pro/src/controllers/chat_kit_scope.dart';
+import 'package:flutter_chat_pro/src/controllers/chat_profile_switcher.dart';
 
 /// Provides the [ChatProfileSwitcher] and the active profile's kit (as a
 /// `ChatKitScope`) to [child].

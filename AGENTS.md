@@ -1,6 +1,6 @@
-# Agent instructions — Flutter Chat Kit
+# Agent instructions — Flutter Chat Pro
 
-This is a **Flutter package** (`flutter_chat_kit`), not an application.
+This is a **Flutter package** (`flutter_chat_pro`), not an application.
 
 ## Load context
 
@@ -11,7 +11,7 @@ This is a **Flutter package** (`flutter_chat_kit`), not an application.
 
 ## Working rules
 
-- Public export only via `lib/flutter_chat_kit.dart`. Add exports alphabetically as each task lands.
+- Public export only via `lib/flutter_chat_pro.dart`. Add exports alphabetically as each task lands.
 - Backend-agnostic: the app implements `ChatSource`, `ChatUploader`, `ChatUserResolver`. Never import a backend SDK.
 - Forbidden in `lib/`: `firebase_*`, `cloud_firestore`, `supabase*`, `dio`, `http` clients for a specific backend, `flutter_riverpod`, `hooks_riverpod`, `riverpod_annotation`, `slang`, `easy_localization`, `.tr(`.
 - The UI reads from the cache only; the repository fills the cache. Widgets never call `ChatSource` directly.

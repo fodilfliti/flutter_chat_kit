@@ -4,19 +4,19 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_chat_kit/src/config/chat_formatters.dart';
-import 'package:flutter_chat_kit/src/config/chat_strings.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
-import 'package:flutter_chat_kit/src/controllers/composer_controller.dart';
-import 'package:flutter_chat_kit/src/controllers/voice_recorder_controller.dart';
-import 'package:flutter_chat_kit/src/media/default_pickers.dart';
-import 'package:flutter_chat_kit/src/models/attachment.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
-import 'package:flutter_chat_kit/src/widgets/composer/attachment_sheet.dart';
-import 'package:flutter_chat_kit/src/widgets/composer/reply_edit_banner.dart';
-import 'package:flutter_chat_kit/src/widgets/composer/staged_attachments.dart';
-import 'package:flutter_chat_kit/src/widgets/composer/voice_record_button.dart';
-import 'package:flutter_chat_kit/src/widgets/messages/audio_message_view.dart';
+import 'package:flutter_chat_pro/src/config/chat_formatters.dart';
+import 'package:flutter_chat_pro/src/config/chat_strings.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/controllers/composer_controller.dart';
+import 'package:flutter_chat_pro/src/controllers/voice_recorder_controller.dart';
+import 'package:flutter_chat_pro/src/media/default_pickers.dart';
+import 'package:flutter_chat_pro/src/models/attachment.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
+import 'package:flutter_chat_pro/src/widgets/composer/attachment_sheet.dart';
+import 'package:flutter_chat_pro/src/widgets/composer/reply_edit_banner.dart';
+import 'package:flutter_chat_pro/src/widgets/composer/staged_attachments.dart';
+import 'package:flutter_chat_pro/src/widgets/composer/voice_record_button.dart';
+import 'package:flutter_chat_pro/src/widgets/messages/audio_message_view.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 import 'package:path/path.dart' as p;
 
@@ -99,7 +99,7 @@ class _ChatComposerState extends State<ChatComposer> {
 
   FocusNode get _focus => widget.focusNode ?? (_ownFocus ??= FocusNode());
 
-  String get _previewId => 'flutter_chat_kit/composer/${_c.roomId}';
+  String get _previewId => 'flutter_chat_pro/composer/${_c.roomId}';
 
   bool get _sendOnEnter =>
       widget.sendOnEnter ??

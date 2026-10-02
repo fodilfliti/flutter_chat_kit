@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_chat_kit/src/cache/chat_cache.dart';
-import 'package:flutter_chat_kit/src/media/media_entry.dart';
+import 'package:flutter_chat_pro/src/cache/chat_cache.dart';
+import 'package:flutter_chat_pro/src/media/media_entry.dart';
 import 'package:http/http.dart' as http;
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 import 'package:path/path.dart' as p;
@@ -289,7 +289,7 @@ class ChatMediaStore {
     final dir = Directory(
       p.join(
         root.path,
-        'flutter_chat_kit',
+        'flutter_chat_pro',
         'media',
         _uuid.v5(Namespace.url.value, userId),
       ),

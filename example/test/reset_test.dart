@@ -4,11 +4,11 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_chat_kit/flutter_chat_kit.dart';
-import 'package:flutter_chat_kit_example/backend.dart';
-import 'package:flutter_chat_kit_example/fake/fake_chat_source.dart';
-import 'package:flutter_chat_kit_example/main.dart';
-import 'package:flutter_chat_kit_example/style/style_settings.dart';
+import 'package:flutter_chat_pro/flutter_chat_pro.dart';
+import 'package:flutter_chat_pro_example/backend.dart';
+import 'package:flutter_chat_pro_example/fake/fake_chat_source.dart';
+import 'package:flutter_chat_pro_example/main.dart';
+import 'package:flutter_chat_pro_example/style/style_settings.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers.dart';

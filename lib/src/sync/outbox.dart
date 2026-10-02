@@ -3,19 +3,19 @@ import 'dart:math' as math;
 
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_chat_kit/src/cache/chat_cache.dart';
-import 'package:flutter_chat_kit/src/config/chat_config.dart';
-import 'package:flutter_chat_kit/src/models/attachment.dart';
-import 'package:flutter_chat_kit/src/models/attachment_file.dart';
-import 'package:flutter_chat_kit/src/models/chat_json_keys.dart';
-import 'package:flutter_chat_kit/src/models/json_utils.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
-import 'package:flutter_chat_kit/src/models/message_status.dart';
-import 'package:flutter_chat_kit/src/source/chat_source.dart';
-import 'package:flutter_chat_kit/src/source/chat_uploader.dart';
-import 'package:flutter_chat_kit/src/sync/outbox_entry.dart';
-import 'package:flutter_chat_kit/src/sync/retry_policy.dart';
-import 'package:flutter_chat_kit/src/sync/server_clock.dart';
+import 'package:flutter_chat_pro/src/cache/chat_cache.dart';
+import 'package:flutter_chat_pro/src/config/chat_config.dart';
+import 'package:flutter_chat_pro/src/models/attachment.dart';
+import 'package:flutter_chat_pro/src/models/attachment_file.dart';
+import 'package:flutter_chat_pro/src/models/chat_json_keys.dart';
+import 'package:flutter_chat_pro/src/models/json_utils.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
+import 'package:flutter_chat_pro/src/models/message_status.dart';
+import 'package:flutter_chat_pro/src/source/chat_source.dart';
+import 'package:flutter_chat_pro/src/source/chat_uploader.dart';
+import 'package:flutter_chat_pro/src/sync/outbox_entry.dart';
+import 'package:flutter_chat_pro/src/sync/retry_policy.dart';
+import 'package:flutter_chat_pro/src/sync/server_clock.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 
 /// An edit, delete or reaction the outbox gave up on. Its optimistic
@@ -1021,7 +1021,7 @@ class Outbox {
       FlutterErrorDetails(
         exception: error,
         stack: stack,
-        library: 'flutter_chat_kit',
+        library: 'flutter_chat_pro',
         context: ErrorDescription('while flushing the outbox'),
       ),
     );

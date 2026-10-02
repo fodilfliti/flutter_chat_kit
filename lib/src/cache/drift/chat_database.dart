@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart';
-import 'package:flutter_chat_kit/src/cache/drift/tables.dart';
+import 'package:flutter_chat_pro/src/cache/drift/tables.dart';
 
 part 'chat_database.g.dart';
 

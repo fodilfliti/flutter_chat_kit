@@ -1,5 +1,5 @@
-import 'package:flutter_chat_kit/src/config/chat_strings.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
+import 'package:flutter_chat_pro/src/config/chat_strings.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
 
 /// One-line summary of [message] for reply previews and the inbox.
 String messageSnippet(Message message, ChatStrings strings) {

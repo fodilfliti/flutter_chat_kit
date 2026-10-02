@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_chat_kit/src/models/json_keys.dart';
-import 'package:flutter_chat_kit/src/models/json_utils.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
+import 'package:flutter_chat_pro/src/models/json_keys.dart';
+import 'package:flutter_chat_pro/src/models/json_utils.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
 
 /// A member's role in a room. The kit stores it for the app; the built-in
 /// UI does not change with it.

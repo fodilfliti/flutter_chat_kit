@@ -1,6 +1,6 @@
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_chat_kit/src/models/attachment.dart';
+import 'package:flutter_chat_pro/src/models/attachment.dart';
 
 /// Makes a smaller copy of a picked [video] before it uploads; set as
 /// `ChatConfig.compressVideo`. Return the original to skip a file. A

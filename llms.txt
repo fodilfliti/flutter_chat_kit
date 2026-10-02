@@ -1,8 +1,8 @@
-# flutter_chat_kit
+# flutter_chat_pro
 
 Backend-agnostic chat kit: models, SQLite cache, outbox, controllers, customizable UI.
 
-- Import: `package:flutter_chat_kit/flutter_chat_kit.dart`
+- Import: `package:flutter_chat_pro/flutter_chat_pro.dart`
 - App implements ChatSource (fetch rooms/messages, events stream, send, edit, delete, markRead), ChatUploader (media), optional ChatUserResolver
 - Names/avatars: ChatPage(items:, hasMore:, users:) from fetch calls, UsersChanged event, kit.updateUsers(); kit stores and replaces them when they change; resolver only for missing ids
 - Kit owns Drift cache (one DB per user), per-room sync, keyset pagination, offline outbox with retry

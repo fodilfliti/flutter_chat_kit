@@ -1,18 +1,18 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:flutter_chat_kit/src/models/attachment.dart';
-import 'package:flutter_chat_kit/src/models/chat_event.dart';
-import 'package:flutter_chat_kit/src/models/chat_page.dart';
-import 'package:flutter_chat_kit/src/models/chat_room.dart';
-import 'package:flutter_chat_kit/src/models/chat_user.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
-import 'package:flutter_chat_kit/src/models/message_cursor.dart';
-import 'package:flutter_chat_kit/src/models/message_status.dart';
-import 'package:flutter_chat_kit/src/models/presence.dart';
-import 'package:flutter_chat_kit/src/models/room_filter.dart';
-import 'package:flutter_chat_kit/src/models/room_member.dart';
-import 'package:flutter_chat_kit/src/source/chat_source.dart';
+import 'package:flutter_chat_pro/src/models/attachment.dart';
+import 'package:flutter_chat_pro/src/models/chat_event.dart';
+import 'package:flutter_chat_pro/src/models/chat_page.dart';
+import 'package:flutter_chat_pro/src/models/chat_room.dart';
+import 'package:flutter_chat_pro/src/models/chat_user.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
+import 'package:flutter_chat_pro/src/models/message_cursor.dart';
+import 'package:flutter_chat_pro/src/models/message_status.dart';
+import 'package:flutter_chat_pro/src/models/presence.dart';
+import 'package:flutter_chat_pro/src/models/room_filter.dart';
+import 'package:flutter_chat_pro/src/models/room_member.dart';
+import 'package:flutter_chat_pro/src/source/chat_source.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 
 /// A complete [ChatSource] kept in memory: paging, idempotent send, edit,
@@ -118,7 +118,7 @@ class InMemoryChatSource with ChatSourceDefaults {
           images: const [
             Attachment(
               mimeType: 'image/jpeg',
-              remoteUrl: 'https://picsum.photos/seed/flutter-chat-kit/1200/800',
+              remoteUrl: 'https://picsum.photos/seed/flutter-chat-pro/1200/800',
               width: 1200,
               height: 800,
             ),

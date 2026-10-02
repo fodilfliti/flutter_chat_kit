@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
-import 'package:flutter_chat_kit/flutter_chat_kit.dart';
-import 'package:flutter_chat_kit_example/custom/custom_messages.dart';
-import 'package:flutter_chat_kit_example/i18n/strings.g.dart';
+import 'package:flutter_chat_pro/flutter_chat_pro.dart';
+import 'package:flutter_chat_pro_example/custom/custom_messages.dart';
+import 'package:flutter_chat_pro_example/i18n/strings.g.dart';
 
 final _cache = Expando<ChatStrings>();
 

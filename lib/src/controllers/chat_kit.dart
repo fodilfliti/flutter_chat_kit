@@ -2,22 +2,22 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/widgets.dart';
-import 'package:flutter_chat_kit/src/cache/chat_cache.dart';
-import 'package:flutter_chat_kit/src/cache/drift_chat_cache.dart';
-import 'package:flutter_chat_kit/src/config/chat_config.dart';
-import 'package:flutter_chat_kit/src/controllers/audio_player_hub.dart';
-import 'package:flutter_chat_kit/src/controllers/chat_room_controller.dart';
-import 'package:flutter_chat_kit/src/controllers/inbox_controller.dart';
-import 'package:flutter_chat_kit/src/media/chat_media_store.dart';
-import 'package:flutter_chat_kit/src/models/chat_user.dart';
-import 'package:flutter_chat_kit/src/models/room_filter.dart';
-import 'package:flutter_chat_kit/src/source/chat_source.dart';
-import 'package:flutter_chat_kit/src/source/chat_uploader.dart';
-import 'package:flutter_chat_kit/src/source/chat_user_resolver.dart';
-import 'package:flutter_chat_kit/src/sync/chat_repository.dart';
-import 'package:flutter_chat_kit/src/sync/outbox.dart';
-import 'package:flutter_chat_kit/src/sync/retry_policy.dart';
-import 'package:flutter_chat_kit/src/sync/server_clock.dart';
+import 'package:flutter_chat_pro/src/cache/chat_cache.dart';
+import 'package:flutter_chat_pro/src/cache/drift_chat_cache.dart';
+import 'package:flutter_chat_pro/src/config/chat_config.dart';
+import 'package:flutter_chat_pro/src/controllers/audio_player_hub.dart';
+import 'package:flutter_chat_pro/src/controllers/chat_room_controller.dart';
+import 'package:flutter_chat_pro/src/controllers/inbox_controller.dart';
+import 'package:flutter_chat_pro/src/media/chat_media_store.dart';
+import 'package:flutter_chat_pro/src/models/chat_user.dart';
+import 'package:flutter_chat_pro/src/models/room_filter.dart';
+import 'package:flutter_chat_pro/src/source/chat_source.dart';
+import 'package:flutter_chat_pro/src/source/chat_uploader.dart';
+import 'package:flutter_chat_pro/src/source/chat_user_resolver.dart';
+import 'package:flutter_chat_pro/src/sync/chat_repository.dart';
+import 'package:flutter_chat_pro/src/sync/outbox.dart';
+import 'package:flutter_chat_pro/src/sync/retry_policy.dart';
+import 'package:flutter_chat_pro/src/sync/server_clock.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 
 /// The root object of the kit. Create one per signed-in user.

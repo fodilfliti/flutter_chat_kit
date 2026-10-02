@@ -1,4 +1,4 @@
-# flutter_chat_kit example
+# flutter_chat_pro example
 
 A complete chat app on an in-memory fake backend. No accounts, keys or
 server are needed; replies, receipts, typing and presence are simulated.
@@ -16,7 +16,7 @@ For the web, first download drift's `sqlite3.wasm` and `drift_worker.js`
 into `web/` (the versions come from `pubspec.lock`), then run it:
 
 ```bash
-dart run flutter_chat_kit:web_setup
+dart run flutter_chat_pro:web_setup
 flutter run -d chrome
 ```
 

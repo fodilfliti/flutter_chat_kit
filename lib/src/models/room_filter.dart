@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_chat_kit/src/models/chat_room.dart';
-import 'package:flutter_chat_kit/src/models/json_utils.dart';
+import 'package:flutter_chat_pro/src/models/chat_room.dart';
+import 'package:flutter_chat_pro/src/models/json_utils.dart';
 
 /// Which rooms one inbox list shows, for example a "Chats" tab with direct
 /// rooms and a "Groups" tab.

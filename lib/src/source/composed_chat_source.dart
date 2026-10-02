@@ -1,10 +1,10 @@
-import 'package:flutter_chat_kit/src/models/chat_event.dart';
-import 'package:flutter_chat_kit/src/models/chat_page.dart';
-import 'package:flutter_chat_kit/src/models/chat_room.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
-import 'package:flutter_chat_kit/src/models/message_cursor.dart';
-import 'package:flutter_chat_kit/src/models/room_filter.dart';
-import 'package:flutter_chat_kit/src/source/chat_source.dart';
+import 'package:flutter_chat_pro/src/models/chat_event.dart';
+import 'package:flutter_chat_pro/src/models/chat_page.dart';
+import 'package:flutter_chat_pro/src/models/chat_room.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
+import 'package:flutter_chat_pro/src/models/message_cursor.dart';
+import 'package:flutter_chat_pro/src/models/room_filter.dart';
+import 'package:flutter_chat_pro/src/source/chat_source.dart';
 
 /// A [ChatSource] built from two backends: [data] for reads and writes,
 /// [realtime] for events and typing.

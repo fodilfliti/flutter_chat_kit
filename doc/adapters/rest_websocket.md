@@ -6,7 +6,7 @@ use `package:http` and `package:web_socket_channel`, but any client works.
 
 ```yaml
 dependencies:
-  flutter_chat_kit: ^0.1.0
+  flutter_chat_pro: ^0.1.0
   http: ^1.6.0
   lemsa_core_kit: ^1.1.0
   web_socket_channel: ^3.0.3
@@ -18,7 +18,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:flutter_chat_kit/flutter_chat_kit.dart';
+import 'package:flutter_chat_pro/flutter_chat_pro.dart';
 import 'package:http/http.dart' as http;
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';

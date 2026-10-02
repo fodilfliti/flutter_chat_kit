@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/flutter_chat_kit.dart';
-import 'package:flutter_chat_kit_example/backend.dart';
-import 'package:flutter_chat_kit_example/i18n/strings.g.dart';
-import 'package:flutter_chat_kit_example/pages/inbox_page.dart';
-import 'package:flutter_chat_kit_example/style/style_settings.dart';
+import 'package:flutter_chat_pro/flutter_chat_pro.dart';
+import 'package:flutter_chat_pro_example/backend.dart';
+import 'package:flutter_chat_pro_example/i18n/strings.g.dart';
+import 'package:flutter_chat_pro_example/pages/inbox_page.dart';
+import 'package:flutter_chat_pro_example/style/style_settings.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_scale_kit/flutter_scale_kit.dart';
 

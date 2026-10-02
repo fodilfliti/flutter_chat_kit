@@ -1,7 +1,7 @@
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/config/chat_styles.dart';
+import 'package:flutter_chat_pro/src/config/chat_styles.dart';
 
 /// Visual settings for the chat room and inbox, one style per part.
 ///

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/config/chat_styles.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/config/chat_styles.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
 
 /// Builds the base theme of a preset from the chat's colors and fonts.
 typedef ChatThemeFactory =

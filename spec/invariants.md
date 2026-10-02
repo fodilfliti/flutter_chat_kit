@@ -2,7 +2,7 @@
 
 ## Exports and dependencies
 
-- Public export **only** via `lib/flutter_chat_kit.dart`.
+- Public export **only** via `lib/flutter_chat_pro.dart`.
 - No backend SDK in `lib/`: no `firebase_*`, `cloud_firestore`, `supabase*`, `dio`. Enforced by `test/import_guard_test.dart` (from T02).
 - No Riverpod, slang, easy_localization, or `.tr(` in `lib/`.
 - The only Lemsa kit dependency is `lemsa_core_kit`.

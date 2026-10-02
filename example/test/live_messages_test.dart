@@ -1,7 +1,7 @@
 import 'dart:math';
 
-import 'package:flutter_chat_kit/flutter_chat_kit.dart';
-import 'package:flutter_chat_kit_example/fake/fake_chat_source.dart';
+import 'package:flutter_chat_pro/flutter_chat_pro.dart';
+import 'package:flutter_chat_pro_example/fake/fake_chat_source.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 

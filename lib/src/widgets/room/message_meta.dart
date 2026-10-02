@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
 
 /// The trailing line of a bubble: "edited", the time and the status ticks.
 class MessageMeta extends StatelessWidget {

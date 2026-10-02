@@ -1,4 +1,4 @@
-import 'package:flutter_chat_kit/src/models/attachment.dart';
+import 'package:flutter_chat_pro/src/models/attachment.dart';
 
 /// Progress of one attachment upload, emitted by [ChatUploader.upload]:
 /// either [UploadRunning] or [UploadDone].

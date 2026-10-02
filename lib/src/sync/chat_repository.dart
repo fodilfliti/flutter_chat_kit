@@ -1,22 +1,22 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_chat_kit/src/cache/chat_cache.dart';
-import 'package:flutter_chat_kit/src/config/chat_config.dart';
-import 'package:flutter_chat_kit/src/models/chat_event.dart';
-import 'package:flutter_chat_kit/src/models/chat_page.dart';
-import 'package:flutter_chat_kit/src/models/chat_room.dart';
-import 'package:flutter_chat_kit/src/models/chat_user.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
-import 'package:flutter_chat_kit/src/models/message_cursor.dart';
-import 'package:flutter_chat_kit/src/models/presence.dart';
-import 'package:flutter_chat_kit/src/models/room_filter.dart';
-import 'package:flutter_chat_kit/src/models/typing.dart';
-import 'package:flutter_chat_kit/src/source/chat_source.dart';
-import 'package:flutter_chat_kit/src/source/chat_user_resolver.dart';
-import 'package:flutter_chat_kit/src/sync/retry_policy.dart';
-import 'package:flutter_chat_kit/src/sync/room_sync_state.dart';
-import 'package:flutter_chat_kit/src/sync/room_window.dart';
+import 'package:flutter_chat_pro/src/cache/chat_cache.dart';
+import 'package:flutter_chat_pro/src/config/chat_config.dart';
+import 'package:flutter_chat_pro/src/models/chat_event.dart';
+import 'package:flutter_chat_pro/src/models/chat_page.dart';
+import 'package:flutter_chat_pro/src/models/chat_room.dart';
+import 'package:flutter_chat_pro/src/models/chat_user.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
+import 'package:flutter_chat_pro/src/models/message_cursor.dart';
+import 'package:flutter_chat_pro/src/models/presence.dart';
+import 'package:flutter_chat_pro/src/models/room_filter.dart';
+import 'package:flutter_chat_pro/src/models/typing.dart';
+import 'package:flutter_chat_pro/src/source/chat_source.dart';
+import 'package:flutter_chat_pro/src/source/chat_user_resolver.dart';
+import 'package:flutter_chat_pro/src/sync/retry_policy.dart';
+import 'package:flutter_chat_pro/src/sync/room_sync_state.dart';
+import 'package:flutter_chat_pro/src/sync/room_window.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 
 /// Result of `ChatRepository.fetchRooms`: whether more rooms exist and the
@@ -885,7 +885,7 @@ class ChatRepository {
         FlutterErrorDetails(
           exception: error,
           stack: stack,
-          library: 'flutter_chat_kit',
+          library: 'flutter_chat_pro',
           context: ErrorDescription('while applying a realtime chat event'),
         ),
       );

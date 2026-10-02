@@ -1,7 +1,7 @@
 // Downloads the two files the chat cache needs on the web into `web/`,
 // matching the drift and sqlite3 versions in your pubspec.lock:
 //
-//   dart run flutter_chat_kit:web_setup
+//   dart run flutter_chat_pro:web_setup
 //
 // Run it from your app folder (the one with pubspec.yaml and web/) after
 // `flutter pub get`, and again after upgrading drift or sqlite3. You can

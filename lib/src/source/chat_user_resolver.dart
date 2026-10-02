@@ -1,4 +1,4 @@
-import 'package:flutter_chat_kit/src/models/chat_user.dart';
+import 'package:flutter_chat_pro/src/models/chat_user.dart';
 
 /// Loads user profiles by id. The kit batches ids and caches the results.
 ///

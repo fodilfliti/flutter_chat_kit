@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/builders/message_context.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
+import 'package:flutter_chat_pro/src/builders/message_context.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
 
 /// Lays out one message: the avatar column, the author name and the
 /// [content] (usually a bubble), aligned to the author's side, with group

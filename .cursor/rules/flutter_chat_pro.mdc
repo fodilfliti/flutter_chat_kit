@@ -1,12 +1,12 @@
 ---
-description: Session rules for flutter_chat_kit
+description: Session rules for flutter_chat_pro
 alwaysApply: true
 ---
 
-# flutter_chat_kit
+# flutter_chat_pro
 
 - Build one task from `spec/tasks/` per session; read `spec/README.md` first.
-- Public export only via `lib/flutter_chat_kit.dart`.
+- Public export only via `lib/flutter_chat_pro.dart`.
 - Backend-agnostic: never import firebase, supabase, dio, or any backend SDK in `lib/`.
 - No riverpod, slang, easy_localization, or `.tr()` in `lib/`. Strings come from `ChatStrings`.
 - UI reads the cache; the repository writes it. Widgets never call `ChatSource`.

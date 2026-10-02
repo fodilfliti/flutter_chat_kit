@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
 
 /// An avatar: the image at [url] over the initials of [name], round or
 /// rounded per `ChatAvatarStyle.radius`.

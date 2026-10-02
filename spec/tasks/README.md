@@ -1,6 +1,6 @@
 # Tasks
 
-Build **one task per session**. Each file is self-contained: Goal, Read first, Depends on, Deliverables, Public API, Done when, Do not. When a task lands: export its public files from `lib/flutter_chat_kit.dart`, tick its boxes, set its status here, and add a line to `CHANGELOG.md` under `## [Unreleased]`.
+Build **one task per session**. Each file is self-contained: Goal, Read first, Depends on, Deliverables, Public API, Done when, Do not. When a task lands: export its public files from `lib/flutter_chat_pro.dart`, tick its boxes, set its status here, and add a line to `CHANGELOG.md` under `## [Unreleased]`.
 
 | ID | Goal | Depends on | Status |
 | --- | --- | --- | --- |

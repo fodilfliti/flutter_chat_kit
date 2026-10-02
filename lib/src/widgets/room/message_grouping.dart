@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_chat_kit/src/builders/message_context.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
-import 'package:flutter_chat_kit/src/models/message_cursor.dart';
+import 'package:flutter_chat_pro/src/builders/message_context.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
+import 'package:flutter_chat_pro/src/models/message_cursor.dart';
 
 /// One row of the message list. Lists are newest first: index 0 is drawn
 /// at the bottom.

@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter_chat_kit/src/controllers/chat_kit.dart';
-import 'package:flutter_chat_kit/src/models/chat_profile.dart';
+import 'package:flutter_chat_pro/src/controllers/chat_kit.dart';
+import 'package:flutter_chat_pro/src/models/chat_profile.dart';
 
 /// Builds the kit of one profile. Return a new kit on every call: the
 /// switcher opens, closes and disposes it.

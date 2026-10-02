@@ -1,14 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_chat_kit/src/controllers/chat_kit.dart';
-import 'package:flutter_chat_kit/src/models/chat_room.dart';
-import 'package:flutter_chat_kit/src/models/chat_user.dart';
-import 'package:flutter_chat_kit/src/models/message_cursor.dart';
-import 'package:flutter_chat_kit/src/models/presence.dart';
-import 'package:flutter_chat_kit/src/models/room_filter.dart';
-import 'package:flutter_chat_kit/src/models/typing.dart';
-import 'package:flutter_chat_kit/src/sync/chat_repository.dart';
+import 'package:flutter_chat_pro/src/controllers/chat_kit.dart';
+import 'package:flutter_chat_pro/src/models/chat_room.dart';
+import 'package:flutter_chat_pro/src/models/chat_user.dart';
+import 'package:flutter_chat_pro/src/models/message_cursor.dart';
+import 'package:flutter_chat_pro/src/models/presence.dart';
+import 'package:flutter_chat_pro/src/models/room_filter.dart';
+import 'package:flutter_chat_pro/src/models/typing.dart';
+import 'package:flutter_chat_pro/src/sync/chat_repository.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 
 /// State of the room list: cached rooms at once, then the first page from

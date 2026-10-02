@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:flutter_chat_kit/src/controllers/chat_kit.dart';
+import 'package:flutter_chat_pro/src/controllers/chat_kit.dart';
 
 /// Provides a [ChatKit] to the widget tree. The scope does not own the kit;
 /// whoever created it closes it.

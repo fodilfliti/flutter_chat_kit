@@ -1,6 +1,6 @@
-# flutter_chat_kit
+# flutter_chat_pro
 
-[![pub package](https://img.shields.io/pub/v/flutter_chat_kit.svg)](https://pub.dev/packages/flutter_chat_kit)
+[![pub package](https://img.shields.io/pub/v/flutter_chat_pro.svg)](https://pub.dev/packages/flutter_chat_pro)
 
 A complete chat for Flutter that works with **any backend**. You write one
 class that talks to your server (Firebase, Supabase, REST, WebSocket, ...).
@@ -22,7 +22,7 @@ The [example app](example/) on a fake backend, inside a phone frame: pick a
 device, switch presets and languages, go offline, turn on incoming messages.
 
 > **Using an AI agent?** Run `npx skills add fodilfliti/flutter_chat_kit`,
-> then ask: *"Add a chat to this app with flutter_chat_kit."* See
+> then ask: *"Add a chat to this app with flutter_chat_pro."* See
 > [Let your AI agent build it](#let-your-ai-agent-build-it).
 
 ## Contents
@@ -93,12 +93,12 @@ Do these three things once. Everything after this section builds on them.
 
 ```yaml
 dependencies:
-  flutter_chat_kit: ^0.1.0
+  flutter_chat_pro: ^0.1.0
   lemsa_core_kit: ^1.1.0 # the AppFailure errors your ChatSource throws
 ```
 
 ```dart
-import 'package:flutter_chat_kit/flutter_chat_kit.dart';
+import 'package:flutter_chat_pro/flutter_chat_pro.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart'; // in your ChatSource file
 ```
 
@@ -140,7 +140,7 @@ app's `web/` folder (`sqlite3.wasm` and `drift_worker.js`). One command
 downloads the versions that match your `pubspec.lock`:
 
 ```bash
-dart run flutter_chat_kit:web_setup
+dart run flutter_chat_pro:web_setup
 ```
 
 Run it from your app folder after `flutter pub get`, and again after
@@ -1246,7 +1246,7 @@ needs a CORS config on the bucket), or through your own domain.
 
 **The chat stays empty or loading on the web.**
 `sqlite3.wasm` or `drift_worker.js` is missing from `web/`. Run
-`dart run flutter_chat_kit:web_setup`.
+`dart run flutter_chat_pro:web_setup`.
 
 **No attach or mic button.**
 `ChatKit` has no `uploader`. Pass a `ChatUploader`
@@ -1294,7 +1294,7 @@ npx skills add fodilfliti/lemsa-skills
 
 Then ask your agent, for example:
 
-- *"Add a chat to this app with flutter_chat_kit. Backend: Firestore.
+- *"Add a chat to this app with flutter_chat_pro. Backend: Firestore.
   Inbox with Chats and Groups tabs, WhatsApp style."*
 - *"Write a ChatSource for our REST API (docs in `api.md`) with realtime
   from our WebSocket at `wss://...`."*

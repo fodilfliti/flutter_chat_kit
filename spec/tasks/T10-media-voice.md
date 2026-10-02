@@ -72,7 +72,7 @@ class ChatMediaStore {
 
 ## As built
 
-- **Store.** Files live in `appSupport/flutter_chat_kit/media/<uuid v5 of userId>/`, named by the uuid v5 of the URL plus its extension. The Drift `media_files` table (schema v2, created by migration) holds the relative `fileName`, `size`, `mimeType` and `lastAccess`, indexed for LRU. Downloads stream to a `.part` file, then rename; concurrent fetches share one download. `peek` returns a file already resolved this session, so revisited bubbles show it on the first frame. On the web `isSupported` is false and widgets load URLs.
+- **Store.** Files live in `appSupport/flutter_chat_pro/media/<uuid v5 of userId>/`, named by the uuid v5 of the URL plus its extension. The Drift `media_files` table (schema v2, created by migration) holds the relative `fileName`, `size`, `mimeType` and `lastAccess`, indexed for LRU. Downloads stream to a `.part` file, then rename; concurrent fetches share one download. `peek` returns a file already resolved this session, so revisited bubbles show it on the first frame. On the web `isSupported` is false and widgets load URLs.
 - **Kit.** `ChatKit(onSaveMedia:, mediaStore:, audio:)` exposes `media` and `audio`. The outbox's `onUploaded` hook calls `adopt`. `close` stops audio; `clearUserData` clears the files before the cache. `ChatConfig.maxMediaCacheBytes` defaults to 500 MB; `autoDownload` defaults to images and audio.
 - **Scope.** `ChatMediaScope` (provided by `ChatMessageList`, falling back to `ChatKitScope`) gives media widgets the store, the hub and `autoDownload`. `MediaViewer` takes the store explicitly, since pushed routes do not see the list's scope.
 - **Widgets.**

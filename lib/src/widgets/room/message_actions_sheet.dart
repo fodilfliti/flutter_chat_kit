@@ -1,14 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/builders/chat_builders.dart';
-import 'package:flutter_chat_kit/src/builders/message_context.dart';
-import 'package:flutter_chat_kit/src/config/chat_strings.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
-import 'package:flutter_chat_kit/src/controllers/composer_controller.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
-import 'package:flutter_chat_kit/src/models/message_status.dart';
-import 'package:flutter_chat_kit/src/widgets/common/message_snippet.dart';
+import 'package:flutter_chat_pro/src/builders/chat_builders.dart';
+import 'package:flutter_chat_pro/src/builders/message_context.dart';
+import 'package:flutter_chat_pro/src/config/chat_strings.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/controllers/composer_controller.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
+import 'package:flutter_chat_pro/src/models/message_status.dart';
+import 'package:flutter_chat_pro/src/widgets/common/message_snippet.dart';
 
 /// The long-press menu of a message: a row of quick reactions and the
 /// actions list.

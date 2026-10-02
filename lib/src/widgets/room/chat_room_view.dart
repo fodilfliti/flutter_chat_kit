@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/builders/chat_builders.dart';
-import 'package:flutter_chat_kit/src/config/chat_config.dart';
-import 'package:flutter_chat_kit/src/config/chat_formatters.dart';
-import 'package:flutter_chat_kit/src/config/chat_strings.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
-import 'package:flutter_chat_kit/src/controllers/chat_room_controller.dart';
-import 'package:flutter_chat_kit/src/controllers/composer_controller.dart';
-import 'package:flutter_chat_kit/src/media/default_pickers.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
-import 'package:flutter_chat_kit/src/widgets/common/chat_style.dart';
-import 'package:flutter_chat_kit/src/widgets/composer/attachment_sheet.dart';
-import 'package:flutter_chat_kit/src/widgets/composer/chat_composer.dart';
-import 'package:flutter_chat_kit/src/widgets/messages/text_message_view.dart';
-import 'package:flutter_chat_kit/src/widgets/room/chat_app_bar.dart';
-import 'package:flutter_chat_kit/src/widgets/room/message_content.dart';
-import 'package:flutter_chat_kit/src/widgets/room/message_list.dart';
-import 'package:flutter_chat_kit/src/widgets/room/selection_app_bar.dart';
+import 'package:flutter_chat_pro/src/builders/chat_builders.dart';
+import 'package:flutter_chat_pro/src/config/chat_config.dart';
+import 'package:flutter_chat_pro/src/config/chat_formatters.dart';
+import 'package:flutter_chat_pro/src/config/chat_strings.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/controllers/chat_room_controller.dart';
+import 'package:flutter_chat_pro/src/controllers/composer_controller.dart';
+import 'package:flutter_chat_pro/src/media/default_pickers.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
+import 'package:flutter_chat_pro/src/widgets/common/chat_style.dart';
+import 'package:flutter_chat_pro/src/widgets/composer/attachment_sheet.dart';
+import 'package:flutter_chat_pro/src/widgets/composer/chat_composer.dart';
+import 'package:flutter_chat_pro/src/widgets/messages/text_message_view.dart';
+import 'package:flutter_chat_pro/src/widgets/room/chat_app_bar.dart';
+import 'package:flutter_chat_pro/src/widgets/room/message_content.dart';
+import 'package:flutter_chat_pro/src/widgets/room/message_list.dart';
+import 'package:flutter_chat_pro/src/widgets/room/selection_app_bar.dart';
 
 /// Wraps or replaces the room app bar; return null to hide it.
 typedef ChatRoomAppBarBuilder =

@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
-import 'package:flutter_chat_kit/src/controllers/chat_room_controller.dart';
-import 'package:flutter_chat_kit/src/models/attachment.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
+import 'package:flutter_chat_pro/src/controllers/chat_room_controller.dart';
+import 'package:flutter_chat_pro/src/models/attachment.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
 
 /// State of the input bar of a room: text, reply target, message being
 /// edited, staged attachments, draft persistence and typing notifications.

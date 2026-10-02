@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter_chat_kit/flutter_chat_kit.dart';
-import 'package:flutter_chat_kit/src/sync/server_clock.dart';
+import 'package:flutter_chat_pro/flutter_chat_pro.dart';
+import 'package:flutter_chat_pro/src/sync/server_clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../cache/memory_cache.dart';

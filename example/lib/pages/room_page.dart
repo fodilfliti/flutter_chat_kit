@@ -1,14 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/flutter_chat_kit.dart';
-import 'package:flutter_chat_kit_example/backend.dart';
-import 'package:flutter_chat_kit_example/custom/custom_messages.dart';
-import 'package:flutter_chat_kit_example/i18n/chat_strings.dart';
-import 'package:flutter_chat_kit_example/i18n/language_button.dart';
-import 'package:flutter_chat_kit_example/i18n/strings.g.dart';
-import 'package:flutter_chat_kit_example/pages/app_bar_actions.dart';
-import 'package:flutter_chat_kit_example/style/style_sheet.dart';
+import 'package:flutter_chat_pro/flutter_chat_pro.dart';
+import 'package:flutter_chat_pro_example/backend.dart';
+import 'package:flutter_chat_pro_example/custom/custom_messages.dart';
+import 'package:flutter_chat_pro_example/i18n/chat_strings.dart';
+import 'package:flutter_chat_pro_example/i18n/language_button.dart';
+import 'package:flutter_chat_pro_example/i18n/strings.g.dart';
+import 'package:flutter_chat_pro_example/pages/app_bar_actions.dart';
+import 'package:flutter_chat_pro_example/style/style_sheet.dart';
 
 class RoomPage extends StatefulWidget {
   const RoomPage({required this.backend, required this.roomId, super.key});

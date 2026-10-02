@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
 
 /// Drag a message towards the reading end (right in left-to-right) past
 /// [threshold] to reply; it springs back when released.

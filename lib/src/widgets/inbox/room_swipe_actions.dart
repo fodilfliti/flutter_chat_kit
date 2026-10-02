@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
-import 'package:flutter_chat_kit/src/builders/inbox_builders.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/builders/inbox_builders.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
 
 /// Reveals [actions] at the trailing edge when [child] is swiped towards
 /// the leading edge. Tapping an action runs it and closes the row.

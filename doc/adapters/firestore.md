@@ -8,7 +8,7 @@ kit never depends on Firebase.
 dependencies:
   cloud_firestore: ^6.10.0
   firebase_storage: ^13.6.0
-  flutter_chat_kit: ^0.1.0
+  flutter_chat_pro: ^0.1.0
   lemsa_core_kit: ^1.1.0
 ```
 
@@ -16,7 +16,7 @@ dependencies:
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart'; // slices
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter_chat_kit/flutter_chat_kit.dart';
+import 'package:flutter_chat_pro/flutter_chat_pro.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 ```
 

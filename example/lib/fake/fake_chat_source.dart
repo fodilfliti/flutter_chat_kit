@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:flutter_chat_kit/flutter_chat_kit.dart';
+import 'package:flutter_chat_pro/flutter_chat_pro.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 
 /// An in-memory backend that behaves like a real one: latency, keyset

@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_chat_kit/src/models/attachment.dart';
-import 'package:flutter_chat_kit/src/models/chat_json_keys.dart';
-import 'package:flutter_chat_kit/src/models/json_utils.dart';
-import 'package:flutter_chat_kit/src/models/message_cursor.dart';
-import 'package:flutter_chat_kit/src/models/message_status.dart';
+import 'package:flutter_chat_pro/src/models/attachment.dart';
+import 'package:flutter_chat_pro/src/models/chat_json_keys.dart';
+import 'package:flutter_chat_pro/src/models/json_utils.dart';
+import 'package:flutter_chat_pro/src/models/message_cursor.dart';
+import 'package:flutter_chat_pro/src/models/message_status.dart';
 
 /// A chat message. Switch over the sealed subtypes to render it.
 ///

@@ -20,7 +20,7 @@ SQLite cache.
 - Four presets inspired by today's chat apps: `ChatPreset.whatsAppNew` (pill bubbles without tails, frameless photos, a composer floating on the wallpaper, as in the 2026 WhatsApp redesign), `ChatPreset.iMessage` (blue and grey bubbles, outlined input), `ChatPreset.messenger` (blue to pink gradient bubbles) and `ChatPreset.glass` (frosted see-through bubbles and input over an aurora gradient). `ChatPreset.values` lists all nine.
 - The example has a style shuffle for demos: a shuffle button in the app bars switches automatically to the next preset every 3 seconds, with a new color, sometimes dark mode and random bubble and row shapes. The style sheet also has "Random style" for a single change. The app bar buttons are smaller so they all fit.
 - A live web demo of the example at https://fodilfliti.github.io/flutter_chat_kit/, deployed to GitHub Pages by `.github/workflows/deploy_web.yml`. In a browser and on desktop the example runs inside device_preview's phone frame. The example's profile photos come from a host that sends CORS headers, so they show on the web too.
-- `dart run flutter_chat_kit:web_setup` downloads the two files the cache needs on the web (`sqlite3.wasm`, `drift_worker.js`) into the app's `web/`, matching the drift and sqlite3 versions in its `pubspec.lock`. The web demo workflow uses it.
+- `dart run flutter_chat_pro:web_setup` downloads the two files the cache needs on the web (`sqlite3.wasm`, `drift_worker.js`) into the app's `web/`, matching the drift and sqlite3 versions in its `pubspec.lock`. The web demo workflow uses it.
 - `InMemoryChatSource`: a complete `ChatSource` kept in memory, to see and style the whole chat before writing backend code. `InMemoryChatSource.sample(currentUserId:)` comes with rooms, people and messages; it pages newest first, sends idempotently, edits, deletes, marks read, reacts, pins, mutes, emits live events and can auto reply with a read receipt and typing first. `receive`, `typing` and `presence` simulate the other side.
 - Field names for every model: `AttachmentJsonKeys`, `RoomJsonKeys` (with `MemberJsonKeys` for members) and `UserJsonKeys`, nested in `ChatJsonKeys` as `attachmentKeys`, `roomKeys` and `userKeys`. `ChatRoom.fromJson`, `RoomMember.fromJson` and `ChatUser.fromJson` take `keys`. `ChatJsonKeys.camelCase` (and a `camelCase` preset on each key set) reads APIs that write `roomId`, `createdAt`, `remoteUrl`, `avatarUrl`, `lastReadAt`. The cache keeps the default names, so no migration.
 - `ChatJsonCheck.message`, `.room` and `.user` check a real backend response and list each field the kit can't read, or reads with a guess, with the fix: missing fields, epoch seconds, dates without a time zone, unknown status or type, attachments without a URL, guessed mime types, images without a size, voice notes without a duration.
@@ -80,7 +80,7 @@ SQLite cache.
 - Date separators, the floating date header, inbox times and "last seen" now use the app locale (they were always English).
 - "last seen" no longer shows its prefix twice in the room app bar.
 
-## [0.0.1] - 2026-09-30
+## [0.0.1] - 2026-10-02
 
 ### Added
 

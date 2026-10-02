@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Flutter Chat Kit Example</string>
+	<string>Flutter Chat Pro Example</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Record voice messages.</string>
 	<key>NSCameraUsageDescription</key>
@@ -21,7 +21,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>flutter_chat_kit_example</string>
+	<string>flutter_chat_pro_example</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

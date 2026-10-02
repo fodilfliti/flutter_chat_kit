@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
 
 /// "New messages" line above the first message that was unread when the
 /// room opened, drawn from `ChatTheme.unreadDivider`.

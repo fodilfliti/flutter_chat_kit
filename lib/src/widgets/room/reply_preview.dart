@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
 
 /// A quoted message: accent bar, author and a one-line snippet. Used inside
 /// bubbles (tap jumps to the original) and above the composer ([onClose]).

@@ -6,13 +6,13 @@ the kit never depends on `supabase_flutter`.
 
 ```yaml
 dependencies:
-  flutter_chat_kit: ^0.1.0
+  flutter_chat_pro: ^0.1.0
   lemsa_core_kit: ^1.1.0
   supabase_flutter: ^2.18.0
 ```
 
 ```dart
-import 'package:flutter_chat_kit/flutter_chat_kit.dart';
+import 'package:flutter_chat_pro/flutter_chat_pro.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 // Realtime has its own Presence class; the kit's is the one used here.
 import 'package:supabase_flutter/supabase_flutter.dart' hide Presence;

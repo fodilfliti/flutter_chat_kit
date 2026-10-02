@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/flutter_chat_kit.dart';
-import 'package:flutter_chat_kit_example/custom/booking_card.dart';
-import 'package:flutter_chat_kit_example/custom/offer_cards.dart';
-import 'package:flutter_chat_kit_example/i18n/strings.g.dart';
+import 'package:flutter_chat_pro/flutter_chat_pro.dart';
+import 'package:flutter_chat_pro_example/custom/booking_card.dart';
+import 'package:flutter_chat_pro_example/custom/offer_cards.dart';
+import 'package:flutter_chat_pro_example/i18n/strings.g.dart';
 
 /// One type, several cards: `data['variant']` picks the widget.
 const offerType = 'offer';

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_chat_kit/src/models/json_keys.dart';
-import 'package:flutter_chat_kit/src/models/json_utils.dart';
+import 'package:flutter_chat_pro/src/models/json_keys.dart';
+import 'package:flutter_chat_pro/src/models/json_utils.dart';
 
 /// A person who can author messages: the name and avatar shown on bubbles,
 /// inbox rows and app bars.

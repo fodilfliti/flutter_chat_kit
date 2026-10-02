@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_chat_kit/src/config/chat_strings.dart';
+import 'package:flutter_chat_pro/src/config/chat_strings.dart';
 import 'package:intl/intl.dart';
 
 /// Formats [time] (local) as a clock time, for example `3:04 PM`.

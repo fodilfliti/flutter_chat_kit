@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/config/chat_strings.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
-import 'package:flutter_chat_kit/src/widgets/common/message_snippet.dart';
-import 'package:flutter_chat_kit/src/widgets/room/reply_preview.dart';
+import 'package:flutter_chat_pro/src/config/chat_strings.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
+import 'package:flutter_chat_pro/src/widgets/common/message_snippet.dart';
+import 'package:flutter_chat_pro/src/widgets/room/reply_preview.dart';
 
 /// Above the composer input: the message being replied to (author and
 /// snippet) or edited (`ChatStrings.editing`), with a close button.

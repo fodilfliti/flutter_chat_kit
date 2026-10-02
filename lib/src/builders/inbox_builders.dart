@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
-import 'package:flutter_chat_kit/src/builders/chat_builders.dart';
-import 'package:flutter_chat_kit/src/models/chat_room.dart';
-import 'package:flutter_chat_kit/src/models/chat_user.dart';
-import 'package:flutter_chat_kit/src/models/presence.dart';
+import 'package:flutter_chat_pro/src/builders/chat_builders.dart';
+import 'package:flutter_chat_pro/src/models/chat_room.dart';
+import 'package:flutter_chat_pro/src/models/chat_user.dart';
+import 'package:flutter_chat_pro/src/models/presence.dart';
 
 /// Everything an inbox row builder needs.
 @immutable

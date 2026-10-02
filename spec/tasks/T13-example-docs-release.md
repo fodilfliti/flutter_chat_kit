@@ -25,7 +25,7 @@ doc/adapters/supabase.md                    tables + RPC, realtime channel -> Ch
 doc/adapters/rest_websocket.md              endpoints, cursor params, WebSocket event mapping
 doc/customization.md                        builders cookbook (bubble, custom type, app bar actions, theme)
 README.md                                   full: install, 20-line quick start, platform setup, customization, links
-skills/flutter-chat-kit/SKILL.md            full consumer skill (no links to spec/)
+skills/flutter-chat-pro/SKILL.md            full consumer skill (no links to spec/)
 CHANGELOG.md                                [0.1.0]
 ```
 

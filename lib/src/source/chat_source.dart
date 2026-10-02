@@ -1,9 +1,9 @@
-import 'package:flutter_chat_kit/src/models/chat_event.dart';
-import 'package:flutter_chat_kit/src/models/chat_page.dart';
-import 'package:flutter_chat_kit/src/models/chat_room.dart';
-import 'package:flutter_chat_kit/src/models/message.dart';
-import 'package:flutter_chat_kit/src/models/message_cursor.dart';
-import 'package:flutter_chat_kit/src/models/room_filter.dart';
+import 'package:flutter_chat_pro/src/models/chat_event.dart';
+import 'package:flutter_chat_pro/src/models/chat_page.dart';
+import 'package:flutter_chat_pro/src/models/chat_room.dart';
+import 'package:flutter_chat_pro/src/models/message.dart';
+import 'package:flutter_chat_pro/src/models/message_cursor.dart';
+import 'package:flutter_chat_pro/src/models/room_filter.dart';
 
 /// Reads and writes of the backend contract: pages of rooms and messages,
 /// send, edit, delete, read pointers, reactions, pin and mute.

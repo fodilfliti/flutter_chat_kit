@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
-import 'package:flutter_chat_kit/flutter_chat_kit.dart';
+import 'package:flutter_chat_pro/flutter_chat_pro.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
 

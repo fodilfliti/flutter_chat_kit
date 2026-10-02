@@ -47,6 +47,6 @@ app.*.map.json
 # Widget Preview related
 .widget_preview/
 
-# drift's web files; `dart run flutter_chat_kit:web_setup` downloads them
+# drift's web files; `dart run flutter_chat_pro:web_setup` downloads them
 /web/sqlite3.wasm
 /web/drift_worker.js

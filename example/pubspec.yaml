@@ -1,5 +1,5 @@
-name: flutter_chat_kit_example
-description: Demo chat app for flutter_chat_kit.
+name: flutter_chat_pro_example
+description: Demo chat app for flutter_chat_pro.
 publish_to: "none"
 version: 0.0.1
 
@@ -12,7 +12,7 @@ dependencies:
   device_preview: 1.3.1
   flutter:
     sdk: flutter
-  flutter_chat_kit:
+  flutter_chat_pro:
     path: ../
   flutter_localizations:
     sdk: flutter

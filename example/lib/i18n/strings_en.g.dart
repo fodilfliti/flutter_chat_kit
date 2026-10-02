@@ -59,8 +59,8 @@ class Translations$app$en {
 
 	// Translations
 
-	/// en: 'flutter_chat_kit example'
-	String get title => 'flutter_chat_kit example';
+	/// en: 'flutter_chat_pro example'
+	String get title => 'flutter_chat_pro example';
 
 	/// en: 'Chats'
 	String get chats => 'Chats';
@@ -639,7 +639,7 @@ extension on Translations {
 	dynamic _flatMapFunction(String path) {
 		return switch (path) {
 			'languageName' => 'English',
-			'app.title' => 'flutter_chat_kit example',
+			'app.title' => 'flutter_chat_pro example',
 			'app.chats' => 'Chats',
 			'app.chatsWithUnread' => ({required Object n}) => 'Chats (${n})',
 			'app.language' => 'Language',

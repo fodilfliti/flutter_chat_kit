@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/config/chat_strings.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
-import 'package:flutter_chat_kit/src/controllers/chat_profile_switcher.dart';
-import 'package:flutter_chat_kit/src/models/chat_profile.dart';
-import 'package:flutter_chat_kit/src/widgets/common/chat_avatar.dart';
-import 'package:flutter_chat_kit/src/widgets/inbox/room_tile.dart';
-import 'package:flutter_chat_kit/src/widgets/profile/chat_profile_scope.dart';
+import 'package:flutter_chat_pro/src/config/chat_strings.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/controllers/chat_profile_switcher.dart';
+import 'package:flutter_chat_pro/src/models/chat_profile.dart';
+import 'package:flutter_chat_pro/src/widgets/common/chat_avatar.dart';
+import 'package:flutter_chat_pro/src/widgets/inbox/room_tile.dart';
+import 'package:flutter_chat_pro/src/widgets/profile/chat_profile_scope.dart';
 
 /// Builds one entry of the profile menu.
 typedef ChatProfileItemBuilder =
@@ -151,7 +151,7 @@ class ChatProfileMenuButton extends StatelessWidget {
             FlutterErrorDetails(
               exception: error,
               stack: stack,
-              library: 'flutter_chat_kit',
+              library: 'flutter_chat_pro',
               context: ErrorDescription('while switching chat profile'),
             ),
           );

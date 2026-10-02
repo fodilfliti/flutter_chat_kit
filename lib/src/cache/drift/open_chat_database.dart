@@ -5,7 +5,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 
 /// Opens `chat_kit_<userId>.sqlite` in the app documents directory, on a
 /// background isolate. On the web the app must serve `sqlite3.wasm` and
-/// `drift_worker.js` from `web/`; `dart run flutter_chat_kit:web_setup`
+/// `drift_worker.js` from `web/`; `dart run flutter_chat_pro:web_setup`
 /// downloads them.
 QueryExecutor openChatDatabase(String userId) {
   return driftDatabase(

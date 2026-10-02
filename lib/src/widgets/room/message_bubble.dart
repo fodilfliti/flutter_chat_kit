@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/builders/message_context.dart';
-import 'package:flutter_chat_kit/src/config/chat_styles.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/builders/message_context.dart';
+import 'package:flutter_chat_pro/src/config/chat_styles.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
 
 /// The rounded card around a message, drawn from the side's
 /// [ChatBubbleStyle] (color or gradient, border, shadows). On the author's

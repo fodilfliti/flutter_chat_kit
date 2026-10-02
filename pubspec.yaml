@@ -1,4 +1,4 @@
-name: flutter_chat_kit
+name: flutter_chat_pro
 description: >
   Backend-agnostic chat kit for Flutter: typed models, built-in SQLite cache,
   offline outbox, controllers, and a fully customizable chat room and inbox UI.

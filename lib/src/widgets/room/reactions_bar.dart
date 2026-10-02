@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit/src/config/chat_strings.dart';
-import 'package:flutter_chat_kit/src/config/chat_styles.dart';
-import 'package:flutter_chat_kit/src/config/chat_theme.dart';
+import 'package:flutter_chat_pro/src/config/chat_strings.dart';
+import 'package:flutter_chat_pro/src/config/chat_styles.dart';
+import 'package:flutter_chat_pro/src/config/chat_theme.dart';
 
 /// Reaction chips with counts, most used first; the current user's
 /// reactions are highlighted and tapping a chip toggles it.

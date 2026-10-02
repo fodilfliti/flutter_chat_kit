@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_kit_example/i18n/strings.g.dart';
+import 'package:flutter_chat_pro_example/i18n/strings.g.dart';
 
 /// Switches the app language at runtime: the chat, the example screens and
 /// the dates follow at once (Arabic also turns the layout right to left).
