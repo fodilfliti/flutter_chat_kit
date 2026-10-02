@@ -129,6 +129,8 @@
     "camera": "Appareil photo",
     "gallery": "Galerie",
     "attachmentTooLarge": "Fichier trop volumineux",
+    "fileUnavailable": "Ce fichier n'est plus disponible. Supprimez-le et renvoyez-le.",
+    "compressing": "Compression",
     "readMore": "Lire la suite",
     "readLess": "Réduire",
     "replyUnavailable": "Message d'origine indisponible",

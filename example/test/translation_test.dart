@@ -49,6 +49,8 @@ Map<String, String> textsOf(ChatStrings s) => {
   'camera': s.camera,
   'gallery': s.gallery,
   'attachmentTooLarge': s.attachmentTooLarge,
+  'fileUnavailable': s.fileUnavailable,
+  'compressing': s.compressing,
   'readMore': s.readMore,
   'readLess': s.readLess,
   'replyUnavailable': s.replyUnavailable,

@@ -50,6 +50,8 @@ ChatStrings buildChatStrings(Translations t) {
     camera: c.camera,
     gallery: c.gallery,
     attachmentTooLarge: c.attachmentTooLarge,
+    fileUnavailable: c.fileUnavailable,
+    compressing: c.compressing,
     readMore: c.readMore,
     readLess: c.readLess,
     replyUnavailable: c.replyUnavailable,

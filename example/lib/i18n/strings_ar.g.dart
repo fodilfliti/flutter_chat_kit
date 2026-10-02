@@ -194,6 +194,8 @@ class _Translations$chat$ar extends Translations$chat$en {
 	@override String get camera => 'الكاميرا';
 	@override String get gallery => 'المعرض';
 	@override String get attachmentTooLarge => 'الملف كبير جدًا';
+	@override String get fileUnavailable => 'هذا الملف لم يعد متاحًا. احذفه وأرسله مرة أخرى.';
+	@override String get compressing => 'جارٍ الضغط';
 	@override String get readMore => 'اقرأ المزيد';
 	@override String get readLess => 'عرض أقل';
 	@override String get replyUnavailable => 'الرسالة الأصلية غير متاحة';
@@ -443,6 +445,8 @@ extension on TranslationsAr {
 			'chat.camera' => 'الكاميرا',
 			'chat.gallery' => 'المعرض',
 			'chat.attachmentTooLarge' => 'الملف كبير جدًا',
+			'chat.fileUnavailable' => 'هذا الملف لم يعد متاحًا. احذفه وأرسله مرة أخرى.',
+			'chat.compressing' => 'جارٍ الضغط',
 			'chat.readMore' => 'اقرأ المزيد',
 			'chat.readLess' => 'عرض أقل',
 			'chat.replyUnavailable' => 'الرسالة الأصلية غير متاحة',

@@ -390,6 +390,12 @@ class Translations$chat$en {
 	/// en: 'File is too large'
 	String get attachmentTooLarge => 'File is too large';
 
+	/// en: 'This file is no longer available. Delete it and send it again.'
+	String get fileUnavailable => 'This file is no longer available. Delete it and send it again.';
+
+	/// en: 'Compressing'
+	String get compressing => 'Compressing';
+
 	/// en: 'Read more'
 	String get readMore => 'Read more';
 
@@ -745,6 +751,8 @@ extension on Translations {
 			'chat.camera' => 'Camera',
 			'chat.gallery' => 'Gallery',
 			'chat.attachmentTooLarge' => 'File is too large',
+			'chat.fileUnavailable' => 'This file is no longer available. Delete it and send it again.',
+			'chat.compressing' => 'Compressing',
 			'chat.readMore' => 'Read more',
 			'chat.readLess' => 'Show less',
 			'chat.replyUnavailable' => 'Original message unavailable',

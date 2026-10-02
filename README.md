@@ -42,6 +42,11 @@ device, switch presets and languages, go offline, turn on incoming messages.
   - [Your field names, camelCase, or a mapper](#your-field-names-camelcase-or-a-mapper)
   - [The ChatSource](#the-chatsource)
   - [Names and avatars](#names-and-avatars)
+- [Media, sync and push](#media-sync-and-push)
+  - [Photos and videos](#photos-and-videos)
+  - [Staying in sync](#staying-in-sync)
+  - [Push notifications](#push-notifications)
+  - [APIs that page by number](#apis-that-page-by-number)
 - [Style the chat](#style-the-chat)
 - [Builders, text and custom messages](#builders-text-and-custom-messages)
   - [Several custom message types](#several-custom-message-types)
@@ -67,6 +72,11 @@ device, switch presets and languages, go offline, turn on incoming messages.
   files, system messages and your own custom types. Replies, reactions,
   edit, delete, multi-select, read receipts.
 - **Media stored locally**: each file is downloaded once and kept on disk.
+  Photos are shrunk before upload, videos get a poster, and you can plug
+  in a video compressor.
+- **Stays in sync**: catches up when the app comes back, reconnects
+  dropped live streams, pauses sending on an expired token, and works with
+  APIs that page by number.
 - **Smooth at any size**: the message list never jumps when pages or new
   messages arrive, and can jump to any old message.
 - **Easy to style**: one `ChatStyle` widget with presets (WhatsApp,
@@ -615,6 +625,114 @@ MaterialApp(
 Staff see which colleague sent each message; customers only see the
 business. See the [profiles guide](doc/adapters/profiles.md).
 
+## Media, sync and push
+
+### Photos and videos
+
+Photos picked with the built-in picker are scaled so their longest side is
+at most 1920 px and saved as JPEG at quality 80; iPhone HEIC photos become
+JPEG on the way. A camera shot of several MB usually ends up a few hundred
+KB. Change or turn it off in `ChatConfig`:
+
+```dart
+const ChatConfig(
+  imageMaxDimension: 2560, // null sends the original size
+  imageQuality: 90,        // null keeps the original encoding
+  maxAttachmentBytes: 50 * 1024 * 1024,
+);
+```
+
+Files picked with "File" are sent untouched, which is also the way to send
+a GIF that must stay animated on every Android version. If you replace the
+picker (`onAttachmentPick`), shrink photos the same way, for example with
+`image_picker`'s `maxWidth`, `maxHeight` and `imageQuality`.
+
+Videos picked on Android, iOS and the web get a poster at once: the kit
+takes the first frame (480 px) and the bubble shows it while the video
+uploads. If your `ChatUploader` returns no `thumbnailUrl`, the kit uploads
+the poster through it too (local id `<localId>_thumb`) and sends its URL,
+so the other side sees a poster. Desktop shows a placeholder.
+
+**Compress videos before upload.** Phones record about 100 MB a minute.
+The kit has no compressor built in (it would add a large native library to
+every app), but it runs yours. With
+[video_compress](https://pub.dev/packages/video_compress):
+
+```dart
+ChatConfig(
+  compressVideo: (video) async {
+    final info = await VideoCompress.compressVideo(
+      video.path,
+      quality: VideoQuality.Res1280x720Quality,
+    );
+    final path = info?.path;
+    if (path == null) return video; // keep the original
+    return XFile(path, mimeType: 'video/mp4');
+  },
+);
+```
+
+The bubble shows "Compressing" meanwhile (`ChatStrings.compressing`). If
+the function throws, the original is sent. `maxAttachmentBytes` is checked
+on the compressed file, so a long video can be picked and still fit.
+
+### Staying in sync
+
+The kit keeps the chat current on its own:
+
+- **Back from the background** (after `ChatConfig.resumeResyncAfter`, 5 s):
+  it reconnects dropped live streams, fetches what open rooms and inbox
+  lists missed, and sends what is queued. Turn it off with
+  `resyncOnResume: false`.
+- **A live stream that fails or ends** is subscribed again with backoff,
+  and the room fetches what it missed. Errors arrive on `kit.syncErrors`.
+- **Opening a room after a long time**: the newest page shows first, then
+  the kit walks back until it meets the cache, at most 5 requests even for
+  1000 new messages. The rest loads as the user scrolls.
+- **Back online**: call `kit.setOnline(online: true)` from your
+  connectivity listener, or `await kit.refresh()` for pull to refresh.
+- **Expired token**: throw `AuthFailure(AuthReason.expired)` from your
+  source or uploader. Sending pauses (nothing turns red) and
+  `onAuthExpired` is called; refresh, then `kit.retryPending()`. See
+  [Troubleshooting](#troubleshooting).
+- **A wrong phone clock**: new messages are stamped with
+  `kit.serverNow()`, the device clock corrected from your server's
+  `created_at`, so they don't sort above replies that arrive meanwhile.
+
+```dart
+kit.syncErrors.listen((failure) => log('chat sync: $failure'));
+```
+
+### Push notifications
+
+The kit doesn't send pushes, but gives you what a push flow needs:
+`kit.activeRoomId` (skip the notification for the room on screen),
+`InboxController.totalUnread` for the badge, and `kit.refresh()`. The
+[push guide](doc/push.md) covers Firebase Messaging end to end: opening the
+room from a tap after a cold start, foreground notifications, and why iOS
+needs a visible alert.
+
+### APIs that page by number
+
+If your messages endpoint takes `?page=3` or `?offset=60` instead of a
+cursor, `PagedMessages` adapts it to `fetchMessages`, dropping the
+duplicates that new messages cause:
+
+```dart
+final paged = PagedMessages(
+  fetchPage: (roomId, {required page, required size}) =>
+      api.getMessages(roomId, page: page, size: size), // raw JSON list
+  decode: (json, roomId) => Message.fromJson(json, roomId: roomId),
+);
+
+@override
+Future<ChatPage<Message>> fetchMessages(String roomId,
+        {MessageCursor? before, MessageCursor? after, int limit = 30}) =>
+    paged.fetch(roomId, before: before, after: after, limit: limit);
+```
+
+See [Plug in an existing API](doc/adapters/your_api.md#2-map-your-endpoints).
+
 ## Style the chat
 
 ### Step 0: do nothing
@@ -1141,7 +1259,8 @@ stay "sending") and calls `onAuthExpired`. Refresh the session there and
 resume:
 
 ```dart
-final kit = ChatKit(
+late final ChatKit kit;
+kit = ChatKit(
   currentUserId: uid,
   source: source,
   onAuthExpired: () async {

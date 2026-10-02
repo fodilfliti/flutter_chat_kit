@@ -186,6 +186,8 @@ class _Translations$chat$fr extends Translations$chat$en {
 	@override String get camera => 'Appareil photo';
 	@override String get gallery => 'Galerie';
 	@override String get attachmentTooLarge => 'Fichier trop volumineux';
+	@override String get fileUnavailable => 'Ce fichier n\'est plus disponible. Supprimez-le et renvoyez-le.';
+	@override String get compressing => 'Compression';
 	@override String get readMore => 'Lire la suite';
 	@override String get readLess => 'Réduire';
 	@override String get replyUnavailable => 'Message d\'origine indisponible';
@@ -415,6 +417,8 @@ extension on TranslationsFr {
 			'chat.camera' => 'Appareil photo',
 			'chat.gallery' => 'Galerie',
 			'chat.attachmentTooLarge' => 'Fichier trop volumineux',
+			'chat.fileUnavailable' => 'Ce fichier n\'est plus disponible. Supprimez-le et renvoyez-le.',
+			'chat.compressing' => 'Compression',
 			'chat.readMore' => 'Lire la suite',
 			'chat.readLess' => 'Réduire',
 			'chat.replyUnavailable' => 'Message d\'origine indisponible',

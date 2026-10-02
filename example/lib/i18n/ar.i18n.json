@@ -137,6 +137,8 @@
     "camera": "الكاميرا",
     "gallery": "المعرض",
     "attachmentTooLarge": "الملف كبير جدًا",
+    "fileUnavailable": "هذا الملف لم يعد متاحًا. احذفه وأرسله مرة أخرى.",
+    "compressing": "جارٍ الضغط",
     "readMore": "اقرأ المزيد",
     "readLess": "عرض أقل",
     "replyUnavailable": "الرسالة الأصلية غير متاحة",

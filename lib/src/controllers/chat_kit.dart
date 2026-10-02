@@ -126,7 +126,8 @@ class ChatKit extends ChangeNotifier {
   /// message; refresh the session, then call [retryPending] to resume.
   ///
   /// ```dart
-  /// ChatKit(
+  /// late final ChatKit kit;
+  /// kit = ChatKit(
   ///   // ...
   ///   onAuthExpired: () async {
   ///     await auth.refreshSession();

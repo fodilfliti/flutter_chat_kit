@@ -71,11 +71,43 @@ MaterialApp(
 );
 
 kit.setOnline(online: isConnected); // from your connectivity source
+kit.syncErrors.listen(log);         // optional: failed live streams / catch-ups
 
 // Sign-out:
 await kit.close();             // dispose controllers first
 await kit.clearUserData();     // deletes cache, drafts, outbox, media files
 ```
+
+Handled by the kit, no app code: on resume after
+`ChatConfig.resumeResyncAfter` (5 s) it reconnects dropped streams,
+catches up open rooms and lists and flushes the outbox
+(`resyncOnResume: false` turns it off); a failed or closed `events()`
+stream is resubscribed with backoff; opening a stale room fetches the
+newest page and walks back with `before`, at most `maxGapPages` (5)
+requests. Pending messages are stamped with `kit.serverNow()` (device
+clock corrected from confirmed `createdAt`), so a wrong phone clock
+doesn't misorder them.
+
+Expired token: throw `AuthFailure(AuthReason.expired)` from the source or
+uploader. The outbox pauses (messages stay sending) and calls
+`onAuthExpired`; refresh, then resume:
+
+```dart
+late final ChatKit kit;
+kit = ChatKit(
+  currentUserId: uid,
+  source: source,
+  onAuthExpired: () async {
+    await auth.refreshSession();
+    await kit.retryPending();
+  },
+);
+```
+
+Push (FCM): `kit.activeRoomId` is the room on screen (skip its foreground
+notification), `InboxController.totalUnread` is the badge, `kit.refresh()`
+catches up. Open the room from `getInitialMessage` /
+`onMessageOpenedApp` after `kit.open()`. Full flow: `doc/push.md`.
 
 ## Pages
 
@@ -196,7 +228,18 @@ Rules:
 - **Pages are newest first.** `before` / `after` are exclusive keyset
   bounds on `(createdAt, id)`; rooms use `(updatedAt, id)`. Fetch
   `limit + 1` rows to compute `hasMore`. For `after`, read ascending and
-  reverse.
+  reverse. `after` is only used by `PollingRealtime` and to scroll down
+  after a jump; catching up uses `before`.
+- **API pages by number or offset** (`?page=3`, `?offset=60`): don't
+  hand-roll cursors. Wrap it in `PagedMessages(fetchPage: (roomId,
+  {required page, required size}) => api.raw(...), decode: (json, roomId)
+  => Message.fromJson(json, roomId: roomId))` and return
+  `paged.fetch(roomId, before:, after:, limit:)` from `fetchMessages`. It
+  removes duplicates caused by new messages shifting pages.
+- **Uploader**: read the file with `attachment.openRead()` (stream) or
+  `readAsBytes()`, never `File(localPath)` (fails on web). End with
+  `UploadDone(remoteUrl:, thumbnailUrl:)`; without `thumbnailUrl` the kit
+  uploads the video poster through the uploader as `<localId>_thumb`.
 - **`send` is idempotent on `localId`**: use it as the document id, or a
   unique column with "insert or return existing". Return the confirmed
   message with the server `id` and `createdAt` and the same `localId`
@@ -534,6 +577,20 @@ ChatKit chatKit(Ref ref) {
 Open it before showing chat pages (`await kit.open()` in a `FutureProvider`
 or at sign-in), and still provide it to widgets with `ChatKitScope`.
 
+## Media
+
+- Photos from the default picker are shrunk to `ChatConfig.imageMaxDimension`
+  (1920) at `imageQuality` (80); HEIC becomes JPEG. Null keeps originals.
+  GIFs that must stay animated: "File" in the attach sheet.
+- Videos get a local poster on Android, iOS and web (`stream_thumbnail`),
+  stored as `Attachment.thumbnailPath` (local only, never sent).
+- Video compression is the app's choice; the kit adds no compressor. Set
+  `ChatConfig(compressVideo: (video) async { ... return XFile(path); })`,
+  for example with `video_compress`. The bubble shows
+  `ChatStrings.compressing`; a throw sends the original;
+  `maxAttachmentBytes` is checked after compression (failure
+  `Outbox.fileTooLarge`, shown as `ChatStrings.attachmentTooLarge`).
+
 ## Platform setup
 
 - Web: `dart run flutter_chat_kit:web_setup` from the app folder downloads
@@ -572,4 +629,6 @@ or at sign-in), and still provide it to widgets with `ChatKitScope`.
 | Riverpod providers | app (wrap `ChatKit` / controllers) |
 | Translated strings | app, via `ChatStrings` |
 | Chat look and screen scale | app, one `ChatStyle` (or an app widget wrapping it) |
-| Push notifications | app (`switcher.switchTo(profileId)` if needed, then open the room) |
+| Push notifications | app (`switcher.switchTo(profileId)` if needed, then open the room; `kit.activeRoomId` to suppress; `doc/push.md`) |
+| Video compression | app, `ChatConfig.compressVideo` |
+| Token refresh | app, `ChatKit.onAuthExpired` then `kit.retryPending()` |

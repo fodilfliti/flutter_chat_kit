@@ -129,6 +129,8 @@
     "camera": "Camera",
     "gallery": "Gallery",
     "attachmentTooLarge": "File is too large",
+    "fileUnavailable": "This file is no longer available. Delete it and send it again.",
+    "compressing": "Compressing",
     "readMore": "Read more",
     "readLess": "Show less",
     "replyUnavailable": "Original message unavailable",
