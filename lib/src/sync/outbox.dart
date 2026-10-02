@@ -4,7 +4,9 @@ import 'dart:math' as math;
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_chat_kit/src/cache/chat_cache.dart';
+import 'package:flutter_chat_kit/src/config/chat_config.dart';
 import 'package:flutter_chat_kit/src/models/attachment.dart';
+import 'package:flutter_chat_kit/src/models/attachment_file.dart';
 import 'package:flutter_chat_kit/src/models/chat_json_keys.dart';
 import 'package:flutter_chat_kit/src/models/json_utils.dart';
 import 'package:flutter_chat_kit/src/models/message.dart';
@@ -13,6 +15,7 @@ import 'package:flutter_chat_kit/src/source/chat_source.dart';
 import 'package:flutter_chat_kit/src/source/chat_uploader.dart';
 import 'package:flutter_chat_kit/src/sync/outbox_entry.dart';
 import 'package:flutter_chat_kit/src/sync/retry_policy.dart';
+import 'package:flutter_chat_kit/src/sync/server_clock.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 
 /// An edit, delete or reaction the outbox gave up on. Its optimistic
@@ -54,8 +57,31 @@ class Outbox {
     this._random,
     this.onUploaded,
     this.onAuthExpired,
+    this.compressVideo,
+    this.maxAttachmentBytes,
+    this.serverClock,
     Future<bool> Function(Attachment attachment)? fileAvailable,
   }) : _fileAvailable = fileAvailable ?? _defaultFileAvailable;
+
+  /// Learns the server's clock offset from each confirmed send.
+  final ServerClock? serverClock;
+
+  /// Runs on each video before it uploads (`ChatConfig.compressVideo`).
+  /// While it runs, [progressOf] reports [compressing]. When it throws, the
+  /// original file is sent.
+  final VideoCompressor? compressVideo;
+
+  /// Checked on each file right before upload, after [compressVideo]. A
+  /// larger file fails the send with [fileTooLarge].
+  final int? maxAttachmentBytes;
+
+  /// The [progressOf] value while [compressVideo] runs.
+  static const compressing = -1.0;
+
+  /// Error code of a send whose file is over [maxAttachmentBytes], even
+  /// after compression. Thrown by [retry] as
+  /// `ValidationFailure({'attachments': fileTooLarge})`.
+  static const fileTooLarge = 'file_too_large';
 
   /// Called once when a write fails with an `AuthFailure` (an expired or
   /// revoked token) and the queue pauses. Refresh the session, then call
@@ -94,6 +120,9 @@ class Outbox {
 
   /// Messages with writes skipped until their send confirms.
   final _awaitingSend = <String>{};
+
+  /// Files [compressVideo] produced, so a retry doesn't compress them again.
+  final _compressed = <String>{};
   final _errors = StreamController<OutboxError>.broadcast();
   Future<void> _lock = Future.value();
   Future<void>? _flushing;
@@ -123,8 +152,8 @@ class Outbox {
   Stream<OutboxError> get errors => _errors.stream;
 
   /// Upload progress of a message's attachments (0..1), null when nothing
-  /// is uploading. Listen to it from the bubble instead of rebuilding the
-  /// list.
+  /// is uploading, and [compressing] while a video is being compressed.
+  /// Listen to it from the bubble instead of rebuilding the list.
   ValueListenable<double?> progressOf(String localId) =>
       _progress.putIfAbsent(localId, () => ValueNotifier(null));
 
@@ -254,9 +283,9 @@ class Outbox {
 
   /// Sends a failed (or waiting) message again now.
   ///
-  /// Throws `ValidationFailure({'attachments': 'file_unavailable'})` when
-  /// it failed again because its file is gone (see [fileUnavailable]);
-  /// offer to delete it.
+  /// Throws `ValidationFailure({'attachments': code})` when it failed again
+  /// because its file is gone ([fileUnavailable]) or too large
+  /// ([fileTooLarge]); offer to delete it.
   Future<void> retry(String localId) async {
     _authPaused = false;
     await _locked(() async {
@@ -273,9 +302,10 @@ class Outbox {
     await flush();
     final entry = await _cache.outboxEntry(sendKey(localId));
     final message = await _cache.messageByAnyId(localId);
-    if (entry?.lastError == fileUnavailable &&
+    final code = entry?.lastError;
+    if ((code == fileUnavailable || code == fileTooLarge) &&
         message?.status == MessageStatus.failed) {
-      throw const ValidationFailure({'attachments': fileUnavailable});
+      throw ValidationFailure({'attachments': code!});
     }
   }
 
@@ -438,7 +468,7 @@ class Outbox {
     );
     if (message == null) return;
 
-    final attachments = _attachmentsOf(message);
+    final attachments = [..._attachmentsOf(message)];
     final uploads = [
       for (var i = 0; i < attachments.length; i++)
         if (_needsUpload(attachments[i])) i,
@@ -452,12 +482,34 @@ class Outbox {
         ..value = 0;
       for (var n = 0; n < uploads.length; n++) {
         final index = uploads[n];
-        if (!await _fileAvailable(attachments[index])) {
+        var attachment = attachments[index];
+        if (!await _fileAvailable(attachment)) {
           throw const ValidationFailure({'attachments': fileUnavailable});
         }
+        final compress = compressVideo;
+        if (compress != null &&
+            attachment.kind == AttachmentKind.video &&
+            !_compressed.contains(attachment.localPath)) {
+          progress.value = compressing;
+          final smaller = await _compress(compress, attachment);
+          if (smaller != attachment) {
+            final stored = await _update(
+              localId,
+              (m) => _withAttachment(m, index, (_) => smaller),
+            );
+            if (stored == null) throw const CancelledFailure();
+            attachment = smaller;
+          }
+          progress.value = n / uploads.length;
+        }
+        final limit = maxAttachmentBytes;
+        if (limit != null && (attachment.size ?? 0) > limit) {
+          throw const ValidationFailure({'attachments': fileTooLarge});
+        }
+        attachments[index] = attachment;
         final done = await _upload(
           uploader,
-          attachments[index],
+          attachment,
           message,
           (fraction) => progress.value = (n + fraction) / uploads.length,
         );
@@ -473,12 +525,20 @@ class Outbox {
           ),
         );
         if (written == null) throw const CancelledFailure();
-        final adopt = onUploaded;
-        if (adopt != null && attachments[index].localPath != null) {
-          try {
-            await adopt(attachments[index], done.remoteUrl);
-          } on Object {
-            // The send goes on; the file downloads when first viewed.
+        await _adopt(attachments[index], done.remoteUrl);
+        final poster = _posterOf(attachments[index]);
+        if (done.thumbnailUrl == null && poster != null) {
+          final url = await _uploadPoster(uploader, poster, message);
+          if (url != null) {
+            await _update(
+              localId,
+              (m) => _withAttachment(
+                m,
+                index,
+                (a) => a.copyWith(thumbnailUrl: url),
+              ),
+            );
+            await _adopt(poster, url);
           }
         }
       }
@@ -492,7 +552,14 @@ class Outbox {
     });
     if (ready == null) throw const CancelledFailure();
     try {
+      final sentAt = _clock();
       final confirmed = await _source.send(ready);
+      serverClock?.record(
+        sentAt: sentAt,
+        answeredAt: _clock(),
+        serverTime: confirmed.createdAt,
+        clientTime: ready.createdAt,
+      );
       await _locked(() async {
         final current = await _cache.messageByAnyId(localId);
         final status = confirmed.status.isLocal
@@ -704,15 +771,87 @@ class Outbox {
     _timer = Timer(earliest.difference(now), _kick);
   }
 
+  /// [video] with the file [compress] made, or [video] itself when it
+  /// throws or returns the same file.
+  Future<Attachment> _compress(
+    VideoCompressor compress,
+    Attachment video,
+  ) async {
+    final file = video.file;
+    if (file == null) return video;
+    try {
+      final out = await compress(file);
+      if (out.path == file.path) return video;
+      _compressed.add(out.path);
+      return video.copyWith(
+        localPath: out.path,
+        size: await out.length(),
+        mimeType: out.mimeType,
+      );
+    } on Object catch (error, stack) {
+      _report(error, stack);
+      return video;
+    }
+  }
+
+  Future<void> _adopt(Attachment local, String remoteUrl) async {
+    final adopt = onUploaded;
+    if (adopt == null || local.localPath == null) return;
+    try {
+      await adopt(local, remoteUrl);
+    } on Object {
+      // The send goes on; the file downloads when first viewed.
+    }
+  }
+
+  /// The local poster of a video as an image attachment, or null.
+  static Attachment? _posterOf(Attachment attachment) {
+    final path = attachment.thumbnailPath;
+    if (attachment.kind != AttachmentKind.video || path == null) return null;
+    final slash = path.lastIndexOf(RegExp(r'[/\\]'));
+    return Attachment(
+      mimeType: 'image/jpeg',
+      localPath: path,
+      name: path.startsWith('blob:') ? 'poster.jpg' : path.substring(slash + 1),
+    );
+  }
+
+  /// Uploads a video's poster with local id `<localId>_thumb`. Null when
+  /// it fails: a missing poster never fails the message.
+  Future<String?> _uploadPoster(
+    ChatUploader uploader,
+    Attachment poster,
+    Message message,
+  ) async {
+    try {
+      if (!await _fileAvailable(poster)) return null;
+      final done = await _upload(
+        uploader,
+        poster,
+        message,
+        (_) {},
+        uploadId: '${message.localId}_thumb',
+      );
+      return done.remoteUrl;
+    } on Object {
+      return null;
+    }
+  }
+
   Future<UploadDone> _upload(
     ChatUploader uploader,
     Attachment attachment,
     Message message,
-    void Function(double fraction) onProgress,
-  ) async {
+    void Function(double fraction) onProgress, {
+    String? uploadId,
+  }) async {
     final completer = Completer<UploadDone>();
     final subscription = uploader
-        .upload(attachment, roomId: message.roomId, localId: message.localId)
+        .upload(
+          attachment,
+          roomId: message.roomId,
+          localId: uploadId ?? message.localId,
+        )
         .listen(
           (event) {
             switch (event) {

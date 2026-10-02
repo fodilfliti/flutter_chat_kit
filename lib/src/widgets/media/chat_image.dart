@@ -31,8 +31,10 @@ class ChatImage extends StatefulWidget {
   final Attachment attachment;
   final BoxFit fit;
 
-  /// Shows `thumbnailUrl` (for video posters and grid cells) instead of the
-  /// full image. Without a thumbnail a video shows the placeholder.
+  /// Shows the thumbnail (for video posters and grid cells) instead of the
+  /// full image: the poster made on this device (`thumbnailPath`) while
+  /// sending, else `thumbnailUrl`. Without either a video shows the
+  /// placeholder.
   final bool thumbnail;
   final ChatStrings strings;
 
@@ -82,7 +84,8 @@ class _ChatImageState extends State<ChatImage> {
     final scope = ChatMediaScope.of(context);
     final store = widget.store ?? scope.store;
     final a = widget.attachment;
-    final key = '${a.localPath}|$_url|${identityHashCode(store)}';
+    final poster = widget.thumbnail ? a.thumbnailPath : null;
+    final key = '${a.localPath}|$poster|$_url|${identityHashCode(store)}';
     if (key == _resolvedFor) return;
     _resolvedFor = key;
     _store = store;
@@ -97,6 +100,16 @@ class _ChatImageState extends State<ChatImage> {
         File(local).existsSync()) {
       _provider = FileImage(File(local));
       return;
+    }
+    if (poster != null) {
+      if (kIsWeb) {
+        _provider = NetworkImage(poster);
+        return;
+      }
+      if (File(poster).existsSync()) {
+        _provider = FileImage(File(poster));
+        return;
+      }
     }
     final url = _url;
     if (url == null) return;

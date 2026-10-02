@@ -11,6 +11,7 @@ class AttachmentJsonKeys {
     this.localPath = 'local_path',
     this.remoteUrl = 'remote_url',
     this.thumbnailUrl = 'thumbnail_url',
+    this.thumbnailPath = 'thumbnail_path',
     this.size = 'size',
     this.width = 'width',
     this.height = 'height',
@@ -18,13 +19,14 @@ class AttachmentJsonKeys {
     this.name = 'name',
   });
 
-  /// `mimeType`, `localPath`, `remoteUrl`, `thumbnailUrl` and `durationMs`;
-  /// the one-word names stay the same.
+  /// `mimeType`, `localPath`, `remoteUrl`, `thumbnailUrl`, `thumbnailPath`
+  /// and `durationMs`; the one-word names stay the same.
   static const camelCase = AttachmentJsonKeys(
     mimeType: 'mimeType',
     localPath: 'localPath',
     remoteUrl: 'remoteUrl',
     thumbnailUrl: 'thumbnailUrl',
+    thumbnailPath: 'thumbnailPath',
     duration: 'durationMs',
   );
 
@@ -41,6 +43,10 @@ class AttachmentJsonKeys {
 
   /// `Attachment.thumbnailUrl`; default `thumbnail_url`.
   final String thumbnailUrl;
+
+  /// `Attachment.thumbnailPath`; default `thumbnail_path`. Only set on the
+  /// sending device.
+  final String thumbnailPath;
 
   /// `Attachment.size` in bytes; default `size`.
   final String size;

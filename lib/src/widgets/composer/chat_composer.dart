@@ -177,8 +177,13 @@ class _ChatComposerState extends State<ChatComposer> {
       chosen.onSelected?.call();
       return;
     }
+    final config = _c.room.kit.config;
     final pick =
-        widget.onAttachmentPick ?? const DefaultAttachmentPicker().call;
+        widget.onAttachmentPick ??
+        DefaultAttachmentPicker(
+          maxDimension: config.imageMaxDimension,
+          imageQuality: config.imageQuality,
+        ).call;
     final List<Attachment> files;
     try {
       files = await pick(context, source);
@@ -187,10 +192,15 @@ class _ChatComposerState extends State<ChatComposer> {
       return;
     }
     if (!mounted || files.isEmpty) return;
-    final limit = _c.room.kit.config.maxAttachmentBytes;
+    final limit = config.maxAttachmentBytes;
+    // Videos are checked again after compressVideo, which may shrink them.
+    final compresses = config.compressVideo != null;
     final accepted = [
       for (final f in files)
-        if (limit == null || (f.size ?? 0) <= limit) f,
+        if (limit == null ||
+            (f.size ?? 0) <= limit ||
+            (compresses && f.kind == AttachmentKind.video))
+          f,
     ];
     if (accepted.length < files.length) _show(_strings.attachmentTooLarge);
     _c.stage(accepted);

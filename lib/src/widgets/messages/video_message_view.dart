@@ -6,8 +6,9 @@ import 'package:flutter_chat_kit/src/config/chat_theme.dart';
 import 'package:flutter_chat_kit/src/models/attachment.dart';
 import 'package:flutter_chat_kit/src/widgets/media/chat_image.dart';
 
-/// A video poster (`thumbnailUrl`, else a placeholder) with a play button
-/// and the duration. Playback happens in the media viewer.
+/// A video poster (the local `thumbnailPath` while sending, else
+/// `thumbnailUrl`, else a placeholder) with a play button and the
+/// duration. Playback happens in the media viewer.
 class VideoMessageView extends StatelessWidget {
   const VideoMessageView({
     required this.video,
@@ -22,7 +23,8 @@ class VideoMessageView extends StatelessWidget {
 
   final Attachment video;
 
-  /// Upload fraction 0..1, or null when not uploading.
+  /// Upload fraction 0..1, `Outbox.compressing` while the video is being
+  /// compressed, or null when not uploading.
   final ValueListenable<double?>? progress;
   final VoidCallback? onTap;
   final Object? heroTag;
@@ -58,18 +60,46 @@ class VideoMessageView extends StatelessWidget {
                   ? _play(theme)
                   : ValueListenableBuilder<double?>(
                       valueListenable: progress,
-                      builder: (context, value, _) => value == null
-                          ? _play(theme)
-                          : SizedBox.square(
-                              dimension: theme.size(44),
-                              child: CircularProgressIndicator(
-                                value: value <= 0 ? null : value,
-                                strokeWidth: 3,
-                                color: media.overlayForegroundColor,
-                                backgroundColor: media.overlayForegroundColor
-                                    .withValues(alpha: 0.24),
+                      builder: (context, value, _) {
+                        if (value == null) return _play(theme);
+                        final spinner = SizedBox.square(
+                          dimension: theme.size(44),
+                          child: CircularProgressIndicator(
+                            value: value <= 0 ? null : value,
+                            strokeWidth: 3,
+                            color: media.overlayForegroundColor,
+                            backgroundColor: media.overlayForegroundColor
+                                .withValues(alpha: 0.24),
+                          ),
+                        );
+                        // A negative value is Outbox.compressing.
+                        if (value >= 0) return spinner;
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            spinner,
+                            SizedBox(height: theme.size(8)),
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: media.overlayColor,
+                                borderRadius: BorderRadius.circular(
+                                  media.overlayRadius,
+                                ),
+                              ),
+                              child: Padding(
+                                padding: media.overlayPadding,
+                                child: Text(
+                                  strings.compressing,
+                                  style: TextStyle(
+                                    color: media.overlayForegroundColor,
+                                    fontSize: theme.fontSize(12),
+                                  ),
+                                ),
                               ),
                             ),
+                          ],
+                        );
+                      },
                     ),
             ),
             if (duration != null)

@@ -208,6 +208,49 @@ void main() {
     expect(taps, 1);
   });
 
+  testWidgets('a video being compressed says so', (tester) async {
+    final progress = ValueNotifier<double?>(Outbox.compressing);
+    addTearDown(progress.dispose);
+    await show(
+      tester,
+      VideoMessageView(
+        video: const Attachment(mimeType: 'video/mp4', localPath: 'v.mp4'),
+        progress: progress,
+      ),
+    );
+    expect(find.text('Compressing'), findsOneWidget);
+
+    progress.value = 0.5;
+    await tester.pump();
+    expect(find.text('Compressing'), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  });
+
+  testWidgets('a video being sent shows the poster made on the device', (
+    tester,
+  ) async {
+    final temp = Directory.systemTemp.createTempSync('chat_poster_');
+    addTearDown(() => temp.deleteSync(recursive: true));
+    final poster = File('${temp.path}/v.jpg')..writeAsBytesSync([0xFF, 0xD8]);
+    await show(
+      tester,
+      VideoMessageView(
+        video: Attachment(
+          mimeType: 'video/mp4',
+          localPath: '${temp.path}/v.mp4',
+          thumbnailPath: poster.path,
+          thumbnailUrl: 'https://cdn.test/v.jpg',
+        ),
+      ),
+      store: _HangingStore(),
+    );
+
+    final image = tester.widget<Image>(find.byType(Image));
+    final provider = (image.image as ResizeImage).imageProvider;
+    expect(provider, isA<FileImage>());
+    expect((provider as FileImage).file.path, poster.path);
+  });
+
   group('MediaViewer', () {
     // The pages show endless spinners, so pumpAndSettle would never return.
     Future<void> frames(WidgetTester tester) async {

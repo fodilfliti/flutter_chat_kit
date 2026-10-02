@@ -18,6 +18,7 @@ import 'package:flutter_chat_kit/src/models/chat_user.dart';
 import 'package:flutter_chat_kit/src/models/message.dart';
 import 'package:flutter_chat_kit/src/models/message_cursor.dart';
 import 'package:flutter_chat_kit/src/models/typing.dart';
+import 'package:flutter_chat_kit/src/sync/outbox.dart';
 import 'package:flutter_chat_kit/src/widgets/common/chat_avatar.dart';
 import 'package:flutter_chat_kit/src/widgets/common/message_snippet.dart';
 import 'package:flutter_chat_kit/src/widgets/media/chat_media_scope.dart';
@@ -921,8 +922,11 @@ class ChatMessageListState extends State<ChatMessageList> {
     final strings = widget.strings;
     try {
       await _controller.retry(localId);
-    } on ValidationFailure {
-      messenger?.showSnackBar(SnackBar(content: Text(strings.fileUnavailable)));
+    } on ValidationFailure catch (e) {
+      final text = e.fields['attachments'] == Outbox.fileTooLarge
+          ? strings.attachmentTooLarge
+          : strings.fileUnavailable;
+      messenger?.showSnackBar(SnackBar(content: Text(text)));
     }
   }
 

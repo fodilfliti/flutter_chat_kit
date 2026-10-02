@@ -17,6 +17,7 @@ import 'package:flutter_chat_kit/src/source/chat_user_resolver.dart';
 import 'package:flutter_chat_kit/src/sync/chat_repository.dart';
 import 'package:flutter_chat_kit/src/sync/outbox.dart';
 import 'package:flutter_chat_kit/src/sync/retry_policy.dart';
+import 'package:flutter_chat_kit/src/sync/server_clock.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 
 /// The root object of the kit. Create one per signed-in user.
@@ -57,7 +58,8 @@ class ChatKit extends ChangeNotifier {
     this.onAuthExpired,
   }) : cache = cache ?? DriftChatCache(),
        audio = audio ?? AudioPlayerHub(),
-       _ownsAudio = audio == null {
+       _ownsAudio = audio == null,
+       _serverClock = ServerClock(clock: clock) {
     media =
         mediaStore?.call(this) ??
         ChatMediaStore(
@@ -96,8 +98,15 @@ class ChatKit extends ChangeNotifier {
   /// Backoff of the outbox.
   final RetryPolicy retryPolicy;
 
-  /// Time source (UTC) for new messages, sync and retries. Tests replace it.
+  /// Time source (UTC) for sync and retries. Tests replace it.
   final DateTime Function() clock;
+
+  final ServerClock _serverClock;
+
+  /// [clock] corrected by the server's clock, learned from confirmed sends.
+  /// New messages are stamped with it, so a phone whose clock is wrong
+  /// still puts them after the replies it already has.
+  DateTime serverNow() => _serverClock.now();
 
   /// The local store. Only the kit writes to it; widgets read through
   /// controllers.
@@ -212,6 +221,9 @@ class ChatKit extends ChangeNotifier {
       onUploaded: (local, remoteUrl) =>
           media.adopt(local.localPath!, remoteUrl, mimeType: local.mimeType),
       onAuthExpired: onAuthExpired,
+      compressVideo: config.compressVideo,
+      maxAttachmentBytes: config.maxAttachmentBytes,
+      serverClock: _serverClock,
     )..setOnline(online: _isOnline);
     _isOpen = true;
     _watchLifecycle();

@@ -111,6 +111,7 @@ type names to kit types, use `ChatJsonKeys(typeAliases: {'photo': 'image'})`.
 | `size` | int | Bytes, shown for files. |
 | `name` | string | File name, shown for files. |
 | `local_path` | string | Only set by the kit on the sending device; ignore it on the server. |
+| `thumbnail_path` | string | The video poster the kit made on the sending device; ignore it on the server. The kit uploads it and sends its URL as `thumbnail_url` when your uploader returns none. |
 
 An attachment can be just a URL string: `"https://cdn.example.com/a.jpg"`.
 
@@ -246,7 +247,7 @@ something visible:
 | `users` on pages (or a `ChatUserResolver`) | No names in direct rooms and groups, and blank avatars. |
 | `mime_type` | Guessed from the extension; an extension-less URL in a file message shows as a file. |
 | `width` / `height` | Images and videos jump in size when they load, and the list can shift. |
-| `thumbnail_url` | Videos have no poster; previews load the full image. |
+| `thumbnail_url` | Videos sent from Android, iOS or the web carry the poster the kit made and uploaded; other videos have no poster. Previews load the full image. |
 | `duration_ms` (audio) | The voice note shows 0:00 until it plays. |
 | `updated_at` | The last message time is used; the order is off when a room changes without a new message. |
 | `unread_count` | No unread badges in the inbox. |
@@ -285,7 +286,7 @@ final message = Message.fromJson(json, keys: ChatJsonKeys.camelCase);
 | `created_at`, `edited_at`, `deleted_at` | `createdAt`, `editedAt`, `deletedAt` |
 | `reply_to_id`, `sent_by`, `custom_type` | `replyToId`, `sentBy`, `customType` |
 | `duration_ms` (message and attachment) | `durationMs` |
-| `mime_type`, `local_path`, `remote_url`, `thumbnail_url` | `mimeType`, `localPath`, `remoteUrl`, `thumbnailUrl` |
+| `mime_type`, `local_path`, `remote_url`, `thumbnail_url`, `thumbnail_path` | `mimeType`, `localPath`, `remoteUrl`, `thumbnailUrl`, `thumbnailPath` |
 | `avatar_url`, `updated_at`, `last_message`, `unread_count` | `avatarUrl`, `updatedAt`, `lastMessage`, `unreadCount` |
 | `user_id`, `last_read_at`, `last_delivered_at` | `userId`, `lastReadAt`, `lastDeliveredAt` |
 

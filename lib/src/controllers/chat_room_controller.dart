@@ -339,7 +339,7 @@ class ChatRoomController extends ChangeNotifier {
         localId: id,
         roomId: roomId,
         authorId: currentUserId,
-        createdAt: kit.clock(),
+        createdAt: kit.serverNow(),
         text: body,
         replyToId: replyToId,
       ),
@@ -390,7 +390,7 @@ class ChatRoomController extends ChangeNotifier {
             localId: id,
             roomId: roomId,
             authorId: currentUserId,
-            createdAt: kit.clock(),
+            createdAt: kit.serverNow(),
             images: images,
             caption: caption,
             replyToId: reply,
@@ -412,7 +412,7 @@ class ChatRoomController extends ChangeNotifier {
                 localId: id,
                 roomId: roomId,
                 authorId: currentUserId,
-                createdAt: kit.clock(),
+                createdAt: kit.serverNow(),
                 video: f,
                 caption: caption,
                 replyToId: reply,
@@ -427,7 +427,7 @@ class ChatRoomController extends ChangeNotifier {
                 localId: id,
                 roomId: roomId,
                 authorId: currentUserId,
-                createdAt: kit.clock(),
+                createdAt: kit.serverNow(),
                 audio: f,
                 duration: f.duration ?? Duration.zero,
                 replyToId: reply,
@@ -442,7 +442,7 @@ class ChatRoomController extends ChangeNotifier {
                 localId: id,
                 roomId: roomId,
                 authorId: currentUserId,
-                createdAt: kit.clock(),
+                createdAt: kit.serverNow(),
                 file: f,
                 replyToId: reply,
               ),
@@ -473,7 +473,7 @@ class ChatRoomController extends ChangeNotifier {
         localId: id,
         roomId: roomId,
         authorId: currentUserId,
-        createdAt: kit.clock(),
+        createdAt: kit.serverNow(),
         audio: audio,
         duration: duration,
         waveform: waveform,
@@ -510,7 +510,7 @@ class ChatRoomController extends ChangeNotifier {
         localId: id,
         roomId: roomId,
         authorId: currentUserId,
-        createdAt: kit.clock(),
+        createdAt: kit.serverNow(),
         customType: customType,
         data: data,
         replyToId: replyToId,
@@ -569,7 +569,8 @@ class ChatRoomController extends ChangeNotifier {
   Future<bool> discard(String localId) => _outbox.discard(localId);
 
   /// Upload progress of the message's attachments, from 0 to 1; null when
-  /// nothing is uploading.
+  /// nothing is uploading, and `Outbox.compressing` (negative) while
+  /// `ChatConfig.compressVideo` runs.
   ValueListenable<double?> progressOf(String localId) =>
       _outbox.progressOf(localId);
 

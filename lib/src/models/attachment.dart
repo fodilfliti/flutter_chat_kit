@@ -41,6 +41,7 @@ class Attachment {
     this.localPath,
     this.remoteUrl,
     this.thumbnailUrl,
+    this.thumbnailPath,
     this.size,
     this.width,
     this.height,
@@ -78,6 +79,7 @@ class Attachment {
       localPath: localPath,
       remoteUrl: remoteUrl,
       thumbnailUrl: readOptionalString(map[keys.thumbnailUrl]),
+      thumbnailPath: readOptionalString(map[keys.thumbnailPath]),
       size: readInt(map[keys.size]),
       width: readInt(map[keys.width]),
       height: readInt(map[keys.height]),
@@ -161,6 +163,12 @@ class Attachment {
   /// Without it a video bubble shows a placeholder instead of a poster.
   final String? thumbnailUrl;
 
+  /// A poster made on this device for a video being sent (JSON
+  /// `thumbnail_path`), shown until [thumbnailUrl] is known. The outbox
+  /// uploads it when the uploader returns no thumbnail. Other devices never
+  /// have it.
+  final String? thumbnailPath;
+
   /// Size in bytes (JSON `size`), shown on file messages.
   final int? size;
 
@@ -206,6 +214,7 @@ class Attachment {
     String? localPath,
     String? remoteUrl,
     String? thumbnailUrl,
+    String? thumbnailPath,
     int? size,
     int? width,
     int? height,
@@ -217,6 +226,7 @@ class Attachment {
       localPath: localPath ?? this.localPath,
       remoteUrl: remoteUrl ?? this.remoteUrl,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      thumbnailPath: thumbnailPath ?? this.thumbnailPath,
       size: size ?? this.size,
       width: width ?? this.width,
       height: height ?? this.height,
@@ -235,6 +245,7 @@ class Attachment {
       keys.localPath: localPath,
       keys.remoteUrl: remoteUrl,
       keys.thumbnailUrl: thumbnailUrl,
+      keys.thumbnailPath: thumbnailPath,
       keys.size: size,
       keys.width: width,
       keys.height: height,
@@ -250,6 +261,7 @@ class Attachment {
         other.localPath == localPath &&
         other.remoteUrl == remoteUrl &&
         other.thumbnailUrl == thumbnailUrl &&
+        other.thumbnailPath == thumbnailPath &&
         other.size == size &&
         other.width == width &&
         other.height == height &&
@@ -263,6 +275,7 @@ class Attachment {
     localPath,
     remoteUrl,
     thumbnailUrl,
+    thumbnailPath,
     size,
     width,
     height,

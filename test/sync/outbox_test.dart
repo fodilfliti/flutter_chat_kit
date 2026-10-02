@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_chat_kit/flutter_chat_kit.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lemsa_core_kit/lemsa_core_kit.dart';
@@ -11,9 +12,13 @@ final _t0 = DateTime.utc(2026, 9, 30, 12);
 
 class _Uploader implements ChatUploader {
   final List<String> uploads = [];
+  final List<String> localIds = [];
 
   /// Paths whose next upload fails with this failure.
   final Map<String, AppFailure> failOnce = {};
+
+  /// Thumbnails the storage makes itself, by path.
+  final Map<String, String> thumbnails = {};
 
   @override
   Stream<UploadProgress> upload(
@@ -23,10 +28,14 @@ class _Uploader implements ChatUploader {
   }) async* {
     final path = attachment.localPath!;
     uploads.add(path);
+    localIds.add(localId);
     yield const UploadRunning(0.5);
     final failure = failOnce.remove(path);
     if (failure != null) throw failure;
-    yield UploadDone(remoteUrl: 'https://cdn/$path');
+    yield UploadDone(
+      remoteUrl: 'https://cdn/$path',
+      thumbnailUrl: thumbnails[path],
+    );
   }
 }
 
@@ -69,6 +78,21 @@ void main() {
       images: [
         for (final p in paths) Attachment(mimeType: 'image/jpeg', localPath: p),
       ],
+    );
+  }
+
+  VideoMessage video(String localId) {
+    return VideoMessage(
+      id: localId,
+      localId: localId,
+      roomId: 'r1',
+      authorId: 'me',
+      createdAt: now,
+      video: const Attachment(
+        mimeType: 'video/mp4',
+        localPath: 'v.mp4',
+        thumbnailPath: 'v.jpg',
+      ),
     );
   }
 
@@ -160,6 +184,127 @@ void main() {
       await outbox.flush();
       expect(uploader.uploads, ['a.jpg', 'b.jpg', 'b.jpg']);
       expect((await stored('m1'))?.status, MessageStatus.sent);
+    });
+
+    test('a video poster is uploaded when the storage makes none', () async {
+      await outbox.send(video('m1'));
+      await outbox.flush();
+
+      expect(uploader.uploads, ['v.mp4', 'v.jpg']);
+      expect(uploader.localIds, ['m1', 'm1_thumb']);
+      final message = await stored('m1') as VideoMessage?;
+      expect(message?.status, MessageStatus.sent);
+      expect(message?.video.thumbnailUrl, 'https://cdn/v.jpg');
+      expect(message?.video.thumbnailPath, 'v.jpg');
+      final sent = source.sent.single as VideoMessage;
+      expect(sent.video.thumbnailUrl, 'https://cdn/v.jpg');
+    });
+
+    test('a storage thumbnail wins over the local poster', () async {
+      uploader.thumbnails['v.mp4'] = 'https://cdn/auto.jpg';
+      await outbox.send(video('m1'));
+      await outbox.flush();
+
+      expect(uploader.uploads, ['v.mp4']);
+      final message = await stored('m1') as VideoMessage?;
+      expect(message?.video.thumbnailUrl, 'https://cdn/auto.jpg');
+    });
+
+    test('a failed poster upload does not fail the message', () async {
+      uploader.failOnce['v.jpg'] = const StorageFailure();
+      await outbox.send(video('m1'));
+      await outbox.flush();
+
+      expect(uploader.uploads, ['v.mp4', 'v.jpg']);
+      final message = await stored('m1') as VideoMessage?;
+      expect(message?.status, MessageStatus.sent);
+      expect(message?.video.remoteUrl, 'https://cdn/v.mp4');
+      expect(message?.video.thumbnailUrl, isNull);
+    });
+
+    group('compressVideo', () {
+      Outbox withCompressor(VideoCompressor compress, {int? maxBytes}) {
+        return Outbox(
+          currentUserId: 'me',
+          source: source,
+          cache: cache,
+          uploader: uploader,
+          retryPolicy: policy,
+          clock: () => now,
+          compressVideo: compress,
+          maxAttachmentBytes: maxBytes,
+        );
+      }
+
+      test('the compressed file is uploaded; progress says so', () async {
+        await outbox.dispose();
+        final gate = Completer<void>();
+        outbox = withCompressor((video) async {
+          await gate.future;
+          return XFile.fromData(
+            Uint8List(1000),
+            path: 'small.mp4',
+            mimeType: 'video/mp4',
+          );
+        });
+        final progress = <double?>[];
+        outbox
+            .progressOf('m1')
+            .addListener(() => progress.add(outbox.progressOf('m1').value));
+        await outbox.send(video('m1'));
+        final flushing = outbox.flush();
+        await pumpEventQueue();
+        expect(outbox.progressOf('m1').value, Outbox.compressing);
+
+        gate.complete();
+        await flushing;
+        final message = await stored('m1') as VideoMessage?;
+        expect(uploader.uploads.first, 'small.mp4');
+        expect(message?.video.localPath, 'small.mp4');
+        expect(message?.video.size, 1000);
+        expect(message?.status, MessageStatus.sent);
+        expect(progress.first, 0);
+        expect(progress[1], Outbox.compressing);
+      });
+
+      test('a compressor that throws sends the original', () async {
+        await outbox.dispose();
+        outbox = withCompressor((video) async => throw StateError('codec'));
+        final errors = <FlutterErrorDetails>[];
+        final previous = FlutterError.onError;
+        FlutterError.onError = errors.add;
+        addTearDown(() => FlutterError.onError = previous);
+
+        await outbox.send(video('m1'));
+        await outbox.flush();
+
+        expect(uploader.uploads.first, 'v.mp4');
+        expect((await stored('m1'))?.status, MessageStatus.sent);
+        expect(errors.single.exception, isA<StateError>());
+      });
+
+      test('still too large after compression fails the send', () async {
+        await outbox.dispose();
+        outbox = withCompressor(
+          (video) async => XFile.fromData(Uint8List(5000), path: 'big.mp4'),
+          maxBytes: 4000,
+        );
+        await outbox.send(video('m1'));
+        await outbox.flush();
+
+        expect(uploader.uploads, isEmpty);
+        expect((await stored('m1'))?.status, MessageStatus.failed);
+        await expectLater(
+          outbox.retry('m1'),
+          throwsA(
+            isA<ValidationFailure>().having(
+              (f) => f.fields['attachments'],
+              'attachments',
+              Outbox.fileTooLarge,
+            ),
+          ),
+        );
+      });
     });
 
     test('a file that is gone fails the send; retry says why', () async {
