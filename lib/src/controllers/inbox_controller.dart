@@ -19,6 +19,8 @@ import 'package:lemsa_core_kit/lemsa_core_kit.dart';
 /// tab): each has its own [filter], search, paging and [totalUnread], and
 /// all of them share the cache and one inbox event subscription.
 class InboxController extends ChangeNotifier {
+  /// A list of [kit]'s rooms matching the filter (all rooms by default).
+  /// [kit] must be open. Prefer `ChatKit.inbox`.
   InboxController(this.kit, {this._filter = RoomFilter.all})
     : _repository = kit.repository {
     _repository.openInbox(onResync: _resync);
@@ -29,6 +31,7 @@ class InboxController extends ChangeNotifier {
     unawaited(refresh());
   }
 
+  /// The kit whose rooms this list shows.
   final ChatKit kit;
   final ChatRepository _repository;
 
@@ -52,6 +55,7 @@ class InboxController extends ChangeNotifier {
   final Map<String, ChatUser> _users = {};
   final Set<String> _requestedUsers = {};
 
+  /// `ChatKit.currentUserId`, used to find the peer of direct rooms.
   String get currentUserId => kit.currentUserId;
 
   /// Pinned first, then most recently updated.
@@ -62,7 +66,12 @@ class InboxController extends ChangeNotifier {
 
   /// A refresh from the source is running.
   bool get isLoading => _isLoading;
+
+  /// True while [loadMore] runs; the list shows a spinner at its end.
   bool get isLoadingMore => _isLoadingMore;
+
+  /// Whether the source may have more rooms after [rooms]; [loadMore] does
+  /// nothing once false. Reset by [refresh].
   bool get hasMore => _hasMore;
 
   /// The last refresh or paging failure, cleared by the next success.
@@ -72,6 +81,8 @@ class InboxController extends ChangeNotifier {
   int get totalUnread =>
       _rooms.fold(0, (sum, room) => room.muted ? sum : sum + room.unreadCount);
 
+  /// The applied search text, trimmed; empty when not searching. Changes
+  /// `ChatConfig.searchDebounce` after [search] is called.
   String get query => _query;
 
   /// Which rooms this list shows. Applied to the cache, and passed to
@@ -92,6 +103,9 @@ class InboxController extends ChangeNotifier {
   /// sent by the backend or resolved lazily, and updated when they change.
   Map<String, ChatUser> get users => _users;
 
+  /// The last known online state of [userId], from `PresenceChanged`
+  /// events; null when none arrived. Listeners are notified when a direct
+  /// room's peer changes.
   Presence? presenceOf(String userId) => _repository.presence(userId);
 
   /// The other member of a direct room, once resolved.
@@ -280,6 +294,7 @@ class InboxController extends ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
+  /// Whether a search debounce timer is still running. For tests.
   @visibleForTesting
   bool get hasPendingTimers => _searchTimer?.isActive ?? false;
 

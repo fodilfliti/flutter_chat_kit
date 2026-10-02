@@ -38,7 +38,13 @@ typedef ChatKitFactory = ChatKit Function(ChatProfile profile);
 /// await switcher.switchTo(shopId);
 /// await switcher.clearAllUserData(); // on sign-out
 /// ```
+///
+/// See doc/adapters/profiles.md.
 class ChatProfileSwitcher extends ChangeNotifier {
+  /// A switcher over [profiles] (not empty, unique ids) starting at
+  /// [initialProfileId], or the first profile when null. Throws an
+  /// [ArgumentError] for an empty list, duplicate ids or an unknown
+  /// initial id. Nothing opens until [open].
   ChatProfileSwitcher({
     required List<ChatProfile> profiles,
     required this.createKit,
@@ -53,6 +59,8 @@ class ChatProfileSwitcher extends ChangeNotifier {
                    'is not one of the profiles',
                  ));
 
+  /// Builds the kit of a profile when it becomes active, and a short-lived
+  /// one to clear a profile's data.
   final ChatKitFactory createKit;
 
   List<ChatProfile> _profiles;
@@ -72,13 +80,16 @@ class ChatProfileSwitcher extends ChangeNotifier {
   /// The open kit of [active]. Null before [open] and after [close].
   ChatKit? get kit => _kit;
 
+  /// Whether the active profile's kit is open, so chat screens can show.
   bool get isOpen => _kit != null;
 
   /// True while [switchTo] opens the next profile's kit.
   bool get isSwitching => _isSwitching;
 
+  /// The last value given to [setOnline]; true by default.
   bool get isOnline => _isOnline;
 
+  /// The profile with [id], or null when it is not in [profiles].
   ChatProfile? profileById(String id) =>
       _profiles.where((p) => p.id == id).firstOrNull;
 

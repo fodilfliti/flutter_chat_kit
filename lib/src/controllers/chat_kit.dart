@@ -30,6 +30,15 @@ import 'package:flutter_chat_kit/src/sync/retry_policy.dart';
 /// await kit.clearUserData(); // on sign-out
 /// ```
 class ChatKit extends ChangeNotifier {
+  /// A kit for [currentUserId] talking to [source]. Nothing runs until
+  /// [open].
+  ///
+  /// Optional parts: [uploader] enables media and voice, [users] resolves
+  /// missing names and avatars, [agentId] is for shared business profiles.
+  /// [cache] defaults to a `DriftChatCache` (SQLite), [onSaveMedia] handles
+  /// the media viewer's "Save" action, [mediaStore] replaces the media
+  /// store and [audio] shares an `AudioPlayerHub` (the kit creates and
+  /// disposes its own otherwise).
   ChatKit({
     required this.currentUserId,
     required this.source,
@@ -60,6 +69,9 @@ class ChatKit extends ChangeNotifier {
   /// The profile the kit chats as: rooms, messages and the local database
   /// belong to it.
   final String currentUserId;
+
+  /// The app's backend: where rooms and messages are read, written and
+  /// listened to. See doc/adapters/your_api.md.
   final ChatSource source;
 
   /// The person acting for [currentUserId] when a business profile is
@@ -74,6 +86,8 @@ class ChatKit extends ChangeNotifier {
   /// Looks up names and avatars the backend did not send with its pages
   /// (`ChatPage.users`) or events (`UsersChanged`).
   final ChatUserResolver? users;
+
+  /// Behaviour settings: page sizes, grouping, reactions, typing, caches.
   final ChatConfig config;
 
   /// Backoff of the outbox.
@@ -99,10 +113,16 @@ class ChatKit extends ChangeNotifier {
   ChatRepository? _repository;
   Outbox? _outbox;
 
+  /// Whether [open] completed and [close] was not called since. Controllers
+  /// can only be created while open.
   bool get isOpen => _isOpen;
 
+  /// The last value given to [setOnline]; true by default. While false,
+  /// sends wait in the outbox.
   bool get isOnline => _isOnline;
 
+  /// Whether an [uploader] was given; the composer shows the attachment
+  /// and mic buttons only then.
   bool get canSendMedia => uploader != null;
 
   /// Sync between the source and the cache. Available while open.

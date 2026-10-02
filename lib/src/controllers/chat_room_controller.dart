@@ -24,7 +24,23 @@ import 'package:uuid/uuid.dart';
 /// The message list reports its viewport through [onViewportChanged];
 /// the controller never scrolls. Create with `ChatKit.room(id)` and
 /// dispose before `ChatKit.close()`.
+///
+/// Read receipts are automatic: while the list is at the bottom of the
+/// latest messages, the newest message from others is marked read through
+/// `ChatSource.markRead` (see `ChatConfig.markReadWhenAtBottom`).
+///
+/// `ChatRoomView` creates one itself; use the controller directly for a
+/// custom room screen or to send from outside the composer.
+///
+/// ```dart
+/// final room = kit.room('r1');
+/// await room.ready;
+/// await room.sendText('Hello', replyToId: room.messages.first.id);
+/// // ...
+/// room.dispose();
+/// ```
 class ChatRoomController extends ChangeNotifier {
+  /// Opens [roomId] of [kit], which must be open. Prefer `ChatKit.room`.
   ChatRoomController(this.kit, this.roomId)
     : _repository = kit.repository,
       _outbox = kit.outbox {
@@ -38,7 +54,10 @@ class ChatRoomController extends ChangeNotifier {
     ready = _open();
   }
 
+  /// The kit this room belongs to.
   final ChatKit kit;
+
+  /// The id of the open room.
   final String roomId;
   final ChatRepository _repository;
   final Outbox _outbox;
@@ -84,10 +103,15 @@ class ChatRoomController extends ChangeNotifier {
   final _highlighted = ValueNotifier<String?>(null);
   final _newMessages = ValueNotifier<int>(0);
 
+  /// `ChatKit.currentUserId`: messages by this id show as outgoing.
   String get currentUserId => kit.currentUserId;
 
+  /// The room as cached: title, avatar and members for the app bar. Null
+  /// until the cache answers, or when the room is not in the cache yet.
   ChatRoom? get room => _room;
 
+  /// The room's members with their read and delivery pointers; empty while
+  /// [room] is null. Drives the ticks and [seenBy].
   List<RoomMember> get members => _room?.members ?? const [];
 
   /// Visible messages, newest first (index 0 is the bottom of the list).
@@ -100,11 +124,24 @@ class ChatRoomController extends ChangeNotifier {
   /// resolved lazily through `ChatUserResolver`. Updated when they change.
   Map<String, ChatUser> get users => _users;
 
+  /// True until the first sync with the source ends; the cached messages
+  /// are already shown meanwhile.
   bool get isSyncing => _isSyncing;
+
+  /// True while [loadOlder] runs; the list shows a spinner at the top.
   bool get isLoadingOlder => _isLoadingOlder;
+
+  /// True while [loadNewer] runs.
   bool get isLoadingNewer => _isLoadingNewer;
+
+  /// True while [jumpToMessage] loads the slice around a message.
   bool get isJumping => _isJumping;
+
+  /// Whether older messages exist before the first one in [messages].
   bool get hasMoreOlder => _window.hasMoreOlder;
+
+  /// Whether newer messages exist after [messages]; only true when
+  /// [isDetached].
   bool get hasMoreNewer => _window.hasMoreNewer;
 
   /// Showing an older slice after a jump; the newest messages are not in
@@ -123,6 +160,8 @@ class ChatRoomController extends ChangeNotifier {
   /// bottom. Reset when it gets there.
   ValueListenable<int> get newMessagesCount => _newMessages;
 
+  /// Whether the list shows the newest messages, as last reported through
+  /// [onViewportChanged]. Starts true.
   bool get isAtBottom => _atBottom;
 
   /// The oldest message from others that was unread when the room opened;
@@ -141,6 +180,8 @@ class ChatRoomController extends ChangeNotifier {
   /// Ids of members typing now (never the current user).
   List<String> get typingUserIds => _typingIds;
 
+  /// Local ids of the selected messages. Not empty while the selection app
+  /// bar is shown.
   Set<String> get selectedIds => Set.unmodifiable(_selected);
 
   // ------------------------------------------------------------ receipts
@@ -281,6 +322,13 @@ class ChatRoomController extends ChangeNotifier {
 
   // --------------------------------------------------------------- writes
 
+  /// Sends [text], trimmed, as a `TextMessage`, quoting [replyToId] when
+  /// given. Blank text is ignored.
+  ///
+  /// The bubble shows at once as pending; the outbox sends it when online
+  /// and retries network failures. A detached list returns to the latest
+  /// messages first. On a shared profile, `ChatKit.agentId` is stamped as
+  /// `Message.sentBy`. The same applies to every send method below.
   Future<void> sendText(String text, {String? replyToId}) async {
     final body = text.trim();
     if (body.isEmpty) return;
@@ -302,6 +350,10 @@ class ChatRoomController extends ChangeNotifier {
   /// audio or file. [caption] goes on the first image or video message, or
   /// follows as a text. Throws `ValidationFailure({'attachments':
   /// 'too_large'})` when a file exceeds `ChatConfig.maxAttachmentBytes`.
+  ///
+  /// Files without a `remoteUrl` are uploaded from their `localPath`
+  /// through `ChatKit.uploader` before the send; without an uploader this
+  /// throws a [StateError]. [replyToId] goes on the first message only.
   Future<void> sendMedia(
     List<Attachment> files, {
     String? caption,
@@ -405,6 +457,9 @@ class ChatRoomController extends ChangeNotifier {
     if (rest != null) await sendText(rest, replyToId: reply);
   }
 
+  /// Sends a voice note: [audio] (a local recording), its [duration], and
+  /// [waveform] bar heights from 0 to 1 drawn in the bubble. The composer's
+  /// mic button calls it; use it for recordings made elsewhere.
   Future<void> sendVoice(
     Attachment audio,
     Duration duration,
@@ -429,6 +484,19 @@ class ChatRoomController extends ChangeNotifier {
 
   /// Sends an app-defined message, rendered by
   /// `ChatBuilders.customBuilders[customType]`.
+  ///
+  /// [data] must be JSON-encodable; it is stored and sent as is (JSON
+  /// `data`). [metadata] is free-form extra data. The inbox preview comes
+  /// from `ChatStrings.customPreview`.
+  ///
+  /// ```dart
+  /// await room.sendCustom('offer', {'price': 120, 'currency': 'EUR'});
+  /// // and in ChatBuilders:
+  /// customBuilders: {
+  ///   'offer': (context, m) =>
+  ///       OfferCard((m.message as CustomMessage).data),
+  /// },
+  /// ```
   Future<void> sendCustom(
     String customType,
     Map<String, Object?> data, {
@@ -452,6 +520,10 @@ class ChatRoomController extends ChangeNotifier {
   }
 
   /// Replaces the text (or the caption of an image or video message).
+  ///
+  /// [id] may be the server id or the local id. Blank text, unchanged text
+  /// and other message types are ignored. The new text shows at once; if
+  /// the source rejects it, the old text returns and [failure] is set.
   Future<void> edit(String id, String newText) async {
     final message = _find(id) ?? await kit.cache.messageByAnyId(id);
     final body = newText.trim();
@@ -466,12 +538,21 @@ class ChatRoomController extends ChangeNotifier {
     await _outbox.edit(edited);
   }
 
+  /// Deletes the message with server or local id [id] and unselects it.
+  ///
+  /// An unsent message is dropped. A sent one shows as deleted at once and
+  /// is deleted through `ChatSource.delete`; if the source rejects it, the
+  /// message returns and [failure] is set.
   Future<void> delete(String id) async {
     _selected.remove(id);
     await _outbox.delete(roomId, id);
   }
 
   /// Toggles the current user's [emoji] reaction on the message.
+  ///
+  /// Adds it when the user has not reacted with [emoji], else removes it.
+  /// The change shows at once and is reverted, with [failure] set, if the
+  /// source rejects it.
   Future<void> react(String id, String emoji) async {
     final message = _find(id) ?? await kit.cache.messageByAnyId(id);
     if (message == null) return;
@@ -479,10 +560,16 @@ class ChatRoomController extends ChangeNotifier {
     await _outbox.react(roomId, id, emoji, add: !mine);
   }
 
+  /// Sends a failed (or waiting) message again now. The failed bubble's
+  /// error icon calls it.
   Future<void> retry(String localId) => _outbox.retry(localId);
 
+  /// Removes an unsent message and its pending writes. Returns false when
+  /// the message was already sent or is being sent.
   Future<bool> discard(String localId) => _outbox.discard(localId);
 
+  /// Upload progress of the message's attachments, from 0 to 1; null when
+  /// nothing is uploading.
   ValueListenable<double?> progressOf(String localId) =>
       _outbox.progressOf(localId);
 
@@ -494,6 +581,7 @@ class ChatRoomController extends ChangeNotifier {
     _notify();
   }
 
+  /// Unselects every message, which closes the selection app bar.
   void clearSelection() {
     if (_selected.isEmpty) return;
     _selected.clear();
@@ -700,6 +788,7 @@ class ChatRoomController extends ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
+  /// Whether a highlight timer is still running. For tests.
   @visibleForTesting
   bool get hasPendingTimers => _highlightTimer?.isActive ?? false;
 
