@@ -49,6 +49,8 @@ class ChatRoomView extends StatefulWidget {
     this.onAttachmentTap,
     this.onAttachmentPick,
     this.extraAttachmentOptions = const [],
+    this.enableVoice = true,
+    this.enableAttachments = true,
     this.onForward,
     this.background,
     this.backgroundColor,
@@ -88,6 +90,12 @@ class ChatRoomView extends StatefulWidget {
   final AttachmentTapCallback? onAttachmentTap;
   final AttachmentPicker? onAttachmentPick;
   final List<AttachmentOption> extraAttachmentOptions;
+
+  /// Shows the hold-to-record mic. Voice also needs a `ChatKit.uploader`.
+  final bool enableVoice;
+
+  /// Shows the attach button. Attachments also need a `ChatKit.uploader`.
+  final bool enableAttachments;
 
   /// Enables the forward action of the selection app bar.
   final ValueChanged<List<Message>>? onForward;
@@ -206,6 +214,8 @@ class ChatRoomViewState extends State<ChatRoomView> {
       controller: composer,
       onAttachmentPick: widget.onAttachmentPick,
       extraAttachmentOptions: widget.extraAttachmentOptions,
+      enableVoice: widget.enableVoice,
+      enableAttachments: widget.enableAttachments,
       strings: widget.strings,
       formatters: widget.formatters,
     );

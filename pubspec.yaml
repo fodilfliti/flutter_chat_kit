@@ -54,4 +54,8 @@ topics:
   - offline
   - ui
 
+screenshots:
+  - description: Chat room with images, a reply and a custom offer message
+    path: screenshots/chat.png
+
 flutter:

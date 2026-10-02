@@ -61,6 +61,8 @@ void main() {
       Widget? header,
       ComposerController? composer,
       ChatBuilders builders = const ChatBuilders(),
+      bool enableVoice = true,
+      bool enableAttachments = true,
     }) async {
       h = Harness();
       h.source
@@ -78,6 +80,8 @@ void main() {
             appBar: appBar,
             header: header,
             builders: builders,
+            enableVoice: enableVoice,
+            enableAttachments: enableAttachments,
           ),
         ),
       );
@@ -108,6 +112,19 @@ void main() {
       expect(find.byKey(const Key('call')), findsOneWidget);
       expect(find.text('Pinned banner'), findsOneWidget);
       expect(find.byType(ChatComposer), findsOneWidget);
+      await close(tester);
+    });
+
+    testWidgets('voice and attachments can be turned off', (tester) async {
+      await open(
+        tester,
+        groupRoom(),
+        enableVoice: false,
+        enableAttachments: false,
+      );
+      final composer = tester.widget<ChatComposer>(find.byType(ChatComposer));
+      expect(composer.enableVoice, isFalse);
+      expect(composer.enableAttachments, isFalse);
       await close(tester);
     });
 
