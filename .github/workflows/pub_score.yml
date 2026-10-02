@@ -1,0 +1,56 @@
+name: Pub score
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pana:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.2"
+          channel: "stable"
+          cache: true
+
+      - name: Install webp (screenshot check)
+        run: sudo apt-get update && sudo apt-get install -y webp
+
+      - name: Install pana
+        run: dart pub global activate pana
+
+      - name: Score the package
+        run: dart pub global run pana --no-warning . | tee pana.txt
+
+      - name: Report each section
+        if: always()
+        run: |
+          python3 - <<'EOF'
+          import re
+          text = open('pana.txt', encoding='utf-8').read()
+          total = re.search(r'Points: (\d+)/(\d+)', text)
+          sections = re.split(r'\n(?=## )', text)
+          for section in sections:
+              head = section.strip().splitlines()[0] if section.strip() else ''
+              if not head.startswith('## '):
+                  continue
+              body = section.strip().replace('%', '%25').replace('\r', '')
+              body = body.replace('\n', '%0A')[:60000]
+              print(f'::notice title={head[3:].strip()}::{body}')
+          if total:
+              got, out_of = total.groups()
+              level = 'notice' if got == out_of else 'error'
+              print(f'::{level} title=Pub points::{got}/{out_of}')
+              if got != out_of:
+                  raise SystemExit(1)
+          EOF
